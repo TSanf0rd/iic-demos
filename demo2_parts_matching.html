@@ -1,0 +1,1619 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Hussmann Refresh — AI Parts Matching</title>
+
+  <!--
+    ========================================================================
+    DEMO 2: AI PARTS MATCHING & AUTO-QUOTE
+    ------------------------------------------------------------------------
+    Same three-language split as Demo 3:
+      HTML = structure (mostly empty containers JS fills at runtime)
+      CSS  = styling  (same design tokens as Demo 3, so the two demos read
+             as one product family — consistency is credibility)
+      JS   = behavior (data.js -> ranker.js -> app.js, loaded in that order)
+
+    The page has TWO SCREENS living in one document (single-page app):
+      #screen-input   : serial number + component selection
+      #screen-results : the ranked parts, confidence bars, and quote
+    JavaScript toggles which is visible — the same show/hide-with-classes
+    technique as Demo 3's dashboard/detail switch.
+    ========================================================================
+  -->
+
+  <style>
+    /* ====== DESIGN TOKENS — identical palette to Demo 3 on purpose ====== */
+    :root {
+      --navy:      #0B2D4D;
+      --navy-2:    #143D63;
+      --blue:      #1E6BB8;
+      --blue-soft: #E5EFFB;
+      --gold:      #C99A2E;
+
+      --bg:        #F5F3EE;
+      --surface:   #FFFFFF;
+      --surface-2: #FAF9F6;
+      --border:    #E2DFD8;
+      --border-2:  #CFCBC1;
+
+      --ink:       #1A1A18;
+      --ink-2:     #5A574F;
+      --ink-3:     #8A867B;
+
+      --green:     #2E9E4A;  --green-bg: #E7F4EA;  --green-ink: #1E7A34;
+      --amber:     #E08A16;  --amber-bg: #FDF0E3;  --amber-ink: #B4600A;
+      --red:       #C62828;  --red-bg:   #FBE4E4;  --red-ink:   #B02020;
+
+      --radius:    10px;
+      --radius-lg: 14px;
+      --maxw:      980px;
+
+      --font: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+      --mono: "SF Mono", ui-monospace, Menlo, Consolas, monospace;
+    }
+
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body {
+      font-family: var(--font);
+      background: var(--bg);
+      color: var(--ink);
+      line-height: 1.5;
+      -webkit-font-smoothing: antialiased;
+    }
+
+    /* ====== TOP BAR — matches Demo 3 so they feel like one product ====== */
+    .topbar {
+      background: var(--navy); color: #fff;
+      padding: 14px 24px;
+      display: flex; align-items: center; justify-content: space-between;
+      border-bottom: 3px solid var(--blue);
+    }
+    .brand { display: flex; align-items: center; gap: 12px; }
+    .brand-mark {
+      width: 34px; height: 34px; border-radius: 7px;
+      background: linear-gradient(135deg, var(--blue) 0%, var(--navy-2) 100%);
+      display: flex; align-items: center; justify-content: center;
+      font-weight: 700; font-size: 17px;
+    }
+    .brand-text { display: flex; flex-direction: column; line-height: 1.15; }
+    .brand-text .name { font-weight: 600; font-size: 15px; }
+    .brand-text .sub  { font-size: 11.5px; color: #A9C4DE; }
+    .env {
+      font-size: 11px; font-weight: 500; color: #A9C4DE;
+      border: 1px solid #2A4E70; padding: 4px 10px; border-radius: 999px;
+    }
+
+    .page { max-width: var(--maxw); margin: 0 auto; padding: 28px 24px 60px; }
+
+    .eyebrow {
+      font-size: 11.5px; font-weight: 600; letter-spacing: 1px;
+      text-transform: uppercase; color: var(--blue); margin-bottom: 4px;
+    }
+    h1 { font-size: 23px; font-weight: 600; color: var(--navy); letter-spacing: -0.3px; }
+    .sub { color: var(--ink-2); font-size: 14px; margin-top: 3px; margin-bottom: 22px; }
+
+    /* ====== SCREEN 1: INPUT ====== */
+    .screen { display: none; }
+    .screen.active { display: block; }
+
+    .input-card {
+      background: var(--surface); border: 1px solid var(--border);
+      border-radius: var(--radius-lg); padding: 26px;
+    }
+    .field-label {
+      font-size: 12px; font-weight: 600; letter-spacing: 0.5px;
+      text-transform: uppercase; color: var(--ink-3); margin-bottom: 8px;
+    }
+    .serial-row { display: flex; gap: 10px; }
+    .serial-input {
+      flex: 1; font-family: var(--mono); font-size: 15px;
+      padding: 12px 14px; border: 1.5px solid var(--border-2);
+      border-radius: var(--radius); color: var(--navy);
+      outline: none; transition: border-color 0.15s;
+    }
+    .serial-input:focus { border-color: var(--blue); }
+    .btn {
+      font-family: var(--font); font-size: 13.5px; font-weight: 600;
+      border-radius: var(--radius); padding: 11px 18px; cursor: pointer;
+      border: 1px solid var(--border-2); background: var(--surface); color: var(--navy);
+      transition: all 0.14s;
+    }
+    .btn:hover { border-color: var(--blue); }
+    .btn.primary { background: var(--navy); color: #fff; border-color: var(--navy); }
+    .btn.primary:hover { background: var(--navy-2); }
+    .btn:disabled { opacity: 0.5; cursor: default; }
+
+    /* quick-pick sample serials (so the live demo never depends on typing) */
+    .samples { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 12px; }
+    .sample-chip {
+      font-family: var(--mono); font-size: 11.5px; color: var(--ink-2);
+      background: var(--surface-2); border: 1px solid var(--border);
+      border-radius: 999px; padding: 5px 12px; cursor: pointer;
+    }
+    .sample-chip:hover { border-color: var(--blue); color: var(--navy); }
+
+    /* the resolved-case card that appears after lookup */
+    .case-card {
+      display: none;
+      margin-top: 20px; padding: 16px 18px;
+      background: var(--blue-soft); border: 1px solid #C7DCF2;
+      border-radius: var(--radius);
+    }
+    .case-card.show { display: flex; align-items: center; gap: 16px; }
+    .case-icon {
+      width: 40px; height: 40px; border-radius: 9px; background: var(--navy);
+      color: #fff; display: flex; align-items: center; justify-content: center;
+      font-weight: 700; font-size: 15px; flex-shrink: 0;
+    }
+    .case-title { font-size: 15px; font-weight: 600; color: var(--navy); }
+    .case-meta  { font-size: 12.5px; color: var(--ink-2); margin-top: 1px; }
+
+    .case-error {
+      display: none;
+      margin-top: 20px; padding: 14px 16px;
+      background: var(--red-bg); border: 1px solid #F0C4C4;
+      border-radius: var(--radius);
+      font-size: 13px; color: var(--red-ink);
+    }
+    .case-error.show { display: block; }
+
+    /* component picker — appears once a case resolves */
+    .component-section { display: none; margin-top: 24px; }
+    .component-section.show { display: block; }
+    .component-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; }
+    .comp-card {
+      background: var(--surface); border: 1.5px solid var(--border);
+      border-radius: var(--radius); padding: 18px 16px; cursor: pointer;
+      text-align: left; font-family: var(--font);
+      transition: all 0.14s;
+    }
+    .comp-card:hover { border-color: var(--blue); transform: translateY(-2px); }
+    .comp-name { font-size: 15px; font-weight: 600; color: var(--navy); }
+    .comp-desc { font-size: 12px; color: var(--ink-2); margin-top: 4px; line-height: 1.45; }
+
+    /* ====== SCREEN 2: RESULTS ====== */
+    .back-btn {
+      display: inline-flex; align-items: center; gap: 7px;
+      background: none; border: none; cursor: pointer;
+      font-family: var(--font); font-size: 13.5px; font-weight: 500;
+      color: var(--blue); padding: 6px 0; margin-bottom: 16px;
+    }
+    .back-btn:hover { color: var(--navy); }
+
+    /* results header: what we matched + overall confidence dial */
+    .results-head {
+      background: var(--surface); border: 1px solid var(--border);
+      border-radius: var(--radius-lg); padding: 20px 24px;
+      display: flex; align-items: center; justify-content: space-between;
+      margin-bottom: 18px;
+    }
+    .rh-title { font-size: 18px; font-weight: 600; color: var(--navy); }
+    .rh-sub   { font-size: 13px; color: var(--ink-2); margin-top: 2px; }
+    .rh-note  { font-size: 12px; color: var(--ink-3); margin-top: 8px; font-style: italic; }
+    .overall {
+      text-align: right;
+    }
+    .overall .pct { font-size: 30px; font-weight: 700; color: var(--navy); line-height: 1; }
+    .overall .lbl {
+      font-size: 10.5px; font-weight: 600; letter-spacing: 0.6px;
+      text-transform: uppercase; color: var(--ink-3); margin-top: 4px;
+    }
+
+    /* AI "thinking" shimmer shown briefly before results render */
+    .thinking {
+      display: none;
+      background: var(--surface); border: 1px solid var(--border);
+      border-radius: var(--radius-lg); padding: 30px 24px;
+      text-align: center; color: var(--ink-2); font-size: 14px;
+    }
+    .thinking.show { display: block; }
+    .dots::after { content: ""; animation: dots 1.2s steps(4, end) infinite; }
+    @keyframes dots { 0% { content: ""; } 25% { content: "."; } 50% { content: ".."; } 75% { content: "..."; } }
+
+    /* per-category match lines */
+    .match-line {
+      background: var(--surface); border: 1px solid var(--border);
+      border-radius: var(--radius-lg); padding: 18px 22px; margin-bottom: 12px;
+    }
+    .ml-head { display: flex; align-items: baseline; justify-content: space-between; margin-bottom: 12px; }
+    .ml-cat {
+      font-size: 11.5px; font-weight: 600; letter-spacing: 0.6px;
+      text-transform: uppercase; color: var(--ink-3);
+    }
+    .ml-cat .primary-tag {
+      margin-left: 8px; font-size: 10px; color: var(--blue);
+      border: 1px solid var(--blue); border-radius: 999px; padding: 1px 8px;
+      letter-spacing: 0.4px;
+    }
+    .ml-main { display: flex; align-items: center; gap: 16px; }
+    .ml-info { flex: 1; min-width: 0; }
+    .ml-part { font-family: var(--mono); font-size: 13.5px; font-weight: 600; color: var(--navy); }
+    .ml-desc { font-size: 13px; color: var(--ink-2); margin-top: 1px; }
+    .ml-price { font-size: 14.5px; font-weight: 600; color: var(--ink); white-space: nowrap; }
+
+    /* the CONFIDENCE BAR — the signature visual of this screen */
+    .conf {
+      width: 190px; flex-shrink: 0;
+    }
+    .conf-row { display: flex; justify-content: space-between; align-items: baseline; margin-bottom: 4px; }
+    .conf-label { font-size: 10.5px; font-weight: 600; letter-spacing: 0.5px; text-transform: uppercase; color: var(--ink-3); }
+    .conf-num { font-size: 13px; font-weight: 700; color: var(--navy); }
+    .conf-track {
+      height: 8px; background: var(--border); border-radius: 6px; overflow: hidden;
+    }
+    .conf-fill {
+      height: 100%; border-radius: 6px;
+      background: linear-gradient(90deg, var(--blue), var(--navy));
+      width: 0;                                  /* JS sets the real width */
+      transition: width 0.7s cubic-bezier(.2,.8,.3,1);
+    }
+    .conf-fill.low { background: linear-gradient(90deg, var(--amber), #C97A10); }
+
+    /* stock pill: availability is SEPARATE from confidence */
+    .stock-pill {
+      display: inline-block; font-size: 11px; font-weight: 600;
+      border-radius: 999px; padding: 3px 10px; margin-top: 6px;
+    }
+    .stock-pill.ok  { background: var(--green-bg); color: var(--green-ink); }
+    .stock-pill.bad { background: var(--red-bg);   color: var(--red-ink); }
+
+    /* alternates (collapsed by default) */
+    .alts-toggle {
+      background: none; border: none; cursor: pointer;
+      font-family: var(--font); font-size: 12px; font-weight: 600; color: var(--blue);
+      padding: 8px 0 0; display: block;
+    }
+    .alts { display: none; margin-top: 10px; border-top: 1px dashed var(--border); padding-top: 10px; }
+    .alts.show { display: block; }
+    .alt-row {
+      display: flex; align-items: center; gap: 14px;
+      font-size: 12.5px; color: var(--ink-2); padding: 5px 0;
+    }
+    .alt-part { font-family: var(--mono); font-size: 12px; color: var(--ink-2); width: 170px; }
+    .alt-conf { font-weight: 600; color: var(--ink-3); width: 44px; text-align: right; }
+
+    /* weakest-link advisory */
+    .advisory {
+      background: var(--amber-bg); border: 1px solid #F3D9B4;
+      border-radius: var(--radius); padding: 13px 16px; margin: 6px 0 18px;
+      font-size: 13px; color: var(--amber-ink);
+    }
+    .advisory strong { font-weight: 600; }
+
+    /* quote section */
+    .quote-actions { margin-top: 20px; }
+    .quote-card {
+      display: none;
+      background: var(--surface); border: 1px solid var(--border);
+      border-radius: var(--radius-lg); padding: 22px 24px; margin-top: 16px;
+    }
+    .quote-card.show { display: block; }
+    .q-title { font-size: 15px; font-weight: 600; color: var(--navy); margin-bottom: 14px; }
+    .q-table { width: 100%; border-collapse: collapse; font-size: 13px; }
+    .q-table th {
+      text-align: left; font-size: 10.5px; font-weight: 600; letter-spacing: 0.5px;
+      text-transform: uppercase; color: var(--ink-3);
+      padding: 0 10px 8px; border-bottom: 2px solid var(--border);
+    }
+    .q-table td { padding: 9px 10px; border-bottom: 1px solid var(--border); }
+    .q-table .mono { font-family: var(--mono); font-size: 12px; color: var(--navy); }
+    .q-table .num { text-align: right; }
+    .q-total td { font-weight: 700; color: var(--navy); border-bottom: none; padding-top: 12px; }
+    .q-id { font-family: var(--mono); font-size: 12px; color: var(--ink-3); margin-top: 12px; }
+
+    .oracle-confirm {
+      display: none;
+      margin-top: 14px; padding: 14px 16px;
+      background: var(--green-bg); border: 1px solid #C4E4CC;
+      border-radius: var(--radius); font-size: 13.5px; color: var(--green-ink);
+    }
+    .oracle-confirm.show { display: block; }
+    .oracle-confirm .mono { font-family: var(--mono); font-weight: 600; }
+
+    /* ====== HERO BAND (screen 1) ====== */
+    .hero {
+      display: flex; align-items: center; gap: 30px;
+      background: linear-gradient(120deg, var(--navy) 0%, var(--navy-2) 70%, #1B4A75 100%);
+      border-radius: var(--radius-lg);
+      padding: 30px 34px 26px;
+      margin-bottom: 20px;
+      overflow: hidden;
+    }
+    .hero-left { flex: 1; min-width: 0; }
+    .hero-eyebrow {
+      font-size: 11.5px; font-weight: 600; letter-spacing: 1.2px;
+      text-transform: uppercase; color: #8FB4D9; margin-bottom: 6px;
+    }
+    .hero-title { font-size: 26px; font-weight: 650; color: #fff; letter-spacing: -0.3px; }
+    .hero-sub { font-size: 14px; color: #C4D6E8; margin-top: 6px; max-width: 480px; }
+    .hero-stats { display: flex; flex-wrap: wrap; gap: 10px; margin-top: 18px; }
+    .stat {
+      display: flex; flex-direction: column;
+      background: rgba(255,255,255,0.08);
+      border: 1px solid rgba(255,255,255,0.16);
+      border-radius: 9px; padding: 8px 14px;
+    }
+    .stat-big { font-size: 13px; font-weight: 650; color: #fff; }
+    .stat-small { font-size: 10.5px; color: #8FB4D9; margin-top: 1px; }
+    .hero-art { width: 210px; flex-shrink: 0; }
+    .hero-art svg { width: 100%; height: auto; display: block; }
+
+    /* ====== STEP RAIL ====== */
+    .steps {
+      display: flex; align-items: center; gap: 10px;
+      margin-bottom: 18px; padding: 0 4px;
+    }
+    .step { display: flex; align-items: center; gap: 8px; }
+    .step-dot {
+      width: 24px; height: 24px; border-radius: 50%;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 12px; font-weight: 700;
+      background: var(--surface); border: 2px solid var(--border-2); color: var(--ink-3);
+      transition: all .2s;
+    }
+    .step-lbl { font-size: 12.5px; font-weight: 600; color: var(--ink-3); transition: color .2s; }
+    .step.active .step-dot { background: var(--navy); border-color: var(--navy); color: #fff; }
+    .step.active .step-lbl { color: var(--navy); }
+    .step.done .step-dot { background: var(--blue-soft); border-color: var(--blue); color: var(--blue); }
+    .step.done .step-lbl { color: var(--ink-2); }
+    .step-line { flex: 1; max-width: 70px; height: 2px; background: var(--border); border-radius: 2px; }
+
+    @media (max-width: 720px) { .hero-art { display: none; } }
+
+    /* ====== v2 VISUAL ADDITIONS ====== */
+
+    /* component picker icons */
+    .comp-card { position: relative; overflow: hidden; }
+    .comp-card::before {
+      content: ""; position: absolute; top: 0; left: 0; right: 0; height: 3px;
+      background: var(--accent, var(--blue)); opacity: 0; transition: opacity .15s;
+    }
+    .comp-card:hover::before { opacity: 1; }
+    .comp-icon { width: 40px; height: 40px; margin-bottom: 10px; }
+    .comp-icon svg { width: 100%; height: 100%; }
+
+    /* category accent on each match line (left border in the category hue) */
+    .match-line { border-left: 4px solid var(--accent, var(--border)); }
+
+    /* part schematic thumbnail */
+    .thumb {
+      width: 56px; height: 56px; flex-shrink: 0;
+      background: color-mix(in srgb, currentColor 8%, white);
+      border: 1px solid color-mix(in srgb, currentColor 25%, white);
+      border-radius: 10px; padding: 9px;
+    }
+    .thumb svg { width: 100%; height: 100%; }
+
+    /* override + AI-top tags */
+    .override-tag {
+      margin-left: 8px; font-size: 10px; color: #7B4FD0;
+      border: 1px solid #7B4FD0; border-radius: 999px; padding: 1px 8px;
+      letter-spacing: 0.4px; text-transform: none;
+    }
+    .ai-top {
+      font-size: 9.5px; color: var(--blue); border: 1px solid var(--blue);
+      border-radius: 999px; padding: 0 6px; margin-left: 6px;
+    }
+    .alt-row:hover { background: var(--surface-2); }
+    .alt-price { width: 70px; text-align: right; }
+    .use-btn {
+      font-family: var(--font); font-size: 11.5px; font-weight: 600;
+      color: var(--navy); background: var(--surface);
+      border: 1px solid var(--border-2); border-radius: 999px;
+      padding: 4px 12px; cursor: pointer; margin-left: 10px;
+      transition: all .12s;
+    }
+    .use-btn:hover { background: var(--navy); color: #fff; border-color: var(--navy); }
+
+    /* explainable-AI popover */
+    .conf { position: relative; }
+    .conf-num {
+      background: none; border: none; cursor: pointer;
+      font-family: var(--font); font-size: 13px; font-weight: 700; color: var(--navy);
+      padding: 0; display: inline-flex; align-items: center; gap: 4px;
+    }
+    .conf-num .qmark {
+      width: 14px; height: 14px; border-radius: 50%;
+      background: var(--blue-soft); color: var(--blue);
+      font-size: 10px; font-weight: 700;
+      display: inline-flex; align-items: center; justify-content: center;
+    }
+    .conf-num:hover .qmark { background: var(--blue); color: #fff; }
+    .pop {
+      position: absolute; right: 0; top: 34px; z-index: 10; width: 270px;
+      background: var(--navy); color: #E7EEF6; border-radius: 10px;
+      padding: 13px 15px; font-size: 12px; line-height: 1.5;
+      box-shadow: 0 10px 28px rgba(11,45,77,.28);
+    }
+    .pop-title { font-weight: 600; font-size: 12px; margin-bottom: 8px; color: #fff; }
+    .pop-row { display: flex; justify-content: space-between; gap: 12px; padding: 3px 0; }
+    .pop-total { border-top: 1px solid #2A4E70; margin-top: 6px; padding-top: 7px; font-weight: 700; color: #fff; }
+    .pop-note { margin-top: 8px; font-size: 10.5px; color: #A9C4DE; font-style: italic; }
+
+    /* confidence donut */
+    .donut-wrap { position: relative; text-align: center; }
+    .donut { width: 88px; height: 88px; transform: rotate(-90deg); }
+    .donut-track { fill: none; stroke: var(--border); stroke-width: 8; }
+    .donut-fill {
+      fill: none; stroke: url(#) var(--blue); stroke: var(--blue);
+      stroke-width: 8; stroke-linecap: round;
+      transition: stroke-dasharray .9s cubic-bezier(.2,.8,.3,1);
+    }
+    .donut-center {
+      position: absolute; top: 0; left: 50%; transform: translateX(-50%);
+      width: 88px; height: 88px; display: flex; align-items: center; justify-content: center;
+    }
+    .donut-pct { font-size: 19px; font-weight: 700; color: var(--navy); }
+    .donut-lbl {
+      font-size: 10px; font-weight: 600; letter-spacing: .5px;
+      text-transform: uppercase; color: var(--ink-3); margin-top: 4px; line-height: 1.35;
+    }
+
+    /* ====== v3: AUTOZONE-PATTERN CATALOG LAYOUT ====== */
+
+    /* Case context bar — the "currently shopping for" strip */
+    .ctx-bar {
+      display: none;
+      align-items: center; gap: 12px; flex-wrap: wrap;
+      background: var(--surface); border: 1px solid var(--border);
+      border-left: 4px solid var(--gold);
+      border-radius: var(--radius); padding: 12px 16px; margin-bottom: 16px;
+    }
+    .screen.active .ctx-bar:not(:empty) { display: flex; }
+    .ctx-label {
+      font-size: 10.5px; font-weight: 700; letter-spacing: 0.7px;
+      text-transform: uppercase; color: var(--ink-3);
+    }
+    .ctx-model { font-size: 14px; font-weight: 650; color: var(--navy); }
+    .ctx-meta { font-size: 12px; color: var(--ink-2); font-family: var(--mono); }
+    .ctx-change {
+      margin-left: auto;
+      font-family: var(--font); font-size: 12px; font-weight: 600;
+      color: var(--navy); background: none;
+      border: 1px solid var(--border-2); border-radius: 999px;
+      padding: 6px 14px; cursor: pointer; transition: all .12s;
+    }
+    .ctx-change:hover { border-color: var(--blue); color: var(--blue); }
+
+    /* Category section header */
+    .cat-section { margin-bottom: 26px; }
+    .cat-head {
+      font-size: 13px; font-weight: 700; letter-spacing: 0.7px;
+      text-transform: uppercase;
+      display: flex; align-items: center; gap: 10px;
+      margin-bottom: 12px;
+    }
+    .cat-count {
+      margin-left: auto; font-size: 11.5px; font-weight: 500;
+      letter-spacing: 0; text-transform: none; color: var(--ink-3);
+    }
+
+    /* Product card grid — the catalog layout */
+    .pcard-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
+      gap: 14px;
+    }
+    .pcard {
+      position: relative;
+      background: var(--surface);
+      border: 1.5px solid var(--border);
+      border-radius: var(--radius-lg);
+      padding: 40px 16px 14px;
+      display: flex; flex-direction: column; gap: 8px;
+      transition: border-color .15s, box-shadow .15s;
+    }
+    .pcard:hover { border-color: var(--border-2); box-shadow: 0 4px 14px rgba(11,45,77,.06); }
+    .pcard.chosen {
+      border-color: var(--navy);
+      box-shadow: 0 0 0 1px var(--navy), 0 6px 16px rgba(11,45,77,.10);
+    }
+
+    /* Corner ribbons — the AutoZone "Recommended" flag pattern */
+    .ribbon {
+      position: absolute; top: 0; left: 0;
+      font-size: 10px; font-weight: 700; letter-spacing: 0.5px;
+      text-transform: uppercase; color: #fff;
+      padding: 4px 12px; border-radius: 12px 0 10px 0;
+    }
+    .ribbon.ai { background: var(--blue); }
+    .ribbon.quoter { background: #7B4FD0; }
+
+    .pcard-img {
+      width: 64px; height: 64px; align-self: center;
+      background: color-mix(in srgb, currentColor 7%, white);
+      border: 1px solid color-mix(in srgb, currentColor 22%, white);
+      border-radius: 12px; padding: 11px;
+    }
+    .pcard-img svg { width: 100%; height: 100%; }
+    .pcard-part { font-family: var(--mono); font-size: 13px; font-weight: 700; color: var(--navy); }
+    .pcard-desc { font-size: 12.5px; color: var(--ink-2); min-height: 34px; }
+
+    /* Fitment badge — green "exact fit" bar / soft substitution notice */
+    .fit {
+      font-size: 11.5px; font-weight: 600;
+      border-radius: 7px; padding: 6px 10px;
+    }
+    .fit.exact { background: var(--green-bg); color: var(--green-ink); border: 1px solid #C4E4CC; }
+    .fit.sub   { background: var(--surface-2); color: var(--ink-2); border: 1px dashed var(--border-2); }
+
+    .pcard-chips { display: flex; flex-wrap: wrap; gap: 6px; }
+    .chip {
+      font-size: 11px; font-weight: 600; color: var(--ink-2);
+      background: var(--surface-2); border: 1px solid var(--border);
+      border-radius: 999px; padding: 3px 10px;
+    }
+    .pcard .conf { width: 100%; }
+    .pcard .stock-pill { margin-top: 0; }
+
+    .pcard-foot {
+      display: flex; align-items: center; justify-content: space-between;
+      margin-top: auto; padding-top: 8px; border-top: 1px solid var(--border);
+    }
+    .pcard-price { font-size: 16px; font-weight: 700; color: var(--ink); }
+    .select-btn {
+      font-family: var(--font); font-size: 12px; font-weight: 650;
+      border-radius: 999px; padding: 7px 14px; cursor: pointer;
+      border: 1.5px solid var(--navy); background: var(--surface); color: var(--navy);
+      transition: all .12s;
+    }
+    .select-btn:hover:not(.selected) { background: var(--navy); color: #fff; }
+    .select-btn.selected {
+      background: var(--navy); color: #fff; cursor: default;
+    }
+
+    @media (max-width: 640px) {
+      .component-grid { grid-template-columns: 1fr; }
+      .ml-main { flex-wrap: wrap; }
+      .conf { width: 100%; }
+      .results-head { flex-direction: column; align-items: flex-start; gap: 12px; }
+    }
+  </style>
+</head>
+
+<body>
+  <header class="topbar">
+    <div class="brand">
+      <div class="brand-mark">H</div>
+      <div class="brand-text">
+        <span class="name">Hussmann Refresh</span>
+        <span class="sub">AI Parts Matching &amp; Auto-Quote</span>
+      </div>
+    </div>
+    <span class="env">Quoter Tool · Demo</span>
+  </header>
+
+  <main class="page">
+
+    <!-- ============ STEP RAIL — persistent orientation across both screens.
+         Tells the user (and a judge) the whole journey in one glance:
+         Identify -> AI match -> Quote. JS advances it via setStep(n). ====== -->
+    <div class="steps" id="steps">
+      <div class="step active"><span class="step-dot">1</span><span class="step-lbl">Identify case</span></div>
+      <div class="step-line"></div>
+      <div class="step"><span class="step-dot">2</span><span class="step-lbl">AI parts match</span></div>
+      <div class="step-line"></div>
+      <div class="step"><span class="step-dot">3</span><span class="step-lbl">Quote &amp; order</span></div>
+    </div>
+
+    <!-- ============ SCREEN 1: IDENTIFY CASE + PICK COMPONENT ============ -->
+    <section class="screen active" id="screen-input">
+
+      <!-- HERO BAND: establishes what this is + why it matters, before the
+           form asks for anything. Line-art case illustration keeps the same
+           schematic visual language as the part thumbnails. -->
+      <div class="hero">
+        <div class="hero-left">
+          <div class="hero-eyebrow">Refresh Quoting</div>
+          <h1 class="hero-title">Identify the case</h1>
+          <p class="hero-sub">Enter or scan a serial number. The system resolves the case, then you choose which component to refresh.</p>
+          <div class="hero-stats">
+            <div class="stat"><span class="stat-big">7\u201310 days \u2192 minutes</span><span class="stat-small">quote turnaround</span></div>
+            <div class="stat"><span class="stat-big">5 tools \u2192 1 lookup</span><span class="stat-small">systems consolidated</span></div>
+            <div class="stat"><span class="stat-big">Quoter approves</span><span class="stat-small">every AI match</span></div>
+          </div>
+        </div>
+        <div class="hero-art" aria-hidden="true">
+          <!-- Open-front multi-deck case, drawn as code. The gold bar is the
+               bumper — a quiet nod to the demo's star component. -->
+          <svg viewBox="0 0 230 180" fill="none">
+            <path d="M30 26 h150 a10 10 0 0 1 10 10 v118 h-170 v-118 a10 10 0 0 1 10 -10 z" stroke="#7FA8CC" stroke-width="2.5"/>
+            <path d="M30 26 h150 a10 10 0 0 1 10 10 v14 h-170 v-14 a10 10 0 0 1 10 -10 z" fill="#143D63" stroke="#7FA8CC" stroke-width="2.5"/>
+            <line x1="34" y1="78"  x2="176" y2="78"  stroke="#7FA8CC" stroke-width="2.5"/>
+            <line x1="34" y1="106" x2="176" y2="106" stroke="#7FA8CC" stroke-width="2.5"/>
+            <line x1="34" y1="134" x2="176" y2="134" stroke="#7FA8CC" stroke-width="2.5"/>
+            <g stroke="#4A7BA8" stroke-width="2" stroke-linecap="round">
+              <line x1="46" y1="70" x2="46" y2="78"/><line x1="58" y1="66" x2="58" y2="78"/><line x1="70" y1="70" x2="70" y2="78"/>
+              <line x1="96" y1="98" x2="96" y2="106"/><line x1="108" y1="94" x2="108" y2="106"/>
+              <line x1="140" y1="126" x2="140" y2="134"/><line x1="152" y1="122" x2="152" y2="134"/><line x1="164" y1="126" x2="164" y2="134"/>
+            </g>
+            <rect x="22" y="150" width="166" height="10" rx="5" fill="#C99A2E"/>
+            <line x1="40" y1="160" x2="40" y2="170" stroke="#7FA8CC" stroke-width="2.5"/>
+            <line x1="170" y1="160" x2="170" y2="170" stroke="#7FA8CC" stroke-width="2.5"/>
+          </svg>
+        </div>
+      </div>
+
+      <div class="input-card">
+        <div class="field-label">Case serial number</div>
+        <div class="serial-row">
+          <input class="serial-input" id="serialInput"
+                 placeholder="e.g. HSM-D5X-081247-2017" autocomplete="off">
+          <button class="btn primary" id="lookupBtn">Look up case</button>
+        </div>
+        <div class="samples" id="samples">
+          <!-- quick-pick chips: one click fills the input (no typing live) -->
+          <button class="sample-chip" data-serial="HSM-D5X-081247-2017">HSM-D5X-081247-2017</button>
+          <button class="sample-chip" data-serial="HSM-D5LE-121892-2019">HSM-D5LE-121892-2019</button>
+          <button class="sample-chip" data-serial="HP-OSIA8-2015-AZ417">HP-OSIA8-2015-AZ417 (competitor)</button>
+        </div>
+
+        <!-- filled by JS when a case resolves -->
+        <div class="case-card" id="caseCard"></div>
+        <div class="case-error" id="caseError"></div>
+
+        <!-- appears only after a case with BOM data resolves -->
+        <div class="component-section" id="componentSection">
+          <div class="field-label" style="margin-top:4px">Which component needs refreshing?</div>
+          <div class="component-grid" id="componentGrid"></div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ============ SCREEN 2: RANKED RESULTS + QUOTE ============ -->
+    <section class="screen" id="screen-results">
+      <button class="back-btn" id="backBtn"><span>&larr;</span> New lookup</button>
+
+      <!-- brief AI-thinking state, then results -->
+      <div class="thinking" id="thinking">
+        Matching parts against BOM data and quote history<span class="dots"></span>
+      </div>
+
+      <!-- CASE CONTEXT BAR — always-visible "what am I quoting for" (filled by JS) -->
+      <div class="ctx-bar" id="ctxBar"></div>
+
+      <div id="resultsBody" style="display:none">
+        <div class="results-head" id="resultsHead"></div>
+        <div id="advisory"></div>
+        <div id="matchLines"></div>
+
+        <div class="quote-actions">
+          <button class="btn primary" id="genQuoteBtn">Generate Quote</button>
+        </div>
+        <div class="quote-card" id="quoteCard"></div>
+        <div class="oracle-confirm" id="oracleConfirm"></div>
+      </div>
+    </section>
+
+  </main>
+
+  <script>
+// ============================================================================
+//  DEMO 2: AI PARTS MATCHING — DATA & RULES FOUNDATION (data.js)
+//  ---------------------------------------------------------------------------
+//  This file holds the THREE data structures Demo 2 stands on:
+//    1. CASES          — serial number  ->  which refrigeration case it is
+//    2. COMPONENT_RULES — the DETERMINISTIC layer: a component (bumper/door/
+//                         panel) -> the part categories it always requires
+//    3. BOM_CATALOG    — a SIMULATED "BOM tool" response: for a case + a part
+//                         category, the candidate parts (with the raw signals
+//                         the AI layer will later turn into a confidence score)
+//
+//  THE ONE BIG IDEA (read this before the code):
+//  ---------------------------------------------------------------------------
+//  A refresh quote is a MIX of certain and uncertain work. Some of it is a
+//  fixed rule ("a bumper always needs a bracket and a hanger"). Some of it is
+//  a judgment call ("which exact bumper part fits THIS case, and is there a
+//  better alternate?"). Good engineering spends "AI" ONLY on the uncertain part
+//  and uses plain, explainable RULES for the certain part.
+//
+//  So this file draws that line explicitly:
+//    - COMPONENT_RULES = the CERTAIN part  (rules, no AI, fully explainable)
+//    - BOM_CATALOG     = the raw material the AI layer will REASON over later
+//
+//  Analogy: a hospital triage protocol. "Chest pain -> always do an EKG" is a
+//  fixed rule (our COMPONENT_RULES). "Given these readings, the likely diagnosis
+//  ranked by probability" is the judgment layer (our future AI ranking). You
+//  don't want AI deciding whether to run the EKG — that's protocol.
+//
+//  NOTE ON THE DATA: the component->parts associations below are our best
+//  STRUCTURAL GUESS from the part categories we already use. They are flagged
+//  for Emily Brickler to validate — she owns the real refresh data. Because it
+//  all lives in these tables, correcting them later is a data edit, not a code
+//  change. (Same "policy in data, mechanism in code" principle as Demo 3.)
+// ============================================================================
+
+
+// ----------------------------------------------------------------------------
+//  1. CASES  —  serial number  ->  the case it identifies
+//  ---------------------------------------------------------------------------
+//  This is a LOOKUP TABLE keyed by serial number. In JavaScript an object used
+//  this way is a "hash map" / "dictionary": you hand it a key, it hands back a
+//  value in O(1) (constant) time — no scanning a list.
+//    Python equivalent:  CASES = { "HSM-D5X-081247-2017": {...}, ... }
+//  We reuse the serial-number format from Demo 3 so the two demos stay
+//  consistent (a judge who saw one recognizes the other).
+// ----------------------------------------------------------------------------
+const CASES = {
+  "HSM-D5X-081247-2017": {
+    model: "D5X",
+    modelName: "D5X Multi-Deck (Open Front)",
+    lengthFt: 8,
+    year: 2017,
+    owner: "Hussmann",           // Hussmann | Competitor | Legacy
+    bomAvailable: true,          // is there full BOM data for this case?
+  },
+  "HSM-D5LE-121892-2019": {
+    model: "D5LE",
+    modelName: "D5LE Multi-Deck (Low-Energy)",
+    lengthFt: 12,
+    year: 2019,
+    owner: "Hussmann",
+    bomAvailable: true,
+  },
+  "HSM-GNSA-040633-2012": {
+    model: "GNSA",
+    modelName: "GNSA Glass-Door Reach-In",
+    lengthFt: 4,
+    year: 2012,
+    owner: "Hussmann",
+    bomAvailable: true,
+  },
+  // A competitor case — included to show the two-tier concept (its BOM is not
+  // in our system, so the flow behaves differently). Kept for later.
+  "HP-OSIA8-2015-AZ417": {
+    model: "OSIA-8",
+    modelName: "Hill Phoenix OSIA-8 (Competitor)",
+    lengthFt: 8,
+    year: 2015,
+    owner: "Competitor",
+    bomAvailable: false,
+  },
+};
+
+
+// ----------------------------------------------------------------------------
+//  2. COMPONENT_RULES  —  the DETERMINISTIC layer
+//  ---------------------------------------------------------------------------
+//  This is the "a bumper always needs these parts" knowledge Ed described. It
+//  is a RULE, not a prediction — so no AI, no training data, no uncertainty.
+//  Each component maps to a PRIMARY category plus the ASSOCIATED categories it
+//  always pulls in.
+//
+//  Why keep this separate from the AI? Because it's the reliable backbone. If a
+//  judge asks "how do you know a bumper needs a bracket?" the honest answer is
+//  "it's a known bill-of-materials rule" — far stronger than "the model guessed."
+//
+//  Python shape:  COMPONENT_RULES = {
+//                   "bumper": {"primary": "bumper",
+//                              "associated": ["bracket", "hanger", "fastener_kit"]},
+//                   ... }
+// ----------------------------------------------------------------------------
+const COMPONENT_RULES = {
+  bumper: {
+    label: "Bumper Refresh",
+    primary: "bumper",
+    associated: ["bracket", "hanger", "fastener_kit"],
+    note: "A bumper always mounts with a bracket + hanger; fasteners complete the kit.",
+  },
+  door: {
+    label: "Door Refresh",
+    primary: "door",
+    associated: ["gasket", "handle", "hinge_kit"],
+    note: "A door refresh always includes its gasket, handle, and hinge hardware.",
+  },
+  panel: {
+    label: "Panel Refresh",
+    primary: "panel",
+    associated: ["fascia", "top_rail", "fastener_kit"],
+    note: "A front panel refresh pulls in the surrounding fascia and top rail.",
+  },
+};
+
+
+// ----------------------------------------------------------------------------
+//  3. BOM_CATALOG  —  a SIMULATED "BOM tool" API response
+//  ---------------------------------------------------------------------------
+//  Ed confirmed the real BOM tool returns a JSON object of parts (with
+//  substitutions) for a serial number. We MODEL our fake data on that real
+//  shape so the demo reflects the true integration contract, not an invented
+//  one. This is a key habit: when you simulate an API, mirror the REAL response
+//  structure — then swapping the simulation for the live call changes nothing
+//  downstream.
+//
+//  STRUCTURE:  BOM_CATALOG[model][category] = [ candidate parts ]
+//  Each candidate part carries the RAW SIGNALS the AI layer will later turn
+//  into a confidence score. This is important to understand: "AI confidence"
+//  is NOT magic — it's COMPUTED from features. Here the features are:
+//     matchType     : "exact"  = the part is cataloged for THIS exact model
+//                     "substitution" = a compatible part from a related model
+//     historicalUses: how many past quotes used this part for this component
+//                     (a stand-in for "how often has this worked before")
+//  The AI layer will combine these into a score. By storing the signals in the
+//  data, we keep the scoring logic honest and explainable.
+//
+//  (Only the D5X is filled out in depth here — it's our primary demo case.
+//   Other models would follow the identical structure.)
+// ----------------------------------------------------------------------------
+const BOM_CATALOG = {
+  D5X: {
+    // ----- Parts for a BUMPER refresh -----
+    bumper: [
+      { partNumber: "HUS-BMP-D5X-8W",  desc: "Bumper, 8 ft, White",          price: 189.00, stock: "In Stock",  matchType: "exact",        historicalUses: 47 },
+      { partNumber: "HUS-BMP-D5X-8B",  desc: "Bumper, 8 ft, Black",          price: 189.00, stock: "In Stock",  matchType: "exact",        historicalUses: 12 },
+      { partNumber: "HUS-BMP-D512-8W", desc: "Bumper, 8 ft, White (D512 fit)",price: 176.00, stock: "In Stock",  matchType: "substitution", historicalUses: 8  },
+    ],
+    bracket: [
+      { partNumber: "HUS-BRK-D5X-STD", desc: "Mounting bracket, standard",   price: 34.00,  stock: "In Stock",  matchType: "exact",        historicalUses: 51 },
+      { partNumber: "HUS-BRK-UNIV",    desc: "Mounting bracket, universal",  price: 28.00,  stock: "In Stock",  matchType: "substitution", historicalUses: 19 },
+    ],
+    hanger: [
+      { partNumber: "HUS-HNG-D5X-8",   desc: "Bumper hanger, 8 ft",          price: 42.00,  stock: "In Stock",  matchType: "exact",        historicalUses: 44 },
+    ],
+    fastener_kit: [
+      { partNumber: "HUS-FST-KIT-A",   desc: "Fastener kit A (bumper/panel)",price: 18.00,  stock: "In Stock",  matchType: "exact",        historicalUses: 63 },
+    ],
+
+    // ----- Parts for a DOOR refresh -----
+    door: [
+      { partNumber: "HUS-DR-D5X-30W",  desc: "Glass door, 30 in, White frame",price: 387.00, stock: "In Stock",  matchType: "exact",        historicalUses: 22 },
+      { partNumber: "HUS-DR-D5X-30B",  desc: "Glass door, 30 in, Black frame",price: 387.00, stock: "In Stock",  matchType: "exact",        historicalUses: 15 },
+    ],
+    gasket: [
+      { partNumber: "HUS-GSK-D5X-30",  desc: "Door gasket, 30 in",           price: 34.00,  stock: "In Stock",  matchType: "exact",        historicalUses: 38 },
+    ],
+    handle: [
+      { partNumber: "HUS-HDL-UNIV-W",  desc: "Door handle, Universal, White",price: 28.00,  stock: "In Stock",  matchType: "exact",        historicalUses: 29 },
+      { partNumber: "HUS-HDL-UNIV-SS", desc: "Door handle, Universal, Steel",price: 42.00,  stock: "In Stock",  matchType: "substitution", historicalUses: 17 },
+    ],
+    hinge_kit: [
+      { partNumber: "HUS-HNGE-D5X",    desc: "Hinge kit, D5X door",          price: 56.00,  stock: "Backordered", matchType: "exact",      historicalUses: 20 },
+    ],
+
+    // ----- Parts for a PANEL refresh -----
+    panel: [
+      { partNumber: "HUS-FPL-D5X-8W",  desc: "Front panel, 8 ft, White",     price: 156.00, stock: "In Stock",  matchType: "exact",        historicalUses: 33 },
+    ],
+    fascia: [
+      { partNumber: "HUS-FAS-D5X-8W",  desc: "Fascia panel, 8 ft, White",    price: 234.00, stock: "In Stock",  matchType: "exact",        historicalUses: 31 },
+      { partNumber: "HUS-FAS-D5X-8SS", desc: "Fascia panel, 8 ft, Stainless",price: 312.00, stock: "In Stock",  matchType: "substitution", historicalUses: 9  },
+    ],
+    top_rail: [
+      { partNumber: "HUS-TRL-D5X-8W",  desc: "Top rail, 8 ft, White",        price: 118.00, stock: "In Stock",  matchType: "exact",        historicalUses: 40 },
+    ],
+  },
+};
+
+
+// ============================================================================
+//  HELPER FUNCTIONS  —  the seams the rest of the app will call
+//  ---------------------------------------------------------------------------
+//  Each function does ONE job. Isolating them means the UI never reaches into
+//  the raw data directly — it asks a function. If the data source changes later
+//  (e.g., a real BOM API), we rewrite ONE function body and nothing else moves.
+// ============================================================================
+
+// --- resolveCase: serial number -> case object ------------------------------
+//  Two-step: try the direct lookup; if the serial isn't in our table, PARSE the
+//  model out of it so we can still respond. Real systems must handle input that
+//  isn't in the happy-path table.
+//  Python parallel:
+//    def resolve_case(serial):
+//        if serial in CASES: return CASES[serial]
+//        parts = serial.split("-"); model = parts[1] if len(parts) > 1 else None
+//        ...
+function resolveCase(serialNumber) {
+  const serial = (serialNumber || "").trim().toUpperCase();
+
+  // Direct hit — the common case.
+  if (CASES[serial]) return { serial: serial, ...CASES[serial], resolved: true };
+
+  // Fallback: parse the model segment (e.g. "HSM-D5X-..." -> "D5X") and see if
+  // we at least know that model in the BOM catalog. .split("-") is the same in
+  // Python; indexing [1] grabs the second segment.
+  const seg = serial.split("-");
+  const model = seg[1];
+  if (model && BOM_CATALOG[model]) {
+    return { serial: serial, model: model, modelName: model + " (parsed)", owner: "Hussmann", bomAvailable: true, resolved: true, parsed: true };
+  }
+
+  // Nothing matched — return a clear "not found" rather than crashing.
+  return { serial: serial, resolved: false };
+}
+
+// --- getRequiredCategories: the DETERMINISTIC expansion ----------------------
+//  Given a component name, return the full list of part categories it requires:
+//  the primary first, then the associated ones. This is the rule layer in action.
+//  Returns [] for an unknown component (defensive default).
+//  Python parallel:
+//    rule = COMPONENT_RULES.get(component)
+//    return [rule["primary"], *rule["associated"]] if rule else []
+function getRequiredCategories(component) {
+  const rule = COMPONENT_RULES[component];
+  if (!rule) return [];
+  // The spread operator (...) unpacks the associated array into the new array,
+  // placing `primary` first. (Python: [rule["primary"], *rule["associated"]])
+  return [rule.primary, ...rule.associated];
+}
+
+// --- lookupBOM: the SIMULATED BOM-tool API call ------------------------------
+//  In production this is an HTTP request to the BOM lookup endpoint that returns
+//  JSON. Here we return the same shape from local data. IMPORTANT: because the
+//  fake data mirrors the real response, the CALLER can't tell the difference —
+//  which is exactly what makes a simulation swappable for the real thing later.
+//
+//  API TEACHING (this is the seam where a real API would live):
+//    Production version would be roughly:
+//      async function lookupBOM(model, category) {
+//        const res = await fetch(
+//          `https://bom.hussmann.com/api/parts?model=${model}&category=${category}`,
+//          { headers: { "Authorization": "Bearer " + token } }   // OAuth token, not a static key
+//        );
+//        return (await res.json()).parts;    // the endpoint returns JSON -> array of parts
+//      }
+//    Type: REST over HTTPS, returns JSON. Auth: a short-lived bearer TOKEN in
+//    the Authorization header (scoped, revocable) — the secure pattern, vs. a
+//    static API key. Config knobs: the query params (model, category) filter
+//    the response server-side so you only get relevant parts back.
+function lookupBOM(model, category) {
+  const byModel = BOM_CATALOG[model];
+  if (!byModel) return [];              // unknown model -> empty result
+  return byModel[category] || [];       // unknown category -> empty result
+}
+
+</script>
+  <script>
+// ============================================================================
+//  DEMO 2: AI RANKING LAYER (ranker.js)
+//  ---------------------------------------------------------------------------
+//  This is the "simulated AI" — the part that takes candidate parts and decides
+//  which is the most likely match, with a CONFIDENCE SCORE.
+//
+//  THE KEY TRUTH THIS FILE TEACHES:
+//  A confidence score is not magic. It is a NUMBER COMPUTED FROM SIGNALS about
+//  the input. Here, two signals:
+//    - matchType      : is the part cataloged for THIS exact model, or borrowed?
+//    - historicalUses : how many past quotes used this part?
+//  We combine them with weights into a score. That combination IS the "model."
+//
+//  HONEST NOTE (ties to the Ed meeting): in a real trained model the weights
+//  below would be LEARNED from historical quote data. That clean data doesn't
+//  exist yet at Hussmann, so we hand-set the weights using reasonable judgment.
+//  This scoring function is the exact SEAM where a trained model would later
+//  drop in — same inputs (features), same output (a confidence score), only the
+//  source of the weights changes.
+// ============================================================================
+
+
+// ----------------------------------------------------------------------------
+//  SCORING WEIGHTS  —  the "hyperparameters"
+//  ---------------------------------------------------------------------------
+//  In machine learning, "hyperparameters" are the dials you set that shape how
+//  the model behaves. We keep them ALL in one place so tuning is a single edit
+//  and so the pitch can honestly say "here's what the model would learn."
+//
+//    exactBase / substitutionBase : the starting confidence from matchType.
+//        An exact catalog match starts higher than a borrowed substitution.
+//    historyMax : the MOST that historical usage can add to the score.
+//    historyK   : controls the saturation curve. Bigger K = slower to saturate
+//        (usage matters for longer). This is the constant in  uses/(uses+K).
+//
+//  Python shape:  SCORING_WEIGHTS = {"exact_base": 0.68, ...}
+// ----------------------------------------------------------------------------
+const SCORING_WEIGHTS = {
+  exactBase: 0.68,          // an exact model match starts at 68% confidence
+  substitutionBase: 0.40,  // a substitution starts lower, at 40%
+  historyMax: 0.30,        // usage can add up to +30 percentage points
+  historyK: 12,            // saturation constant for the usage curve
+};
+
+
+// ----------------------------------------------------------------------------
+//  scoreConfidence(part)  —  the heart of the "AI"
+//  ---------------------------------------------------------------------------
+//  Turns one candidate part's signals into a confidence score in [0, 1].
+//  Returns the score AND a transparent breakdown of HOW it was computed — this
+//  is "explainable AI": we can always show our work, which matters for trust
+//  (and for a CISO/judge who asks "why did it pick that?").
+//
+//  THE SATURATING USAGE TERM:  historyMax * (uses / (uses + K))
+//    - uses = 0   -> 0            (never used -> no bonus)
+//    - uses = K   -> historyMax/2 (at K uses, halfway to the max bonus)
+//    - uses = big -> approaches historyMax (but never exceeds it)
+//  This is the "diminishing returns" curve: early usage matters a lot, later
+//  usage barely moves the score. (Analogy: 5->50 product reviews builds trust
+//  fast; 500->550 barely registers.)
+//
+//  Python parallel:
+//    def score_confidence(part):
+//        base = W["exact_base"] if part["matchType"] == "exact" else W["substitution_base"]
+//        uses = part["historicalUses"]
+//        history_bonus = W["history_max"] * (uses / (uses + W["history_k"]))
+//        return {"score": min(1.0, base + history_bonus),
+//                "breakdown": {"base": base, "historyBonus": history_bonus}}
+// ----------------------------------------------------------------------------
+function scoreConfidence(part) {
+  const W = SCORING_WEIGHTS;
+
+  // Signal 1: the base confidence from how well the part matches the model.
+  // (A ternary: value_if_true if condition else value_if_false. Python has the
+  //  same idea written as  base = X if cond else Y.)
+  const base = part.matchType === "exact" ? W.exactBase : W.substitutionBase;
+
+  // Signal 2: the saturating bonus from historical usage.
+  const uses = part.historicalUses || 0;
+  const historyBonus = W.historyMax * (uses / (uses + W.historyK));
+
+  // Combine, and clamp to a max of 1.0 (100%). Math.min stops the score from
+  // ever exceeding 100% even if we later add more positive signals.
+  const score = Math.min(1, base + historyBonus);
+
+  // Return the score PLUS the breakdown, so the UI can explain the "why".
+  return { score: score, breakdown: { base: base, historyBonus: historyBonus } };
+}
+
+
+// ----------------------------------------------------------------------------
+//  rankCandidates(candidates)  —  score, sort, and mark the winner
+//  ---------------------------------------------------------------------------
+//  Given the raw candidate parts for ONE category, score each, sort best-first,
+//  and flag the top as the PRIMARY recommendation (the rest are alternates).
+//  This is the same "score / sort / pick" pattern from Demo 3's contact routing
+//  — it's the skeleton of every ranking and recommendation system.
+//
+//  Python parallel:
+//    scored = [ {**p, **score_confidence(p)} for p in candidates ]
+//    scored.sort(key=lambda x: x["score"], reverse=True)
+//    if scored: scored[0]["isPrimary"] = True
+// ----------------------------------------------------------------------------
+function rankCandidates(candidates) {
+  // Score every candidate. The spread {...p, ...scoreConfidence(p)} merges the
+  // part's fields with the score fields into one object. (Python: {**p, **s}.)
+  const scored = candidates.map(function (p) {
+    const s = scoreConfidence(p);
+    return { ...p, score: s.score, breakdown: s.breakdown, isPrimary: false };
+  });
+
+  // Sort by score, highest first. (b - a gives descending order.)
+  scored.sort(function (a, b) { return b.score - a.score; });
+
+  // The top-scoring candidate is the primary recommendation.
+  if (scored.length > 0) scored[0].isPrimary = true;
+
+  return scored;
+}
+
+
+// ----------------------------------------------------------------------------
+//  matchParts(serialNumber, component)  —  the full orchestration
+//  ---------------------------------------------------------------------------
+//  Ties the whole pipeline together and returns ONE structured result the UI
+//  can render. The flow, and notice how little of it is actually "AI":
+//     1. resolveCase(serial)           -> which case?          (lookup)
+//     2. getRequiredCategories(comp)   -> which categories?    (RULE, deterministic)
+//     3. lookupBOM(model, category)    -> candidate parts      (simulated API)
+//     4. rankCandidates(...)           -> confidence + ranking (the AI slice)
+//  Steps 1-3 are certain/mechanical. Only step 4 is the "intelligence."
+//
+//  It also separates FIT (confidence) from AVAILABILITY (stock): a part can be
+//  a confident match AND be backordered. Those are different questions.
+// ----------------------------------------------------------------------------
+function matchParts(serialNumber, component) {
+  // Step 1 — resolve the case. Bail early with a clear message if unknown.
+  const caseInfo = resolveCase(serialNumber);
+  if (!caseInfo.resolved) {
+    return { ok: false, reason: "unknown_serial", serial: serialNumber };
+  }
+  if (!caseInfo.bomAvailable) {
+    // Competitor/legacy cases have no BOM data — a different workflow (kept for
+    // later). We surface this rather than pretending we can match.
+    return { ok: false, reason: "no_bom", case: caseInfo };
+  }
+
+  // Step 2 — the DETERMINISTIC expansion: component -> required categories.
+  const rule = COMPONENT_RULES[component];
+  const categories = getRequiredCategories(component);
+  if (categories.length === 0) {
+    return { ok: false, reason: "unknown_component", component: component };
+  }
+
+  // Steps 3 & 4 — for each required category, look up candidates and rank them.
+  const lines = categories.map(function (category) {
+    const candidates = lookupBOM(caseInfo.model, category);
+    const ranked = rankCandidates(candidates);
+    const primary = ranked[0] || null;              // best match (or none)
+    const alternates = ranked.slice(1);             // everything after the top
+    return {
+      category: category,
+      isPrimaryComponent: category === (rule ? rule.primary : null),
+      primary: primary,
+      alternates: alternates,
+      // Availability is tracked SEPARATELY from confidence.
+      available: primary ? primary.stock !== "Backordered" : false,
+    };
+  });
+
+  // Overall confidence = the AVERAGE of the primary picks' scores. This is the
+  // "how sure are we about this whole quote?" number. (We average the parts
+  //  we can actually recommend.)
+  const primaries = lines.map(function (l) { return l.primary; }).filter(Boolean);
+  const overall = primaries.length
+    ? primaries.reduce(function (sum, p) { return sum + p.score; }, 0) / primaries.length
+    : 0;
+
+  // The WEAKEST LINK — the lowest-confidence primary — is worth surfacing so a
+  // quoter knows where to double-check. (Math.min over the primary scores.)
+  const weakest = primaries.length
+    ? primaries.reduce(function (lo, p) { return p.score < lo.score ? p : lo; })
+    : null;
+
+  return {
+    ok: true,
+    case: caseInfo,
+    component: component,
+    componentLabel: rule ? rule.label : component,
+    ruleNote: rule ? rule.note : "",
+    lines: lines,
+    overallConfidence: overall,
+    weakestPart: weakest,
+  };
+}
+
+/*  ========================================================================
+    WHERE THE SIGNALS COME FROM IN PRODUCTION (API / data-engineering note)
+    ------------------------------------------------------------------------
+    Right now `historicalUses` is baked into the fake catalog. In production it
+    would be a FEATURE computed from real data:
+
+      "How many past quotes used part X for a bumper on a D5X?"
+
+    That's a query against your quote history — ideally a GOLD table in Fabric
+    that your pipeline has already aggregated (part_number, component, model,
+    use_count). The ranker would fetch these features via an API/query at
+    request time, OR they'd be precomputed nightly into a "feature table" (a
+    pattern literally called a FEATURE STORE in ML systems).
+
+    The lesson mirrors the geocoding one: don't recompute expensive aggregates
+    on every request. Precompute them upstream (Gold), serve them cheaply. The
+    ranker stays the same; only the SOURCE of the features changes — the
+    swappable-seam principle again.
+    ======================================================================== */
+
+</script>
+  <script>
+// ============================================================================
+//  DEMO 2: APPLICATION LOGIC (app.js) — v2 with richer visuals + interactivity
+//  ---------------------------------------------------------------------------
+//  NEW IN THIS VERSION (each is a state->render feature, not decoration):
+//    1. ui.overrides — the quoter can PROMOTE an alternate to primary. The
+//       "effective primary" for a category = the override if one exists, else
+//       the AI's top pick.  (Python: overrides.get(category, ranked[0]))
+//    2. Explainable-AI popover — click any confidence % to see HOW it was
+//       computed (base + history bonus). We already had the breakdown data;
+//       now we surface it.
+//    3. Category identity colors + SVG part schematics — color that CARRIES
+//       information (consistent hue per category), drawings-as-code thumbnails.
+// ============================================================================
+
+let ui = { caseInfo: null, component: null, match: null, overrides: {} };
+
+function money(x) { return "$" + x.toFixed(2); }
+function pct(x)   { return Math.round(x * 100) + "%"; }
+
+// ----------------------------------------------------------------------------
+//  CATEGORY IDENTITY COLORS — one consistent hue per part category.
+//  Cool tones only: warm amber/red stay RESERVED for warnings, so warnings
+//  still pop. (Color with meaning: hue = "which category am I looking at.")
+//  Python shape: CATEGORY_COLORS = {"bumper": "#1E6BB8", ...}
+// ----------------------------------------------------------------------------
+const CATEGORY_COLORS = {
+  bumper:       "#1E6BB8",   // blue
+  bracket:      "#0E8C7F",   // teal
+  hanger:       "#6A5ACD",   // slate purple
+  fastener_kit: "#5B7A99",   // steel blue-gray
+  door:         "#3F51B5",   // indigo
+  gasket:       "#0E8C7F",   // teal (rubber/seal family)
+  handle:       "#7B4FD0",   // violet
+  hinge_kit:    "#5B7A99",   // steel
+  panel:        "#1E6BB8",   // blue
+  fascia:       "#3F51B5",   // indigo
+  top_rail:     "#6A5ACD",   // slate purple
+};
+function catColor(cat) { return CATEGORY_COLORS[cat] || "#5B7A99"; }
+
+// ----------------------------------------------------------------------------
+//  SVG PART SCHEMATICS — "pictures" as drawings-in-code.
+//  Each is a tiny line drawing (like an engineering catalog schematic). They
+//  use stroke="currentColor", which means "inherit whatever text color the
+//  parent has" — so the SAME drawing renders in each category's identity color
+//  with zero extra work. Self-contained: no image files, no network, no
+//  copyright questions. (Real product photos = production question for Emily.)
+// ----------------------------------------------------------------------------
+const PART_ICONS = {
+  bumper: '<svg viewBox="0 0 48 48" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><rect x="4" y="18" width="40" height="12" rx="6"/><line x1="10" y1="30" x2="10" y2="36"/><line x1="38" y1="30" x2="38" y2="36"/></svg>',
+  bracket: '<svg viewBox="0 0 48 48" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 8 v26 h22"/><circle cx="14" cy="14" r="2.2"/><circle cx="30" cy="34" r="2.2"/></svg>',
+  hanger: '<svg viewBox="0 0 48 48" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M24 8 a5 5 0 1 1 5 5 v4"/><path d="M12 34 l12 -14 12 14 z"/></svg>',
+  fastener_kit: '<svg viewBox="0 0 48 48" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><circle cx="16" cy="18" r="6"/><path d="M16 12 v-4 M16 24 v4 M10 18 h-4 M22 18 h4"/><path d="M32 26 l8 8 M36 22 l-8 8" /><rect x="28" y="30" width="12" height="6" rx="2" transform="rotate(45 34 33)"/></svg>',
+  door: '<svg viewBox="0 0 48 48" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><rect x="12" y="6" width="24" height="36" rx="3"/><line x1="30" y1="20" x2="30" y2="28"/></svg>',
+  gasket: '<svg viewBox="0 0 48 48" fill="none" stroke="currentColor" stroke-width="2.2"><rect x="8" y="8" width="32" height="32" rx="7"/><rect x="15" y="15" width="18" height="18" rx="4" stroke-dasharray="4 3"/></svg>',
+  handle: '<svg viewBox="0 0 48 48" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><rect x="18" y="8" width="12" height="32" rx="6"/><line x1="24" y1="14" x2="24" y2="34" stroke-dasharray="3 4"/></svg>',
+  hinge_kit: '<svg viewBox="0 0 48 48" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><rect x="8" y="12" width="14" height="24" rx="2"/><rect x="26" y="12" width="14" height="24" rx="2"/><line x1="24" y1="10" x2="24" y2="38"/><circle cx="15" cy="18" r="1.6"/><circle cx="33" cy="18" r="1.6"/><circle cx="15" cy="30" r="1.6"/><circle cx="33" cy="30" r="1.6"/></svg>',
+  panel: '<svg viewBox="0 0 48 48" fill="none" stroke="currentColor" stroke-width="2.2"><rect x="8" y="10" width="32" height="28" rx="3"/><line x1="8" y1="20" x2="40" y2="20"/></svg>',
+  fascia: '<svg viewBox="0 0 48 48" fill="none" stroke="currentColor" stroke-width="2.2"><rect x="6" y="16" width="36" height="16" rx="3"/><line x1="12" y1="16" x2="12" y2="32" stroke-dasharray="3 3"/><line x1="36" y1="16" x2="36" y2="32" stroke-dasharray="3 3"/></svg>',
+  top_rail: '<svg viewBox="0 0 48 48" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><rect x="6" y="20" width="36" height="8" rx="4"/><line x1="14" y1="28" x2="14" y2="34"/><line x1="34" y1="28" x2="34" y2="34"/></svg>',
+};
+function catIcon(cat) { return PART_ICONS[cat] || PART_ICONS.panel; }
+
+// Component-picker icons reuse the primary category's schematic.
+const COMPONENT_ICON = { bumper: "bumper", door: "door", panel: "panel" };
+
+
+// ----------------------------------------------------------------------------
+//  SCREEN 1 — case lookup + component selection
+// ----------------------------------------------------------------------------
+function doLookup() {
+  const serial = document.getElementById("serialInput").value;
+  const info = resolveCase(serial);
+
+  const card = document.getElementById("caseCard");
+  const err = document.getElementById("caseError");
+  const compSection = document.getElementById("componentSection");
+
+  card.classList.remove("show");
+  err.classList.remove("show");
+  compSection.classList.remove("show");
+  ui.caseInfo = null;
+
+  if (!info.resolved) {
+    err.textContent = "No case found for \u201C" + serial + "\u201D. Check the serial number and try again.";
+    err.classList.add("show");
+    return;
+  }
+  if (!info.bomAvailable) {
+    err.innerHTML = "<strong>" + info.modelName + "</strong> recognized \u2014 but this is a competitor case with no BOM data in our system. "
+      + "Competitor cases route to the all-makes workflow (engineering-validated part equivalents). "
+      + "For this demo, choose a Hussmann case.";
+    err.classList.add("show");
+    return;
+  }
+
+  ui.caseInfo = info;
+  card.innerHTML =
+    '<div class="case-icon">' + info.model.slice(0, 3) + '</div>'
+    + '<div>'
+    + '  <div class="case-title">' + info.modelName + '</div>'
+    + '  <div class="case-meta">' + (info.lengthFt ? info.lengthFt + " ft \u00b7 " : "")
+    +      (info.year ? "Installed " + info.year + " \u00b7 " : "")
+    +      "Serial " + info.serial + ' \u00b7 Full BOM available</div>'
+    + '</div>';
+  card.classList.add("show");
+
+  renderComponentGrid();
+  compSection.classList.add("show");
+}
+
+function renderComponentGrid() {
+  const grid = document.getElementById("componentGrid");
+  grid.innerHTML = Object.keys(COMPONENT_RULES).map(function (key) {
+    const rule = COMPONENT_RULES[key];
+    const color = catColor(COMPONENT_ICON[key] || key);
+    return '<button class="comp-card" data-component="' + key + '" style="--accent:' + color + '">'
+      + '<div class="comp-icon" style="color:' + color + '">' + catIcon(COMPONENT_ICON[key] || key) + '</div>'
+      + '<div class="comp-name">' + rule.label + '</div>'
+      + '<div class="comp-desc">' + rule.note + '</div>'
+      + '</button>';
+  }).join("");
+
+  grid.querySelectorAll(".comp-card").forEach(function (btn) {
+    btn.addEventListener("click", function () {
+      runMatch(btn.getAttribute("data-component"));
+    });
+  });
+}
+
+
+// ----------------------------------------------------------------------------
+//  SCREEN 2 — run the match and render results
+// ----------------------------------------------------------------------------
+function runMatch(component) {
+  ui.component = component;
+  ui.overrides = {};                 // fresh match -> no quoter overrides yet
+
+  showScreen("screen-results");
+  setStep(2);                        // rail: now in the AI-match step
+  document.getElementById("thinking").classList.add("show");
+  document.getElementById("resultsBody").style.display = "none";
+
+  setTimeout(function () {
+    ui.match = matchParts(ui.caseInfo.serial, component);
+    document.getElementById("thinking").classList.remove("show");
+    renderResults();
+  }, 900);
+}
+
+// --- The EFFECTIVE primary for a line: quoter's override, else AI's top pick.
+//  All the candidates (primary + alternates) live in one ranked pool; the
+//  override just points at a different member of that pool.
+//  Python: pool = [line["primary"], *line["alternates"]]
+//          chosen = next((p for p in pool if p["partNumber"] == ov), pool[0])
+function effectivePrimary(line) {
+  const ov = ui.overrides[line.category];
+  if (!ov) return line.primary;
+  const pool = [line.primary].concat(line.alternates);
+  return pool.find(function (p) { return p.partNumber === ov; }) || line.primary;
+}
+
+function renderResults() {
+  const m = ui.match;
+  if (!m || !m.ok) return;
+
+  // Overall confidence recomputed over the EFFECTIVE picks (so promoting a
+  // lower-confidence alternate honestly lowers the overall number — the
+  // human's choice is reflected, not hidden).
+  const effectives = m.lines.map(effectivePrimary).filter(Boolean);
+  const overall = effectives.length
+    ? effectives.reduce(function (s, p) { return s + p.score; }, 0) / effectives.length
+    : 0;
+
+  // --- Header with the CONFIDENCE DONUT ---
+  // SVG donut trick: a circle's outline is drawn with stroke-dasharray =
+  // "visible_length total_length". Circumference = 2*PI*r; we make the visible
+  // part = confidence * circumference. Same idea as the bars, wrapped in a ring.
+  const R = 30, CIRC = 2 * Math.PI * R;
+  const dash = (overall * CIRC).toFixed(1) + " " + CIRC.toFixed(1);
+  // CASE CONTEXT BAR — the AutoZone "Currently shopping for" pattern: the
+  // thing you're quoting for stays visible at all times, with an escape hatch.
+  document.getElementById("ctxBar").innerHTML =
+    '<span class="ctx-label">Currently quoting for</span>'
+    + '<span class="ctx-model">' + m.case.modelName + '</span>'
+    + '<span class="ctx-meta">' + (m.case.lengthFt ? m.case.lengthFt + ' ft \u00b7 ' : '')
+    +   'Serial ' + m.case.serial + '</span>'
+    + '<button class="ctx-change" id="ctxChange">Change case</button>';
+  document.getElementById("ctxChange").addEventListener("click", function () {
+    showScreen("screen-input"); setStep(1);
+  });
+
+  document.getElementById("resultsHead").innerHTML =
+    '<div>'
+    + '  <div class="rh-title">' + m.componentLabel + ' \u2014 ' + m.case.modelName + '</div>'
+    + '  <div class="rh-sub">' + m.lines.length + ' part categories \u00b7 Rule: ' + m.ruleNote + '</div>'
+    + '</div>'
+    + '<div class="donut-wrap">'
+    + '  <svg class="donut" viewBox="0 0 76 76">'
+    + '    <circle cx="38" cy="38" r="' + R + '" class="donut-track"/>'
+    + '    <circle cx="38" cy="38" r="' + R + '" class="donut-fill" stroke-dasharray="0 ' + CIRC.toFixed(1) + '" data-dash="' + dash + '"/>'
+    + '  </svg>'
+    + '  <div class="donut-center"><div class="donut-pct">' + pct(overall) + '</div></div>'
+    + '  <div class="donut-lbl">Overall match<br>confidence</div>'
+    + '</div>';
+
+  // --- Advisories (weakest link + backorder), computed over effective picks ---
+  const adv = document.getElementById("advisory");
+  let advHtml = "";
+  const weakest = effectives.length
+    ? effectives.reduce(function (lo, p) { return p.score < lo.score ? p : lo; })
+    : null;
+  if (weakest && weakest.score < 0.9) {
+    advHtml += '<div class="advisory">Lowest-confidence pick: <strong>' + weakest.partNumber
+      + '</strong> (' + pct(weakest.score) + ') \u2014 recommend quoter review before finalizing.</div>';
+  }
+  const backordered = m.lines.filter(function (l) {
+    const p = effectivePrimary(l); return p && p.stock === "Backordered";
+  });
+  if (backordered.length) {
+    advHtml += '<div class="advisory"><strong>' + effectivePrimary(backordered[0]).partNumber
+      + '</strong> is the right part but currently backordered \u2014 confidence and availability are separate questions. Flag lead time before quoting a ship date.</div>';
+  }
+  adv.innerHTML = advHtml;
+
+  // --- Match lines ---
+  document.getElementById("matchLines").innerHTML = m.lines.map(renderCategorySection).join("");
+  wireLineEvents();
+
+  document.getElementById("quoteCard").classList.remove("show");
+  document.getElementById("oracleConfirm").classList.remove("show");
+  document.getElementById("resultsBody").style.display = "block";
+
+  // Animate bars and the donut in after layout.
+  setTimeout(function () {
+    document.querySelectorAll(".conf-fill").forEach(function (bar) {
+      bar.style.width = bar.getAttribute("data-w") + "%";
+    });
+    const d = document.querySelector(".donut-fill");
+    if (d) d.setAttribute("stroke-dasharray", d.getAttribute("data-dash"));
+  }, 60);
+}
+
+function renderCategorySection(line) {
+  const chosen = effectivePrimary(line);
+  if (!chosen) return "";
+  const color = catColor(line.category);
+  // The full candidate pool, still in AI-ranked order (best first).
+  const pool = [line.primary].concat(line.alternates);
+
+  const cards = pool.map(function (p) {
+    const isChosen = p.partNumber === chosen.partNumber;
+    const isAiPick = p.partNumber === line.primary.partNumber;
+    const confPct = Math.round(p.score * 100);
+    const lowClass = p.score < 0.7 ? " low" : "";
+
+    // FITMENT BADGE — the AutoZone "Fits your vehicle" pattern, powered by our
+    // matchType signal. Exact = green check bar; substitution = soft notice.
+    const fit = p.matchType === "exact"
+      ? '<div class="fit exact">\u2713 Exact fit \u00b7 ' + ui.match.case.model + '</div>'
+      : '<div class="fit sub">Compatible substitution \u00b7 related model family</div>';
+
+    // Social proof chip — the ratings analog: prior-quote usage.
+    const proof = '<span class="chip">Used in ' + p.historicalUses + ' prior quote' + (p.historicalUses === 1 ? '' : 's') + '</span>';
+    const stockPill = p.stock !== "Backordered"
+      ? '<span class="stock-pill ok">' + p.stock + '</span>'
+      : '<span class="stock-pill bad">' + p.stock + '</span>';
+
+    // Ribbon: AI's top pick always shows; quoter's override marked separately.
+    let ribbon = "";
+    if (isAiPick) ribbon = '<div class="ribbon ai">AI Recommended</div>';
+    if (isChosen && !isAiPick) ribbon = '<div class="ribbon quoter">Quoter Selected</div>';
+
+    const bd = p.breakdown;
+    const popHtml =
+      '<div class="pop" hidden>'
+      + '<div class="pop-title">How this score was computed</div>'
+      + '<div class="pop-row"><span>Base \u2014 ' + (p.matchType === "exact" ? "exact model match" : "substitution (related model)") + '</span><span>' + pct(bd.base) + '</span></div>'
+      + '<div class="pop-row"><span>History \u2014 ' + p.historicalUses + ' prior quotes</span><span>+' + pct(bd.historyBonus) + '</span></div>'
+      + '<div class="pop-row pop-total"><span>Confidence</span><span>' + confPct + '%</span></div>'
+      + '<div class="pop-note">Weights are hand-set today; with structured quote history, a trained model would learn them.</div>'
+      + '</div>';
+
+    return '<div class="pcard' + (isChosen ? " chosen" : "") + '" style="--accent:' + color + '">'
+      + ribbon
+      + '<div class="pcard-img" style="color:' + color + '">' + catIcon(line.category) + '</div>'
+      + '<div class="pcard-part">' + p.partNumber + '</div>'
+      + '<div class="pcard-desc">' + p.desc + '</div>'
+      + fit
+      + '<div class="pcard-chips">' + proof + stockPill + '</div>'
+      + '<div class="conf">'
+      + '  <div class="conf-row"><span class="conf-label">AI confidence</span>'
+      + '  <button class="conf-num">' + confPct + '% <span class="qmark">?</span></button></div>'
+      + '  <div class="conf-track"><div class="conf-fill' + lowClass + '" data-w="' + confPct + '"></div></div>'
+      +    popHtml
+      + '</div>'
+      + '<div class="pcard-foot">'
+      + '  <span class="pcard-price">' + money(p.price) + '</span>'
+      +    (isChosen
+             ? '<button class="select-btn selected" disabled>\u2713 In quote</button>'
+             : '<button class="select-btn" data-cat="' + line.category + '" data-part="' + p.partNumber + '">Select for quote</button>')
+      + '</div>'
+      + '</div>';
+  }).join("");
+
+  return '<div class="cat-section">'
+    + '<div class="cat-head" style="color:' + color + '">'
+    +   line.category.replace("_", " ")
+    +   (line.isPrimaryComponent ? '<span class="primary-tag">requested component</span>' : "")
+    +   '<span class="cat-count">' + pool.length + ' candidate' + (pool.length === 1 ? '' : 's') + '</span>'
+    + '</div>'
+    + '<div class="pcard-grid">' + cards + '</div>'
+    + '</div>';
+}
+
+// Wire per-line events after each render (elements are fresh, so no leaks).
+function wireLineEvents() {
+  // SELECT a card for the quote: the AutoZone-style selection IS the override.
+  // Same state mechanism as before: choosing the AI's own top pick clears the
+  // override; choosing anything else records it. One state change, re-render.
+  document.querySelectorAll(".select-btn:not(.selected)").forEach(function (btn) {
+    btn.addEventListener("click", function () {
+      const cat = btn.getAttribute("data-cat");
+      const part = btn.getAttribute("data-part");
+      const line = ui.match.lines.find(function (l) { return l.category === cat; });
+      if (line.primary.partNumber === part) {
+        delete ui.overrides[cat];
+      } else {
+        ui.overrides[cat] = part;
+      }
+      renderResults();
+    });
+  });
+
+  // Explainable-AI popover, per card.
+  document.querySelectorAll(".conf-num").forEach(function (btn) {
+    btn.addEventListener("click", function () {
+      const pop = btn.closest(".conf").querySelector(".pop");
+      pop.hidden = !pop.hidden;
+    });
+  });
+}
+
+// ----------------------------------------------------------------------------
+function generateQuote() {
+  const m = ui.match;
+  const picks = m.lines.map(effectivePrimary).filter(Boolean);
+  const total = picks.reduce(function (s, p) { return s + p.price; }, 0);
+  const qid = "QT-2026-" + String(Math.floor(1000 + Math.random() * 9000));
+  const overrideCount = Object.keys(ui.overrides).length;
+
+  const rows = picks.map(function (p) {
+    return '<tr>'
+      + '<td class="mono">' + p.partNumber + '</td>'
+      + '<td>' + p.desc + '</td>'
+      + '<td class="num">1</td>'
+      + '<td class="num">' + money(p.price) + '</td>'
+      + '</tr>';
+  }).join("");
+
+  document.getElementById("quoteCard").innerHTML =
+    '<div class="q-title">Draft Quote \u2014 ' + m.componentLabel + ', ' + m.case.modelName + '</div>'
+    + '<table class="q-table">'
+    + '<thead><tr><th>Part</th><th>Description</th><th class="num">Qty</th><th class="num">Price</th></tr></thead>'
+    + '<tbody>' + rows
+    + '<tr class="q-total"><td colspan="3">Quote total</td><td class="num">' + money(total) + '</td></tr>'
+    + '</tbody></table>'
+    + '<div class="q-id">Quote ID ' + qid + ' \u00b7 ' + picks.length + ' AI-matched parts'
+    +   (overrideCount ? ' \u00b7 ' + overrideCount + ' quoter override' + (overrideCount > 1 ? 's' : '') : '')
+    +   ' \u00b7 Pending quoter review</div>'
+    + '<div class="quote-actions"><button class="btn primary" id="pushOracleBtn">Approve &amp; Push to Oracle</button></div>';
+
+  document.getElementById("quoteCard").classList.add("show");
+  setStep(3);                        // rail: quote & order stage
+
+  document.getElementById("pushOracleBtn").addEventListener("click", function () {
+    const oid = "ORD-2026-" + String(Math.floor(10000 + Math.random() * 89999));
+    document.getElementById("oracleConfirm").innerHTML =
+      'Order <span class="mono">' + oid + '</span> created in Oracle via Adaptia. '
+      + 'Parts demand generated \u00b7 Estimated ship in 5 weeks \u00b7 Now trackable in Live Order Tracking (Demo 3).';
+    document.getElementById("oracleConfirm").classList.add("show");
+  });
+}
+
+
+// ----------------------------------------------------------------------------
+//  SCREEN SWITCHING + STARTUP
+// ----------------------------------------------------------------------------
+function showScreen(id) {
+  document.querySelectorAll(".screen").forEach(function (s) {
+    s.classList.toggle("active", s.id === id);
+  });
+}
+
+// --- Step rail: mark step n as active, everything before it as done. -------
+//  The rail is ONE shared element above both screens; its state narrates the
+//  flow (1 Identify -> 2 Match -> 3 Quote). forEach gives us (element, index);
+//  index is 0-based so step numbers are index+1.
+//  Python parallel: for i, el in enumerate(steps): ...
+function setStep(n) {
+  document.querySelectorAll(".step").forEach(function (el, i) {
+    const num = i + 1;
+    el.classList.toggle("active", num === n);
+    el.classList.toggle("done", num < n);
+  });
+}
+
+function init() {
+  document.getElementById("lookupBtn").addEventListener("click", doLookup);
+  document.getElementById("serialInput").addEventListener("keydown", function (e) {
+    if (e.key === "Enter") doLookup();
+  });
+  document.querySelectorAll(".sample-chip").forEach(function (chip) {
+    chip.addEventListener("click", function () {
+      document.getElementById("serialInput").value = chip.getAttribute("data-serial");
+      doLookup();
+    });
+  });
+  document.getElementById("backBtn").addEventListener("click", function () {
+    showScreen("screen-input");
+    setStep(1);                      // rail: back to the identify step
+  });
+  document.getElementById("genQuoteBtn").addEventListener("click", generateQuote);
+}
+
+if (document.readyState === "loading") {
+  document.addEventListener("DOMContentLoaded", init);
+} else {
+  init();
+}
+
+</script>
+</body>
+</html>

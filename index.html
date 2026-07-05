@@ -1,0 +1,65 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Refresh Pipeline — Interactive Demos</title>
+<style>
+  /* Same design tokens as both demos, so the landing reads as one product. */
+  :root{
+    --navy:#0B2D4D; --navy-2:#143D63; --blue:#1E6BB8; --gold:#C99A2E;
+    --bg:#F5F3EE; --surface:#fff; --border:#E2DFD8;
+    --ink:#1A1A18; --ink-2:#5A574F; --ink-3:#8A867B;
+    --font:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;
+  }
+  *{margin:0;padding:0;box-sizing:border-box}
+  body{font-family:var(--font);background:var(--bg);color:var(--ink);min-height:100vh;
+       display:flex;flex-direction:column;align-items:center;padding:40px 20px}
+  .hero{max-width:760px;text-align:center;margin-bottom:36px}
+  .eyebrow{font-size:12px;font-weight:600;letter-spacing:1.4px;text-transform:uppercase;color:var(--blue)}
+  h1{font-size:30px;font-weight:650;color:var(--navy);margin-top:8px;letter-spacing:-.4px}
+  .sub{font-size:15px;color:var(--ink-2);margin-top:10px;line-height:1.6}
+  .cards{display:grid;grid-template-columns:repeat(auto-fit,minmax(300px,1fr));gap:18px;max-width:760px;width:100%}
+  a.card{display:block;text-decoration:none;background:var(--surface);
+         border:1.5px solid var(--border);border-radius:16px;padding:26px 24px;
+         transition:all .15s}
+  a.card:hover{border-color:var(--blue);transform:translateY(-3px);
+               box-shadow:0 10px 26px rgba(11,45,77,.10)}
+  .num{display:inline-flex;align-items:center;justify-content:center;
+       width:30px;height:30px;border-radius:8px;background:var(--navy);color:#fff;
+       font-weight:700;font-size:14px;margin-bottom:14px}
+  .card h2{font-size:18px;font-weight:650;color:var(--navy)}
+  .card p{font-size:13.5px;color:var(--ink-2);margin-top:8px;line-height:1.55}
+  .card .go{display:inline-block;margin-top:16px;font-size:13px;font-weight:650;color:var(--blue)}
+  .foot{margin-top:40px;font-size:12px;color:var(--ink-3);text-align:center;line-height:1.6}
+</style>
+</head>
+<body>
+  <div class="hero">
+    <div class="eyebrow">AI-Powered Refresh Pipeline</div>
+    <h1>Interactive Demos</h1>
+    <p class="sub">Two proof-of-concept prototypes for the refresh quoting and order-tracking
+    pipeline. All data is simulated for demonstration purposes.</p>
+  </div>
+  <div class="cards">
+    <a class="card" href="demo2_parts_matching.html">
+      <span class="num">2</span>
+      <h2>AI Parts Matching &amp; Auto-Quote</h2>
+      <p>Identify a case by serial number, choose a component, and watch the AI rank
+      matching parts with transparent confidence scores &mdash; then generate a quote
+      and push it to order in one click.</p>
+      <span class="go">Open demo &rarr;</span>
+    </a>
+    <a class="card" href="demo3_order_tracking.html">
+      <span class="num">3</span>
+      <h2>Live Order Tracking</h2>
+      <p>A customer-facing FedEx-style tracker plus an internal view with part-level
+      risk, an interactive supply-chain map, and a Copilot assistant that answers
+      status emails.</p>
+      <span class="go">Open demo &rarr;</span>
+    </a>
+  </div>
+  <div class="foot">Intern Ideation &amp; Innovation Challenge &middot; Team 2 &middot; July 2026<br>
+  Proof of concept &mdash; all orders, parts, prices, and emails are fabricated.</div>
+</body>
+</html>

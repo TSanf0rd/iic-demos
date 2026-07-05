@@ -1,0 +1,2142 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Hussmann Refresh — Live Order Tracking</title>
+
+  <!--
+    ========================================================================
+    DEMO 3: LIVE ORDER TRACKING
+    ------------------------------------------------------------------------
+    STRUCTURE OF THIS FILE:
+      1. <head>  — metadata + all the CSS (the styling)
+      2. <body>  — the HTML structure (mostly empty containers that
+                   JavaScript fills in)
+      3. <script>— loads data.js first, then app.js (the logic)
+
+    HOW A WEB PAGE WORKS (the 3 languages):
+      - HTML  = the STRUCTURE (like the skeleton / the nouns)
+      - CSS   = the STYLING   (like the clothing / the adjectives)
+      - JS    = the BEHAVIOR  (like the muscles / the verbs)
+
+    We're using plain HTML/CSS/JS with NO frameworks and NO build step.
+    That's deliberate: GitHub Pages serves these files as-is, and the
+    browser runs them directly. Nothing to compile, nothing to break
+    during a live demo.
+    ========================================================================
+  -->
+
+  <style>
+    /* ======================================================================
+       DESIGN TOKENS
+       ----------------------------------------------------------------------
+       CSS "custom properties" (variables) defined once at the top, then
+       reused everywhere. Same "single source of truth" idea as the data
+       file: change a color here, and it updates across the whole app.
+
+       The `:root` selector means "the whole document" — variables defined
+       here are available to every element on the page.
+       ====================================================================== */
+    :root {
+      /* Hussmann brand blues */
+      --navy:        #0B2D4D;   /* deep corporate navy — headers, primary */
+      --navy-2:      #143D63;   /* slightly lighter navy for accents */
+      --blue:        #1E6BB8;   /* active/interactive blue */
+      --blue-soft:   #E5EFFB;   /* soft blue background wash */
+
+      /* Warm neutrals — softer than pure white, feels less templated */
+      --bg:          #F5F3EE;   /* page background — warm off-white */
+      --surface:     #FFFFFF;   /* cards sit on white above the warm bg */
+      --surface-2:   #FAF9F6;   /* subtle alternate surface */
+      --border:      #E2DFD8;   /* hairline borders — warm gray */
+      --border-2:    #CFCBC1;   /* stronger border on hover */
+
+      /* Text */
+      --ink:         #1A1A18;   /* near-black primary text */
+      --ink-2:       #5A574F;   /* muted secondary text */
+      --ink-3:       #8A867B;   /* faint tertiary text / captions */
+
+      /* Status colors — used ONLY for state, so they stay meaningful */
+      --green:       #2E9E4A;   --green-bg: #E7F4EA;   --green-ink: #1E7A34;
+      --amber:       #E08A16;   --amber-bg: #FDF0E3;   --amber-ink: #B4600A;
+      --sky:         #2A7FD4;   --sky-bg:   #E5EFFB;   --sky-ink:   #1560A8;
+      --gray:        #9A9A94;   --gray-bg:  #EEEEEC;   --gray-ink:  #5F5F5B;
+      --red:         #C62828;   --red-bg:   #FBE4E4;   --red-ink:   #B02020;
+
+      /* Layout */
+      --radius:      10px;      /* standard corner rounding */
+      --radius-lg:   14px;      /* larger cards */
+      --gap:         16px;
+      --maxw:        1180px;    /* max content width */
+
+      /* Type */
+      --font: "Inter", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+      --mono: "SF Mono", "Roboto Mono", ui-monospace, monospace;
+    }
+
+    /* ======================================================================
+       RESET & BASE
+       ----------------------------------------------------------------------
+       Browsers apply their own default margins/padding. The `* { }` universal
+       selector zeroes them out so we start from a clean, predictable slate.
+       `box-sizing: border-box` makes width/height include padding+border,
+       which makes layout math far more intuitive.
+       ====================================================================== */
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    body {
+      font-family: var(--font);
+      background: var(--bg);
+      color: var(--ink);
+      line-height: 1.5;
+      -webkit-font-smoothing: antialiased;
+    }
+
+    /* Load Inter from Google Fonts — a clean, professional workhorse face
+       used widely in enterprise SaaS. Loaded via @import for simplicity. */
+    @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
+
+    /* ======================================================================
+       TOP BAR (Hussmann-branded header)
+       ----------------------------------------------------------------------
+       The dark navy bar establishes "this is an internal enterprise tool"
+       the moment the page loads — not a consumer app.
+       ====================================================================== */
+    .topbar {
+      background: var(--navy);
+      color: #fff;
+      padding: 14px 24px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      border-bottom: 3px solid var(--blue);
+    }
+    .topbar .brand {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+    .topbar .brand-mark {
+      width: 34px; height: 34px;
+      border-radius: 7px;
+      background: linear-gradient(135deg, var(--blue) 0%, var(--navy-2) 100%);
+      display: flex; align-items: center; justify-content: center;
+      font-weight: 700; font-size: 17px; letter-spacing: -0.5px;
+    }
+    .topbar .brand-text { display: flex; flex-direction: column; line-height: 1.15; }
+    .topbar .brand-text .name { font-weight: 600; font-size: 15px; letter-spacing: 0.2px; }
+    .topbar .brand-text .sub  { font-size: 11.5px; color: #A9C4DE; font-weight: 400; }
+    .topbar .env {
+      font-size: 11px; font-weight: 500;
+      color: #A9C4DE;
+      border: 1px solid #2A4E70;
+      padding: 4px 10px; border-radius: 999px;
+    }
+
+    /* ======================================================================
+       PAGE LAYOUT
+       ====================================================================== */
+    .page {
+      max-width: var(--maxw);
+      margin: 0 auto;
+      padding: 28px 24px 60px;
+    }
+
+    /* Section heading used above the dashboard and detail views */
+    .section-head { margin-bottom: 20px; }
+    .section-head .eyebrow {
+      font-size: 11.5px; font-weight: 600; letter-spacing: 1px;
+      text-transform: uppercase; color: var(--blue);
+      margin-bottom: 4px;
+    }
+    .section-head h1 {
+      font-size: 23px; font-weight: 600; letter-spacing: -0.3px;
+      color: var(--navy);
+    }
+    .section-head p { color: var(--ink-2); font-size: 14px; margin-top: 3px; }
+
+    /* ======================================================================
+       DASHBOARD — the grid of order cards
+       ----------------------------------------------------------------------
+       CSS Grid lays the cards out in responsive columns. `auto-fill` +
+       `minmax` means: fit as many 340px-min cards per row as will fit, and
+       stretch them to fill. Resize the window and the count adjusts itself.
+       ====================================================================== */
+    .order-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(340px, 1fr));
+      gap: var(--gap);
+    }
+
+    .order-card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-lg);
+      padding: 18px;
+      cursor: pointer;
+      transition: border-color 0.15s ease, transform 0.12s ease, box-shadow 0.15s ease;
+    }
+    .order-card:hover {
+      border-color: var(--blue);
+      transform: translateY(-2px);
+      box-shadow: 0 6px 18px rgba(11, 45, 77, 0.08);
+    }
+    .order-card .card-top {
+      display: flex; justify-content: space-between; align-items: flex-start;
+      margin-bottom: 12px;
+    }
+    .order-card .cust { font-size: 16.5px; font-weight: 600; color: var(--ink); }
+    .order-card .store { font-size: 12.5px; color: var(--ink-2); margin-top: 1px; }
+    .order-card .oid {
+      font-family: var(--mono); font-size: 11.5px; color: var(--ink-3);
+      margin-top: 8px; letter-spacing: 0.2px;
+    }
+    .order-card .cases {
+      font-size: 13px; color: var(--ink-2);
+      margin-top: 10px; padding-top: 10px;
+      border-top: 1px solid var(--border);
+    }
+    .order-card .card-bottom {
+      display: flex; justify-content: space-between; align-items: center;
+      margin-top: 14px;
+    }
+    .order-card .stage-label { font-size: 12.5px; color: var(--ink-2); }
+    .order-card .stage-label strong { color: var(--navy); font-weight: 600; }
+
+    /* ======================================================================
+       STATUS BADGE — the colored pill (On Track / At Risk / etc.)
+       ----------------------------------------------------------------------
+       Base `.badge` sets shape/size. The color comes from inline styles the
+       JavaScript injects (from STATUS_CONFIG in data.js), which keeps the
+       color logic in one place. The small dot uses `currentColor` tricks.
+       ====================================================================== */
+    .badge {
+      display: inline-flex; align-items: center; gap: 6px;
+      font-size: 12px; font-weight: 600;
+      padding: 4px 11px; border-radius: 999px;
+      white-space: nowrap;
+    }
+    .badge .dot { width: 7px; height: 7px; border-radius: 50%; }
+
+    /* ======================================================================
+       DETAIL VIEW
+       ====================================================================== */
+    .detail { display: none; }          /* hidden until an order is clicked */
+    .detail.active { display: block; }
+    .dashboard.hidden { display: none; }
+
+    .back-btn {
+      display: inline-flex; align-items: center; gap: 7px;
+      background: none; border: none; cursor: pointer;
+      font-family: var(--font); font-size: 13.5px; font-weight: 500;
+      color: var(--blue); padding: 6px 0; margin-bottom: 16px;
+    }
+    .back-btn:hover { color: var(--navy); }
+    .back-btn .arrow { font-size: 16px; line-height: 1; }
+
+    /* Detail header card — the order summary at the top of the detail view */
+    .detail-header {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-lg);
+      padding: 22px 24px;
+      display: flex; justify-content: space-between; align-items: flex-start;
+      margin-bottom: 20px;
+    }
+    .detail-header .dh-cust { font-size: 22px; font-weight: 600; color: var(--navy); }
+    .detail-header .dh-store { font-size: 14px; color: var(--ink-2); margin-top: 2px; }
+    .detail-header .dh-meta { display: flex; gap: 28px; margin-top: 16px; }
+    .detail-header .dh-meta .item .k {
+      font-size: 11px; font-weight: 600; letter-spacing: 0.6px;
+      text-transform: uppercase; color: var(--ink-3); margin-bottom: 3px;
+    }
+    .detail-header .dh-meta .item .v {
+      font-size: 14.5px; font-weight: 500; color: var(--ink);
+    }
+    .detail-header .dh-meta .item .v.mono { font-family: var(--mono); font-size: 13px; }
+
+    /* ======================================================================
+       TABS (Customer View / Internal View)
+       ----------------------------------------------------------------------
+       The signature interaction. Tabs sit on a track; the active one gets a
+       navy underline. Clicking swaps which panel is visible (JS handles it).
+       ====================================================================== */
+    .tabs {
+      display: flex; gap: 4px;
+      border-bottom: 2px solid var(--border);
+      margin-bottom: 24px;
+    }
+    .tab {
+      background: none; border: none; cursor: pointer;
+      font-family: var(--font); font-size: 14px; font-weight: 500;
+      color: var(--ink-2);
+      padding: 11px 18px;
+      position: relative;
+      transition: color 0.15s ease;
+    }
+    .tab:hover { color: var(--navy); }
+    .tab.active { color: var(--navy); font-weight: 600; }
+    /* The underline sits just below the tab, overlapping the 2px track */
+    .tab.active::after {
+      content: "";
+      position: absolute; left: 0; right: 0; bottom: -2px;
+      height: 2px; background: var(--navy);
+    }
+    .tab .tab-hint {
+      display: block; font-size: 11px; font-weight: 400;
+      color: var(--ink-3); margin-top: 1px;
+    }
+
+    .tab-panel { display: none; }
+    .tab-panel.active { display: block; }
+
+    /* ======================================================================
+       Placeholder styles for content we build in the next pieces
+       (progress rail + parts table). Defined now so the shell is complete.
+       ====================================================================== */
+    .panel-card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-lg);
+      padding: 26px 24px;
+    }
+
+    /* ======================================================================
+       CUSTOMER VIEW — header row above the rail
+       ====================================================================== */
+    .cust-head {
+      display: flex; justify-content: space-between; align-items: flex-start;
+      margin-bottom: 34px;
+    }
+    .cust-head-title { font-size: 17px; font-weight: 600; color: var(--navy); }
+    .cust-head-sub { font-size: 13.5px; color: var(--ink-2); margin-top: 2px; }
+    .cust-head-sub strong { color: var(--ink); font-weight: 600; }
+
+    /* ======================================================================
+       THE PROGRESS RAIL — the signature FedEx-style stage tracker
+       ----------------------------------------------------------------------
+       Structure (three layers stacked with position):
+         .rail          = the positioning context (position: relative)
+           .rail-track  = the full-width gray line (the "unfilled" path)
+           .rail-fill   = the navy line on top, width set by JS = % complete
+           .rail-nodes  = the row of stage circles, spaced evenly
+       The track and fill are absolutely positioned so they sit BEHIND the
+       nodes at the vertical center of the circles.
+       ====================================================================== */
+    .rail {
+      position: relative;
+      padding: 0 4px;
+    }
+    /* The gray baseline and the navy fill both sit at the vertical center of
+       the 34px circles (17px down), behind the nodes (z-index below). */
+    .rail-track, .rail-fill {
+      position: absolute;
+      top: 17px;
+      height: 3px;
+      border-radius: 3px;
+    }
+    .rail-track {
+      left: 4px; right: 4px;
+      background: var(--border);
+    }
+    .rail-fill {
+      left: 4px;
+      background: var(--navy);
+      transition: width 0.5s ease;   /* animates if we ever update progress */
+      max-width: calc(100% - 8px);
+    }
+    /* The nodes row uses flex with space-between so the 8 circles spread out
+       evenly across the full width. z-index lifts them above the lines. */
+    .rail-nodes {
+      position: relative;
+      z-index: 1;
+      display: flex;
+      justify-content: space-between;
+    }
+    .rail-node {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      width: 84px;              /* fixed width keeps labels from shifting */
+      text-align: center;
+    }
+    .rail-dot {
+      width: 34px; height: 34px;
+      border-radius: 50%;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 13px; font-weight: 600;
+      background: var(--surface);
+      border: 2px solid var(--border-2);
+      color: var(--ink-3);
+      margin-bottom: 10px;
+      transition: all 0.2s ease;
+    }
+    .rail-label {
+      font-size: 11.5px; line-height: 1.3;
+      color: var(--ink-3);
+      font-weight: 500;
+    }
+    /* DONE stages: filled navy circle with a checkmark, darker label */
+    .rail-node.done .rail-dot {
+      background: var(--navy);
+      border-color: var(--navy);
+      color: #fff;
+    }
+    .rail-node.done .rail-label { color: var(--ink-2); }
+    /* ACTIVE stage: bright blue ring, blue label, subtle emphasis */
+    .rail-node.active .rail-dot {
+      background: var(--blue);
+      border-color: var(--blue);
+      color: #fff;
+      box-shadow: 0 0 0 4px var(--blue-soft);
+    }
+    .rail-node.active .rail-label {
+      color: var(--navy);
+      font-weight: 600;
+    }
+    /* UPCOMING stages stay in the faint default styling defined above. */
+
+    /* Carrier tracking block (only shows for shipped orders) */
+    .carrier {
+      margin-top: 30px;
+      padding-top: 20px;
+      border-top: 1px solid var(--border);
+      display: flex; flex-direction: column; gap: 3px;
+    }
+    .carrier-k {
+      font-size: 11px; font-weight: 600; letter-spacing: 0.6px;
+      text-transform: uppercase; color: var(--ink-3);
+    }
+    .carrier-v {
+      font-family: var(--mono); font-size: 14px; color: var(--navy);
+      font-weight: 500;
+    }
+
+    /* ======================================================================
+       INTERNAL VIEW — risk banner + parts table
+       ====================================================================== */
+
+    /* The alert banner at the top of the internal view. Its color and icon
+       change with severity (jeopardy = red, delayed = amber, clear = green). */
+    .risk-banner {
+      display: flex; gap: 14px; align-items: flex-start;
+      border-radius: var(--radius);
+      padding: 15px 17px;
+      margin-bottom: 20px;
+      border: 1px solid transparent;
+    }
+    .risk-banner-icon {
+      flex-shrink: 0;
+      width: 26px; height: 26px; border-radius: 50%;
+      display: flex; align-items: center; justify-content: center;
+      font-weight: 700; font-size: 15px;
+      color: #fff;
+    }
+    .risk-banner-title { font-size: 14.5px; font-weight: 600; margin-bottom: 2px; }
+    .risk-banner-text  { font-size: 13px; line-height: 1.5; }
+    .risk-banner-text strong { font-weight: 600; }
+
+    .risk-banner.jeopardy {
+      background: var(--red-bg); border-color: #F0C4C4;
+    }
+    .risk-banner.jeopardy .risk-banner-icon { background: var(--red); }
+    .risk-banner.jeopardy .risk-banner-title { color: var(--red-ink); }
+    .risk-banner.jeopardy .risk-banner-text { color: #7A2020; }
+
+    .risk-banner.delayed {
+      background: var(--amber-bg); border-color: #F3D9B4;
+    }
+    .risk-banner.delayed .risk-banner-icon { background: var(--amber); }
+    .risk-banner.delayed .risk-banner-title { color: var(--amber-ink); }
+    .risk-banner.delayed .risk-banner-text { color: #7A4E0A; }
+
+    .risk-banner.clear {
+      background: var(--green-bg); border-color: #C4E4CC;
+    }
+    .risk-banner.clear .risk-banner-icon { background: var(--green); }
+    .risk-banner.clear .risk-banner-title { color: var(--green-ink); }
+    .risk-banner.clear .risk-banner-text { color: #2A5E38; }
+
+    /* Caption above the table */
+    .internal-sub {
+      font-size: 12.5px; color: var(--ink-3);
+      margin-bottom: 16px; line-height: 1.5;
+    }
+
+    /* The parts table. `table-wrap` allows horizontal scroll on small screens
+       instead of squishing the columns. */
+    .table-wrap { overflow-x: auto; }
+    .parts-table {
+      width: 100%;
+      border-collapse: collapse;   /* merge cell borders into single lines */
+      font-size: 13px;
+    }
+    .parts-table th {
+      text-align: left;
+      font-size: 11px; font-weight: 600; letter-spacing: 0.5px;
+      text-transform: uppercase; color: var(--ink-3);
+      padding: 0 14px 10px;
+      border-bottom: 2px solid var(--border);
+      white-space: nowrap;
+    }
+    .parts-table td {
+      padding: 12px 14px;
+      border-bottom: 1px solid var(--border);
+      color: var(--ink);
+      vertical-align: middle;
+    }
+    .parts-table .mono { font-family: var(--mono); font-size: 12px; color: var(--navy); }
+    .parts-table .num { text-align: center; }
+    .parts-table th.num { text-align: center; }
+    .parts-table .note { color: var(--ink-2); font-size: 12.5px; }
+
+    /* Risk cells */
+    .risk-none { color: var(--ink-3); }
+    .risk-pill {
+      display: inline-block;
+      font-size: 11.5px; font-weight: 600;
+      padding: 3px 10px; border-radius: 999px;
+      white-space: nowrap;
+    }
+
+    /* Faint row tint for at-risk parts, so the eye jumps to them */
+    .parts-table tr.row-delayed  td { background: rgba(224, 138, 22, 0.05); }
+    .parts-table tr.row-jeopardy td { background: rgba(198, 40, 40, 0.05); }
+
+    /* ======================================================================
+       SUPPLY-CHAIN MAP (inside the internal view)
+       ====================================================================== */
+    .map-section { margin-bottom: 22px; }
+    .map-section-head { margin-bottom: 10px; }
+    .map-holder {
+      position: relative;
+      background: var(--surface-2);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 6px;
+    }
+    .supply-map { display: block; width: 100%; height: auto; }
+
+    /* Landmasses */
+    .mstate { fill: #E9E5DC; stroke: #fff; stroke-width: 0.6; }
+    .mstate.context { fill: #EFEDE7; stroke: #fff; stroke-width: 0.5; }
+
+    /* Routes (legs) */
+    .mleg { fill: none; stroke-linecap: round; opacity: 1; transition: opacity 0.15s; }
+    .mleg.complete { stroke: var(--navy); stroke-width: 2.2; }
+    .mleg.moving   { stroke: var(--blue); stroke-width: 2.4; stroke-dasharray: 6 5; animation: mdash 0.9s linear infinite; }
+    .mleg.stuck    { stroke: var(--red);  stroke-width: 2.6; stroke-dasharray: 3 4; }
+    .mleg.waiting  { stroke: #B9B4A8; stroke-width: 2; stroke-dasharray: 2 6; }
+    @keyframes mdash { to { stroke-dashoffset: -22; } }
+
+    /* Nodes */
+    .mnode { cursor: pointer; }
+    .mhalo { fill: var(--navy); opacity: 0; transition: opacity 0.15s; }
+    .mdot { stroke: #fff; stroke-width: 2; }
+    .mdot.plant { fill: var(--navy); }
+    .mdot.hub { fill: #C99A2E; }
+    .mdiamond { fill: var(--amber); stroke: #fff; stroke-width: 1.5; }
+    .mlabel, .mstore-label {
+      text-anchor: middle; paint-order: stroke; stroke: #fff; stroke-width: 3px;
+    }
+    .mlabel { font-size: 10px; font-weight: 600; fill: var(--navy); }
+    .mstore-label { font-size: 9px; font-weight: 500; fill: var(--ink-2); stroke: var(--surface-2); stroke-width: 2.5px; }
+
+    /* Context (uninvolved) facilities are faint */
+    .mnode.context .mdot { opacity: 0.28; }
+    .mnode.context .mlabel { opacity: 0.35; }
+    .mnode.on .mhalo { opacity: 0.16; }
+
+    /* When a facility is isolated (focused), dim non-active legs & nodes */
+    .supply-map.focused .mleg:not(.on) { opacity: 0.1; }
+    .supply-map.focused .mnode.involved:not(.on) .mdot { opacity: 0.25; }
+    .supply-map.focused .mnode.involved:not(.on) .mlabel { opacity: 0.25; }
+
+    /* Map tooltip */
+    .map-tip {
+      position: absolute; pointer-events: none; z-index: 5;
+      background: var(--navy); color: #fff; font-size: 12px;
+      padding: 7px 10px; border-radius: 7px; opacity: 0; transition: opacity 0.12s;
+      max-width: 220px; line-height: 1.4;
+    }
+    .map-tip .tname { font-weight: 600; margin-bottom: 1px; }
+    .map-tip .tmakes { font-size: 11px; color: #B9CFE4; }
+
+    /* ======================================================================
+       COPILOT ASSISTANT PANEL
+       ====================================================================== */
+    .copilot {
+      margin-top: 24px;
+      border: 1px solid var(--border);
+      border-radius: var(--radius-lg);
+      background: linear-gradient(180deg, #F7FAFD 0%, var(--surface) 100%);
+      padding: 20px;
+    }
+    .copilot-head {
+      display: flex; align-items: center; gap: 10px;
+      margin-bottom: 16px;
+    }
+    .copilot-badge {
+      font-size: 11px; font-weight: 700; letter-spacing: 0.4px;
+      color: #fff; background: linear-gradient(135deg, #2A7FD4 0%, #7B4FD0 100%);
+      padding: 3px 9px; border-radius: 5px;
+    }
+    .copilot-title { font-size: 15px; font-weight: 600; color: var(--navy); }
+    .copilot-note { font-size: 11.5px; color: var(--ink-3); margin-left: auto; }
+
+    /* The incoming email */
+    .email-card {
+      background: var(--surface); border: 1px solid var(--border);
+      border-radius: var(--radius); padding: 14px 16px; margin-bottom: 14px;
+    }
+    .email-meta { display: flex; align-items: baseline; gap: 8px; margin-bottom: 4px; }
+    .email-from { font-size: 13.5px; font-weight: 600; color: var(--ink); }
+    .email-addr { font-size: 12px; color: var(--ink-3); font-family: var(--mono); }
+    .email-subj { font-size: 13px; font-weight: 600; color: var(--navy); margin-bottom: 6px; }
+    .email-body { font-size: 13px; color: var(--ink-2); line-height: 1.55; }
+
+    .copilot-actions { margin-bottom: 4px; }
+    .cbtn {
+      font-family: var(--font); font-size: 13px; font-weight: 600;
+      border-radius: 8px; padding: 9px 16px; cursor: pointer;
+      border: 1px solid var(--border-2); background: var(--surface); color: var(--navy);
+      transition: all 0.14s ease;
+    }
+    .cbtn:hover { border-color: var(--blue); }
+    .cbtn:disabled { opacity: 0.7; cursor: default; }
+    .cbtn.primary { background: var(--navy); color: #fff; border-color: var(--navy); }
+    .cbtn.primary:hover { background: var(--navy-2); }
+
+    /* Copilot's response */
+    .copilot-response { margin-top: 14px; }
+    .copilot-response-inner {
+      font-size: 13.5px; line-height: 1.6; color: var(--ink);
+      background: var(--surface); border: 1px solid var(--border);
+      border-left: 3px solid var(--blue);
+      border-radius: var(--radius); padding: 14px 16px;
+      white-space: pre-wrap;               /* preserve the \n\n paragraph breaks */
+      min-height: 20px;
+    }
+    .copilot-draft-actions { margin-top: 12px; }
+
+    /* Contact recommendation card */
+    .copilot-contact { margin-top: 14px; }
+    .contact-flag {
+      font-size: 11px; font-weight: 600; letter-spacing: 0.5px; text-transform: uppercase;
+      color: #7B4FD0; margin-bottom: 6px;
+    }
+    .contact-card {
+      display: flex; align-items: center; gap: 14px;
+      background: var(--surface); border: 1px solid #E0D6F0;
+      border-left: 3px solid #7B4FD0; border-radius: var(--radius);
+      padding: 13px 16px;
+    }
+    .contact-main { flex: 1; }
+    .contact-name { font-size: 14.5px; font-weight: 600; color: var(--navy); }
+    .contact-role { font-size: 12.5px; color: var(--ink-2); margin-top: 1px; }
+    .contact-reason { font-size: 12.5px; color: var(--ink-2); line-height: 1.5; margin-top: 6px; }
+    .intro-card {
+      margin-top: 10px; background: var(--surface-2);
+      border: 1px solid var(--border); border-radius: var(--radius); padding: 14px 16px;
+    }
+
+    /* The drafted reply */
+    .draft-card {
+      margin-top: 12px; background: var(--surface-2);
+      border: 1px solid var(--border); border-radius: var(--radius); padding: 14px 16px;
+    }
+    .draft-label {
+      font-size: 11px; font-weight: 600; letter-spacing: 0.5px; text-transform: uppercase;
+      color: var(--ink-3); margin-bottom: 8px;
+    }
+    .draft-body {
+      font-size: 13.5px; line-height: 1.6; color: var(--ink);
+      white-space: pre-wrap; font-family: var(--font);
+    }
+    .draft-hint { font-size: 11.5px; color: var(--ink-3); margin-top: 10px; font-style: italic; }
+
+    /* ======================================================================
+       RESPONSIVE — collapse to single column on narrow screens
+       ====================================================================== */
+    @media (max-width: 640px) {
+      .order-grid { grid-template-columns: 1fr; }
+      .detail-header { flex-direction: column; gap: 14px; }
+      .detail-header .dh-meta { flex-wrap: wrap; gap: 16px; }
+    }
+  </style>
+</head>
+
+<body>
+
+  <!-- ======================================================================
+       TOP BAR — always visible, establishes the Hussmann brand
+       ====================================================================== -->
+  <header class="topbar">
+    <div class="brand">
+      <div class="brand-mark">H</div>
+      <div class="brand-text">
+        <span class="name">Hussmann Refresh</span>
+        <span class="sub">Live Order Tracking</span>
+      </div>
+    </div>
+    <span class="env">Internal Tool · Demo</span>
+  </header>
+
+  <!-- ======================================================================
+       MAIN PAGE — holds BOTH the dashboard and the detail view.
+       JavaScript shows one and hides the other. They live in the same page
+       so switching between them is instant (no page reload).
+       ====================================================================== -->
+  <main class="page">
+
+    <!-- ---- DASHBOARD VIEW (the grid of orders) ---- -->
+    <section class="dashboard" id="dashboard">
+      <div class="section-head">
+        <div class="eyebrow">Active Refresh Projects</div>
+        <h1>Order Dashboard</h1>
+        <p>Real-time status across all active refresh orders. Select an order to view details.</p>
+      </div>
+      <!-- The grid starts EMPTY. JavaScript reads the ORDERS array from
+           data.js and fills this container with cards. This is called
+           "rendering" — turning data into visible HTML. -->
+      <div class="order-grid" id="orderGrid"></div>
+    </section>
+
+    <!-- ---- DETAIL VIEW (hidden until an order is clicked) ---- -->
+    <section class="detail" id="detail">
+      <button class="back-btn" id="backBtn">
+        <span class="arrow">&larr;</span> Back to dashboard
+      </button>
+
+      <!-- The detail header (customer, store, meta) — filled by JS -->
+      <div class="detail-header" id="detailHeader"></div>
+
+      <!-- The two tabs -->
+      <div class="tabs">
+        <button class="tab active" data-tab="customer">
+          Customer View
+          <span class="tab-hint">What the customer sees</span>
+        </button>
+        <button class="tab" data-tab="internal">
+          Internal View
+          <span class="tab-hint">Part-level detail &amp; risks</span>
+        </button>
+      </div>
+
+      <!-- The two panels — one shows at a time. Filled by JS in later pieces. -->
+      <div class="tab-panel active" id="panel-customer">
+        <div class="panel-card">Customer tracking view — built in the next step.</div>
+      </div>
+      <div class="tab-panel" id="panel-internal">
+        <div class="panel-card">Internal parts view — built in the step after.</div>
+      </div>
+    </section>
+
+  </main>
+
+  <!-- ======================================================================
+       SCRIPTS — order matters!
+       data.js MUST load first (it defines ORDERS, STAGES, etc.),
+       then app.js uses that data. The browser runs them top-to-bottom.
+       ====================================================================== -->
+  <script>
+// AUTO-GENERATED by generate_map_geometry.js — do not hand-edit.
+// Contains the projected map: SVG outline paths + facility/store pixel coords.
+const MAP_GEO = {"viewBox":"0 0 1000 640","paths":{"states":"M618.3,439.6L621.5,439.1L622.3,439.4L619.1,439.9ZM620.4,350.7L620.4,350.5L632.4,350.6L641.4,350.8L657.7,350.9L661.2,350.9L663.3,363.5L667.8,391.0L668.8,392.8L669.1,395.2L670.6,397.5L671.3,399.4L670.7,401.2L672.4,402.3L669.8,404.7L669.9,407.0L668.5,410.2L668.7,412.9L669.8,414.2L670.0,416.1L668.9,420.6L669.0,422.2L670.1,423.7L670.7,425.6L656.7,425.8L646.8,425.8L639.2,425.7L629.9,425.7L629.3,428.1L630.9,430.4L632.9,431.6L633.1,432.7L632.2,434.3L633.5,436.0L632.5,436.5L631.9,438.4L631.1,438.8L626.7,439.7L623.5,439.8L627.2,439.1L627.4,438.6L625.0,436.4L624.6,435.0L625.1,433.9L624.5,431.9L623.4,431.4L621.9,434.8L621.8,437.0L621.4,438.1L619.5,436.9L617.3,437.2L617.0,428.1L616.1,409.2L617.8,393.3L618.1,389.9L619.9,371.8L622.0,352.7Z M203.4,393.8L206.5,393.1L207.4,391.5L207.5,390.2L206.6,388.0L204.4,388.0L203.6,386.9L204.1,383.5L203.3,382.8L203.3,381.0L204.4,380.8L206.0,378.6L206.5,375.7L206.9,375.5L206.4,373.2L206.8,372.3L206.3,371.1L207.9,369.2L207.9,368.1L212.6,364.8L212.0,363.1L209.4,361.1L207.3,356.1L206.0,355.1L204.7,353.0L204.8,350.6L205.8,348.0L205.3,343.8L204.3,342.0L204.4,338.7L203.9,338.1L203.6,335.1L204.3,333.8L203.1,331.6L202.9,329.6L205.8,328.4L206.8,328.8L208.9,328.5L209.8,330.2L211.0,331.1L212.4,330.9L214.0,327.6L213.9,311.8L255.4,311.7L269.9,311.7L270.3,311.8L292.7,311.8L292.7,359.8L292.6,369.7L292.6,419.5L289.0,419.5L260.7,419.5L240.5,412.0L228.5,407.7L222.7,405.6L202.0,398.0L202.0,395.7Z M292.6,230.8L333.4,230.8L337.1,230.9L358.5,230.9L371.2,230.8L402.6,230.8L402.6,251.4L402.7,269.1L402.7,291.0L402.8,293.4L402.8,311.9L387.7,311.8L366.6,311.9L354.3,311.9L326.9,311.9L326.8,311.8L292.7,311.8L292.7,288.7L292.4,286.4L292.4,277.5L292.6,273.8L292.6,241.2Z M737.5,535.0L737.5,535.0L737.5,535.0ZM735.9,536.0L735.9,536.0L735.9,536.0ZM731.7,537.6L734.6,536.3L734.9,536.8L732.4,537.9ZM720.8,540.0L721.9,538.5L726.6,535.8L728.8,536.8L729.8,538.2L727.3,539.1L727.1,538.7L722.9,540.2ZM717.7,540.5L719.9,540.1L719.3,540.8ZM715.3,540.1L715.3,540.1L715.3,540.1ZM713.7,502.9L715.1,506.4L716.5,507.2L716.4,507.7L714.8,506.5ZM703.2,538.9L703.2,538.9L703.2,538.9ZM675.9,447.6L677.5,446.9L676.6,447.9ZM670.7,425.6L671.6,427.7L672.1,430.2L672.9,430.9L680.5,431.3L695.3,432.2L714.5,433.5L714.6,436.2L715.2,437.4L717.3,437.2L717.8,433.4L717.1,432.0L717.5,429.6L718.7,428.8L720.9,429.5L722.3,430.3L726.6,431.0L726.6,433.0L727.1,435.1L727.4,438.4L729.5,447.3L731.0,452.0L732.8,456.4L734.5,460.0L738.1,466.3L740.3,469.4L741.1,471.7L740.1,472.5L739.8,474.7L740.4,478.2L743.3,484.5L745.3,490.9L746.8,494.2L747.9,497.3L748.8,501.2L748.8,504.7L747.5,515.4L747.5,517.9L746.9,520.3L746.4,519.6L745.5,520.0L744.1,523.3L744.2,525.7L743.6,527.6L744.7,527.0L746.2,524.1L746.1,525.4L743.7,529.9L740.3,533.4L738.8,534.2L741.5,531.8L742.4,529.3L740.8,529.0L738.9,529.3L737.6,530.0L736.6,529.3L735.2,530.2L732.3,530.5L730.9,528.7L731.6,526.0L730.3,523.8L729.1,520.6L728.1,520.6L727.6,519.1L726.2,518.6L723.8,517.0L722.7,517.7L721.0,513.6L720.7,511.0L719.9,508.5L717.7,505.9L716.2,506.7L715.7,504.0L715.0,503.2L716.4,503.5L717.0,501.1L716.5,499.6L716.7,498.3L715.1,499.1L715.6,501.3L713.9,501.8L710.9,496.5L709.3,493.0L707.0,489.9L706.8,488.8L708.9,486.8L710.3,484.4L711.7,482.8L711.4,481.6L710.2,481.3L710.4,483.0L709.2,482.6L709.2,480.5L707.1,479.4L706.5,480.8L708.0,481.4L708.6,483.1L707.8,485.1L706.7,485.2L704.5,482.3L704.9,479.5L704.3,476.0L704.9,476.0L705.1,478.8L705.6,478.9L705.4,476.5L706.4,474.6L707.3,472.0L707.6,469.3L707.4,467.4L706.4,464.7L707.1,463.7L705.9,462.0L705.2,459.3L702.2,458.8L701.3,459.6L701.0,457.4L699.5,456.7L698.4,454.2L695.9,452.6L695.7,449.9L693.7,448.9L692.2,446.0L689.8,444.3L687.5,443.2L686.1,442.0L684.0,442.6L682.2,442.1L680.7,443.7L681.0,445.7L679.3,445.2L678.0,445.5L672.6,448.7L672.1,447.8L670.8,449.1L668.8,449.1L669.6,450.4L670.5,450.8L673.9,449.3L674.2,449.5L670.0,451.4L667.2,449.7L665.2,450.1L664.4,448.6L664.2,446.8L664.6,446.1L665.0,449.2L665.9,448.9L666.0,447.4L665.0,445.7L663.0,444.6L661.3,442.9L659.8,442.1L656.2,439.6L653.6,438.4L650.3,437.3L645.0,436.7L640.5,437.2L636.8,437.9L634.6,438.0L631.1,438.8L631.9,438.4L632.5,436.5L633.5,436.0L632.2,434.3L633.1,432.7L632.9,431.6L630.9,430.4L629.3,428.1L629.9,425.7L639.2,425.7L646.8,425.8L656.7,425.8Z M661.2,350.9L681.4,350.9L692.4,350.9L700.4,350.6L700.3,351.8L698.5,352.9L697.1,354.7L696.8,356.7L698.5,358.1L699.5,358.2L700.8,359.9L702.1,360.7L704.1,360.7L704.7,362.8L706.2,364.9L706.6,366.9L708.5,369.1L709.1,370.8L712.4,372.8L714.0,374.4L714.8,376.7L717.2,378.0L719.2,380.3L718.8,382.1L721.6,384.5L721.9,385.9L723.9,386.8L725.9,388.4L725.6,389.5L726.9,391.6L727.1,395.7L729.2,396.9L730.5,398.6L730.3,399.1L731.7,401.9L731.1,402.6L731.8,405.1L733.6,405.4L735.4,406.6L735.8,407.8L734.4,408.0L734.6,408.9L733.7,409.9L732.6,409.5L733.0,410.6L731.5,412.4L731.1,415.2L729.5,415.6L730.8,416.1L729.5,418.2L729.0,421.9L727.3,423.2L726.9,425.4L725.8,426.1L727.2,426.1L727.3,427.3L726.4,429.9L726.6,431.0L722.3,430.3L720.9,429.5L718.7,428.8L717.5,429.6L717.1,432.0L717.8,433.4L717.3,437.2L715.2,437.4L714.6,436.2L714.5,433.5L695.3,432.2L680.5,431.3L672.9,430.9L672.1,430.2L671.6,427.7L670.7,425.6L670.1,423.7L669.0,422.2L668.9,420.6L670.0,416.1L669.8,414.2L668.7,412.9L668.5,410.2L669.9,407.0L669.8,404.7L672.4,402.3L670.7,401.2L671.3,399.4L670.6,397.5L669.1,395.2L668.8,392.8L667.8,391.0L663.3,363.5Z M631.0,216.0L632.6,217.3L635.8,217.7L637.4,217.3L642.0,214.9L658.3,214.9L673.8,214.9L673.8,216.2L673.8,220.6L673.8,245.3L673.6,253.0L673.5,269.7L672.3,270.9L673.4,272.6L672.9,273.9L674.1,274.5L673.7,276.1L671.0,276.3L668.3,278.1L666.6,277.2L664.3,277.2L663.6,277.7L664.2,281.1L662.9,282.6L661.2,283.2L660.1,285.9L659.0,286.6L657.7,286.4L656.4,288.7L656.2,291.4L654.5,292.1L652.3,291.8L650.8,290.8L650.7,289.2L649.9,288.9L647.9,290.9L646.8,291.1L647.0,293.4L644.9,293.8L643.2,293.7L642.5,292.2L638.5,294.1L638.3,295.7L637.2,296.2L636.8,295.2L635.8,295.0L633.3,293.2L631.4,293.8L629.8,292.5L629.4,293.6L630.0,294.7L628.7,295.3L628.6,293.9L626.2,294.4L625.6,293.5L624.5,294.1L625.1,295.7L624.4,296.5L623.1,295.9L622.0,293.9L623.4,292.4L623.0,290.9L624.7,289.0L623.9,288.0L624.7,286.0L625.8,286.4L627.8,283.1L627.6,282.4L629.0,281.7L629.0,280.6L629.9,278.6L631.5,277.1L630.6,274.7L631.2,272.8L630.2,272.1L630.2,270.7L629.3,269.7L629.2,268.5L630.2,267.4L629.7,266.6L630.2,265.0L630.9,264.8L630.9,251.7L631.0,242.0L631.0,220.6Z M402.6,251.4L437.8,251.5L462.4,251.4L508.6,251.5L510.3,253.5L512.8,254.3L513.3,253.5L514.6,253.8L515.4,255.0L514.2,256.7L513.9,258.0L513.0,258.3L511.9,261.0L514.9,264.7L516.1,267.4L517.2,268.2L519.9,268.7L519.6,269.4L519.6,291.2L519.5,292.1L519.5,311.8L505.4,311.8L460.8,311.8L431.7,311.7L402.8,311.9L402.8,293.4L402.7,291.0L402.7,269.1Z M932.2,162.6L932.2,162.6L932.2,162.6ZM930.1,163.3L930.5,161.7L931.9,163.4L931.1,164.3ZM929.7,159.3L929.7,159.3L929.7,159.3ZM924.8,161.6L924.8,161.6L924.8,161.6ZM923.6,170.0L923.6,170.0L923.6,170.0ZM923.1,164.3L925.0,162.7L925.9,165.3L924.3,166.3ZM922.8,161.3L924.0,159.5L923.6,161.5ZM895.5,187.2L893.5,185.7L893.8,183.7L891.5,181.3L891.0,180.3L891.6,176.6L891.2,176.2L890.3,152.4L889.5,137.9L890.7,137.0L892.1,137.8L893.1,139.7L893.8,138.0L894.2,135.1L896.6,136.2L896.6,135.5L895.2,133.3L896.4,131.2L897.9,129.8L900.5,128.3L900.0,127.0L902.5,124.8L902.8,123.7L901.6,123.2L901.7,120.9L902.8,119.0L902.0,118.1L903.3,114.8L905.6,112.9L906.6,106.5L918.7,88.9L921.6,89.6L921.5,93.6L923.8,95.4L926.7,93.9L928.3,93.9L928.9,92.8L932.0,92.9L932.0,91.6L934.3,91.3L937.7,94.0L939.7,96.6L941.3,97.9L941.3,108.7L941.5,122.2L941.9,124.2L941.1,125.0L941.9,126.3L941.0,127.0L941.1,129.6L944.2,131.2L946.7,131.3L947.2,133.6L945.8,133.8L947.1,136.4L946.0,138.5L948.4,142.0L949.1,140.6L951.2,141.2L952.3,143.2L953.1,146.0L953.9,146.7L954.0,149.0L950.7,152.6L949.4,153.1L948.9,151.3L947.3,151.8L948.0,152.9L946.0,154.6L944.7,154.5L945.7,155.9L944.5,157.0L943.4,155.0L942.0,155.9L941.6,154.8L940.3,157.6L939.3,157.4L937.2,159.6L936.3,158.1L935.2,158.4L935.3,159.6L934.4,161.0L935.0,161.6L933.0,161.9L931.7,161.3L930.8,159.3L932.4,158.2L931.9,157.3L930.5,157.3L929.1,158.4L929.1,159.8L929.8,161.1L928.4,163.4L928.8,165.2L928.5,166.5L927.6,166.7L927.6,164.0L926.5,162.0L927.3,161.0L926.0,159.6L925.0,160.0L925.3,155.8L924.1,157.4L923.5,156.8L922.3,157.5L923.1,159.0L922.2,160.4L920.7,164.5L921.6,166.7L921.0,167.4L919.5,167.3L918.8,168.7L917.6,168.3L916.2,168.8L916.5,167.6L914.4,170.4L913.7,169.4L911.9,171.6L911.2,170.7L910.4,172.4L908.9,173.3L908.6,171.7L907.7,171.6L906.5,173.1L905.4,173.0L905.0,174.0L903.9,173.9L903.4,176.3L901.0,176.9L900.8,179.0L900.0,180.7L897.9,181.5L897.5,183.7L896.0,187.0Z M902.2,224.3L902.9,224.8L905.6,224.4L906.3,223.1L907.2,225.0L906.5,225.8L904.7,225.7ZM893.4,223.4L894.5,223.4L895.5,221.8L897.1,220.7L899.4,223.5L895.4,223.7L894.4,224.5ZM855.2,193.9L867.9,194.3L886.2,195.0L888.0,194.1L887.9,193.0L889.8,192.7L890.3,191.5L892.4,190.9L893.7,191.2L894.3,195.1L895.7,195.9L896.4,195.2L897.2,195.8L896.3,197.4L892.8,198.2L893.5,199.1L891.6,200.2L891.0,201.2L890.7,203.8L892.7,203.3L894.5,204.6L896.5,207.9L895.5,210.1L897.9,211.3L898.0,213.7L900.0,215.2L902.5,215.8L903.5,215.1L906.5,213.9L906.1,211.3L905.4,211.9L905.1,209.1L904.2,208.5L903.4,209.3L902.8,208.3L904.7,208.4L906.0,209.4L907.0,211.7L907.6,213.8L907.7,216.3L906.8,218.6L906.6,216.8L902.7,217.7L901.0,217.5L898.8,219.3L896.9,219.4L894.1,221.5L896.2,219.4L896.7,215.9L895.3,215.4L895.3,216.5L894.0,217.6L892.2,217.8L891.6,220.0L888.9,220.4L888.8,217.0L887.7,216.7L887.3,215.9L885.7,214.5L885.5,212.0L884.8,212.1L884.8,209.4L878.3,209.6L878.2,209.3L862.3,209.0L851.7,208.8L851.4,208.0Z M478.4,52.5L511.1,52.5L511.1,43.2L512.6,44.0L514.2,43.6L516.3,45.4L517.0,49.6L517.4,50.1L518.5,55.3L518.1,56.7L519.1,58.7L520.8,59.6L525.1,59.7L525.7,60.9L531.8,61.4L532.4,64.0L534.8,64.0L537.6,63.3L537.6,62.3L539.4,61.4L541.6,61.0L542.2,61.5L545.1,61.5L549.2,63.5L550.7,63.4L550.7,64.4L549.4,65.3L550.3,65.9L552.7,65.7L553.2,67.5L554.9,71.0L556.3,70.5L555.8,68.8L556.5,67.9L559.8,67.8L560.7,68.6L560.6,70.0L562.8,71.3L565.1,71.5L565.2,73.5L567.6,73.7L567.4,75.2L569.5,75.1L572.5,74.2L575.1,72.0L578.2,70.4L580.1,73.9L583.0,73.4L586.2,74.0L590.0,73.6L591.6,74.2L592.2,75.5L594.1,76.6L594.9,75.9L598.7,76.3L598.6,77.0L596.8,77.6L595.4,78.8L592.5,80.2L583.6,83.2L578.4,86.6L574.4,90.3L573.4,91.6L568.8,96.6L567.4,97.4L565.3,99.4L559.2,104.4L560.4,106.2L559.3,105.3L557.4,106.3L557.3,107.5L556.0,107.2L556.0,120.6L555.1,122.0L553.8,121.8L553.2,122.9L550.6,123.9L549.4,124.8L548.3,127.7L547.1,128.6L546.7,131.8L548.5,132.1L550.5,134.9L550.5,135.9L548.7,138.3L548.9,142.4L548.0,143.5L548.6,144.1L548.6,148.4L548.0,149.9L551.6,153.5L552.1,154.4L555.6,154.8L557.0,157.0L559.8,158.0L561.9,159.5L562.6,162.4L565.1,164.0L567.3,166.2L569.5,166.8L572.0,170.4L572.5,171.8L572.1,173.9L573.0,177.7L542.3,177.7L490.6,177.7L490.6,138.0L490.1,136.8L487.0,135.6L485.7,133.1L484.3,131.2L484.5,130.3L487.2,128.4L488.7,126.3L488.9,123.8L489.0,121.0L488.4,117.3L488.3,114.8L486.5,112.4L485.9,109.1L485.2,107.2L485.2,103.6L485.8,101.0L484.8,100.2L484.9,96.8L484.3,89.7L484.3,85.3L483.0,81.6L482.6,81.3L481.8,78.1L481.2,77.4L480.9,75.0L480.0,72.9L480.2,69.6L479.7,67.7L479.9,64.5L479.5,63.3L480.5,60.0L479.7,58.3L479.2,55.8L478.3,53.3Z M819.1,259.1L819.9,257.9L821.4,255.5L822.3,254.8L824.5,254.3L825.9,253.5L825.9,252.3L830.8,248.9L832.3,248.3L828.8,244.5L828.4,243.3L827.0,242.9L826.9,240.4L824.9,239.6L824.7,237.2L825.2,235.4L825.8,235.5L827.1,233.5L825.8,231.4L828.4,229.0L828.2,228.5L829.8,227.0L830.6,224.8L832.7,223.3L837.7,226.4L845.1,230.9L844.2,234.5L842.9,237.2L842.5,237.9L840.5,238.5L839.6,241.1L839.6,241.9L841.5,242.1L843.7,243.0L844.1,243.8L842.4,253.3L842.2,256.4L838.4,263.1L837.2,264.5L835.4,265.5L833.6,267.4L831.2,272.0L830.1,273.1L828.4,273.1L829.7,268.6L827.2,267.5L825.8,268.2L825.2,266.9L822.2,264.9L820.6,262.9L819.5,262.5L819.9,260.1L819.2,259.5Z M816.5,332.6L817.5,332.9L818.3,334.9ZM812.0,349.3L812.9,348.3L817.2,346.2L819.5,345.4L820.4,340.0L819.6,335.8L820.7,339.1L820.5,341.4L819.7,346.1L818.3,346.3L815.5,347.3ZM723.0,319.9L736.2,320.4L738.3,320.4L744.7,320.7L757.0,320.8L772.7,320.8L776.9,320.7L797.8,320.7L799.5,320.6L814.3,320.6L815.4,325.7L816.3,328.3L819.6,335.5L819.1,335.2L817.3,331.4L816.5,331.3L816.0,328.4L814.6,323.2L813.8,321.9L811.6,321.4L811.9,322.4L813.4,323.0L813.4,324.2L815.3,329.9L814.3,328.8L813.4,326.6L812.0,327.7L810.2,325.7L809.3,325.5L811.3,328.3L809.4,328.9L808.2,327.7L808.8,329.5L805.0,327.8L806.3,329.0L807.5,329.4L805.8,329.8L805.0,330.8L803.2,331.2L801.6,330.5L800.9,328.5L801.3,325.9L800.4,328.5L801.6,332.6L803.9,332.4L806.0,331.6L806.5,332.5L809.4,331.4L811.2,331.5L812.0,332.9L811.2,334.2L811.5,337.8L812.0,337.7L812.6,333.3L813.8,331.8L815.2,332.1L816.5,334.8L816.7,337.3L815.7,339.5L813.9,339.6L813.0,340.4L812.0,342.5L810.0,344.3L804.6,343.5L803.7,342.7L803.0,340.8L804.7,340.8L805.0,340.0L802.3,340.8L803.1,343.2L801.1,342.4L800.3,342.6L796.1,340.7L797.0,342.2L798.2,342.3L801.7,344.0L804.3,344.4L804.8,345.6L803.3,348.8L799.6,351.3L796.8,349.5L796.8,350.5L800.2,352.2L802.3,350.8L804.5,350.3L805.4,349.5L806.0,351.1L807.0,351.2L806.5,350.0L807.6,350.4L807.7,351.8L806.8,353.1L805.8,353.3L803.9,356.7L801.6,356.2L804.0,357.3L805.3,355.3L811.2,349.2L811.6,349.5L807.3,353.5L805.1,356.1L803.8,358.5L803.6,357.4L801.6,356.5L799.4,356.5L796.0,357.1L793.2,358.2L787.8,361.8L785.7,363.6L783.5,366.6L781.6,371.4L781.4,372.5L780.5,371.8L778.0,371.4L774.7,371.6L772.3,372.5L754.5,354.4L736.8,354.1L737.0,351.9L734.6,348.6L733.0,349.8L733.0,347.8L729.9,347.6L713.3,346.8L709.2,347.6L706.0,349.3L705.6,349.0L700.4,350.6L692.4,350.9L681.4,350.9L681.9,346.3L684.9,345.9L686.1,344.8L686.1,342.8L688.3,340.7L690.0,339.8L694.5,339.7L695.1,338.9L697.2,338.0L698.4,336.6L699.3,336.6L700.9,335.4L702.3,335.7L703.7,333.8L704.1,332.3L705.0,332.9L706.1,331.2L708.0,330.0L708.2,331.9L709.1,332.2L710.7,331.2L711.5,329.6L714.5,328.2L715.8,329.3L717.4,328.8L719.3,325.4L721.1,324.4L722.5,324.7L721.9,323.5L722.7,322.2Z M371.2,52.5L381.8,52.5L444.7,52.5L478.4,52.5L478.3,53.3L479.2,55.8L479.7,58.3L480.5,60.0L479.5,63.3L479.9,64.5L479.7,67.7L480.2,69.6L480.0,72.9L480.9,75.0L481.2,77.4L481.8,78.1L482.6,81.3L483.0,81.6L484.3,85.3L484.3,89.7L484.9,96.8L484.8,100.2L485.8,101.0L485.2,103.6L485.2,107.2L485.9,109.1L486.5,112.4L488.3,114.8L488.4,117.3L489.0,121.0L488.9,123.8L459.8,123.8L424.7,123.6L371.3,123.6L371.3,67.4Z M387.7,311.8L402.8,311.9L431.7,311.7L460.8,311.8L505.4,311.8L519.5,311.8L519.5,321.6L522.4,343.1L522.0,359.3L521.6,376.6L521.0,377.0L520.0,375.8L518.1,375.6L517.0,374.4L515.5,374.5L513.9,372.3L512.7,372.3L511.4,370.9L509.9,370.5L508.9,372.1L505.0,372.0L504.1,371.0L501.6,372.5L500.4,372.8L498.7,372.3L495.4,372.8L495.0,374.3L493.1,374.2L492.7,375.5L491.0,373.9L489.8,374.0L489.4,373.1L487.9,372.7L488.5,371.7L487.1,371.4L486.7,372.8L483.9,372.2L483.5,370.7L482.1,370.7L482.3,371.9L480.5,373.5L480.7,374.6L479.5,374.8L478.8,373.3L479.3,372.8L478.7,371.3L478.0,372.3L476.8,372.1L476.2,373.1L475.1,373.1L474.8,371.5L473.3,371.7L472.8,370.6L471.2,370.0L468.9,372.4L466.8,372.0L467.2,369.9L465.0,369.7L464.4,368.2L464.6,366.8L463.7,367.6L460.6,366.7L459.8,368.1L458.7,368.5L457.3,367.0L456.2,366.6L454.3,367.1L450.8,365.5L449.9,366.0L447.6,365.6L447.3,363.3L444.6,361.0L444.4,362.5L441.5,361.8L441.1,362.6L439.4,362.4L436.0,358.7L434.9,359.0L434.9,321.6L387.6,321.6Z M741.1,210.3L746.4,207.8L747.5,206.3L748.4,206.8L753.0,204.1L753.1,209.8L780.8,209.8L800.4,209.8L806.7,209.8L822.3,209.8L823.4,210.8L823.8,212.6L826.2,213.2L827.1,215.0L827.2,217.9L826.7,218.1L829.6,221.6L832.0,221.8L832.7,223.3L830.6,224.8L829.8,227.0L828.2,228.5L828.4,229.0L825.8,231.4L827.1,233.5L825.8,235.5L825.2,235.4L824.7,237.2L824.9,239.6L826.9,240.4L827.0,242.9L828.4,243.3L828.8,244.5L832.3,248.3L830.8,248.9L825.9,252.3L825.9,253.5L824.5,254.3L822.3,254.8L821.4,255.5L818.8,254.8L816.6,255.7L815.5,257.2L788.1,257.2L774.8,257.2L757.6,257.2L741.1,257.2L741.1,238.3Z M371.1,144.8L371.3,144.7L371.3,123.6L424.7,123.6L459.8,123.8L488.9,123.8L488.7,126.3L487.2,128.4L484.5,130.3L484.3,131.2L485.7,133.1L487.0,135.6L490.1,136.8L490.6,138.0L490.6,177.7L488.4,177.7L488.3,178.8L489.5,180.0L489.4,182.0L488.7,182.1L488.9,183.7L490.3,183.7L490.9,185.9L489.7,187.4L489.9,189.4L489.2,191.7L487.8,193.4L487.9,194.8L489.7,196.4L490.7,199.4L488.1,199.1L486.6,196.9L487.0,195.9L485.2,195.6L485.1,194.8L482.4,193.6L480.0,193.4L478.6,191.8L477.2,191.3L475.1,191.8L472.3,191.6L471.3,191.9L468.7,191.3L467.8,192.9L466.0,193.6L464.3,192.3L459.0,189.6L458.5,188.5L433.0,188.5L409.3,188.6L405.8,188.5L371.2,188.5L371.1,181.9L371.1,147.6Z M387.6,321.6L434.9,321.6L434.9,359.0L436.0,358.7L439.4,362.4L441.1,362.6L441.5,361.8L444.4,362.5L444.6,361.0L447.3,363.3L447.6,365.6L449.9,366.0L450.8,365.5L454.3,367.1L456.2,366.6L457.3,367.0L458.7,368.5L459.8,368.1L460.6,366.7L463.7,367.6L464.6,366.8L464.4,368.2L465.0,369.7L467.2,369.9L466.8,372.0L468.9,372.4L471.2,370.0L472.8,370.6L473.3,371.7L474.8,371.5L475.1,373.1L476.2,373.1L476.8,372.1L478.0,372.3L478.7,371.3L479.3,372.8L478.8,373.3L479.5,374.8L480.7,374.6L480.5,373.5L482.3,371.9L482.1,370.7L483.5,370.7L483.9,372.2L486.7,372.8L487.1,371.4L488.5,371.7L487.9,372.7L489.4,373.1L489.8,374.0L491.0,373.9L492.7,375.5L493.1,374.2L495.0,374.3L495.4,372.8L498.7,372.3L500.4,372.8L501.6,372.5L504.1,371.0L505.0,372.0L508.9,372.1L509.9,370.5L511.4,370.9L512.7,372.3L513.9,372.3L515.5,374.5L517.0,374.4L518.1,375.6L520.0,375.8L521.0,377.0L521.6,376.6L523.6,378.4L524.5,377.7L525.7,378.2L526.3,377.4L527.3,378.2L528.5,378.2L528.5,378.2L528.6,388.2L528.6,407.4L530.6,409.2L532.0,411.4L532.3,412.8L531.7,414.6L534.5,419.1L534.1,420.0L535.2,420.7L535.5,422.5L536.6,422.3L536.2,423.9L536.8,425.2L536.0,426.1L536.7,426.9L536.0,427.9L536.2,428.9L535.2,430.4L534.3,433.0L533.5,433.5L534.0,435.9L532.9,437.8L533.8,438.7L533.6,440.1L534.1,441.3L533.9,442.7L532.5,444.1L531.4,446.5L530.4,447.2L531.8,449.5L529.2,449.7L527.1,450.3L519.9,453.5L516.9,455.2L518.6,453.4L520.3,452.4L520.6,451.7L517.6,452.5L517.1,452.1L518.1,450.7L518.3,448.3L516.4,448.3L515.6,449.7L514.4,449.4L513.4,450.1L513.8,451.1L513.2,451.9L514.9,453.0L515.2,456.4L514.2,456.7L511.9,458.8L511.0,458.6L511.2,460.3L515.4,456.8L516.3,455.8L517.7,456.0L513.1,459.3L509.7,462.2L507.4,464.4L506.6,464.5L500.7,468.0L494.3,471.1L491.6,473.1L490.8,474.2L487.8,475.9L483.8,479.3L482.0,481.5L478.7,487.0L477.4,490.0L476.2,494.9L476.1,498.1L476.6,501.2L479.0,509.8L479.6,513.7L477.6,505.6L475.9,501.1L475.7,495.5L476.4,491.4L477.3,488.6L478.3,486.4L480.1,483.4L480.8,481.4L481.8,480.8L483.3,478.2L486.2,476.5L488.2,474.8L490.9,473.7L490.6,472.4L488.0,474.2L487.0,474.3L486.7,472.7L485.3,473.0L485.2,475.9L483.1,477.7L481.6,477.2L481.4,476.6L479.6,477.5L478.7,478.5L479.9,478.8L481.2,478.0L481.7,479.1L479.1,482.9L478.1,482.1L474.9,482.1L474.6,483.0L476.1,482.7L476.2,484.5L478.0,485.2L477.0,487.5L475.6,491.9L474.0,492.7L474.4,491.2L472.0,492.8L473.5,493.5L475.4,492.9L474.7,500.9L474.5,501.0L475.6,506.7L476.1,506.7L477.7,510.4L477.1,511.1L477.8,513.6L479.6,514.1L479.7,516.0L478.4,515.9L476.5,516.5L476.2,517.9L475.1,517.8L472.9,516.2L471.8,514.8L469.5,514.1L466.8,514.2L465.1,514.0L463.2,514.2L460.2,512.4L459.0,511.3L457.1,510.7L456.0,511.0L453.3,508.7L452.3,508.9L448.8,507.5L449.2,506.8L448.0,505.8L447.3,502.4L446.4,500.4L443.6,497.2L443.9,494.5L443.7,493.2L442.2,492.1L442.7,491.6L443.0,488.9L442.3,488.8L442.6,487.6L441.1,486.2L439.5,486.0L437.8,483.9L436.8,483.4L435.9,480.2L435.0,479.9L433.6,477.3L431.6,476.5L430.2,474.8L429.4,472.7L429.6,471.9L428.4,470.0L428.6,469.4L427.0,468.0L425.4,463.7L424.6,463.0L424.3,460.2L423.3,459.5L422.3,457.5L419.0,455.3L418.2,453.7L415.1,452.6L415.2,450.7L414.6,451.7L414.3,450.4L413.4,450.0L412.6,448.3L411.7,447.9L408.0,448.2L405.8,447.5L403.8,447.3L402.7,447.8L401.2,447.5L400.6,446.7L398.7,446.1L397.9,446.4L397.3,448.1L395.4,447.8L393.3,448.7L391.8,450.4L390.7,452.6L390.2,455.5L389.6,455.6L389.2,457.3L389.4,458.2L387.9,458.7L387.5,459.7L386.1,460.9L385.9,462.2L383.3,462.3L381.0,461.2L379.5,459.5L376.3,458.5L374.6,457.0L372.4,456.6L369.7,455.1L367.8,452.7L366.6,452.6L364.0,450.4L363.1,448.1L361.3,445.3L360.9,443.5L361.2,442.3L360.8,439.6L358.6,436.3L357.8,433.5L356.8,432.8L356.2,431.4L355.3,431.4L354.5,430.4L352.8,429.3L350.0,428.3L350.0,427.7L347.5,425.8L346.8,424.1L344.1,422.6L342.6,420.4L341.3,418.9L339.3,418.3L337.3,417.1L334.5,412.2L332.2,411.2L331.0,410.5L330.4,409.1L330.8,407.2L376.4,407.2L386.7,407.2L386.7,387.8L387.0,370.7L387.0,345.8L387.1,325.1L387.0,321.6Z M371.1,144.8L371.1,147.6L371.1,181.9L371.2,188.5L371.2,230.8L358.5,230.9L337.1,230.9L333.4,230.8L292.6,230.8L273.9,230.9L261.2,230.9L261.2,219.0L261.2,209.8L261.2,194.4L261.2,174.2L261.2,156.4L261.1,144.7L266.5,144.9L291.8,144.6L292.4,144.8L322.7,144.8L323.5,144.8L341.6,144.9L342.9,144.8Z M851.7,208.8L862.3,209.0L878.2,209.3L878.3,209.6L878.4,215.6L878.3,222.1L877.6,222.2L877.3,224.1L876.0,223.7L869.0,225.3L868.0,225.0L866.5,225.6L864.7,225.2L861.0,225.7L860.8,224.6L859.3,226.4L857.3,227.7L856.6,227.3L855.2,228.4L853.5,228.6L853.3,229.6L851.6,229.8L849.0,231.1L848.0,228.7L851.8,226.4L850.7,224.6Z M501.5,239.4L519.9,239.7L539.5,239.5L559.2,239.1L564.9,238.8L565.6,240.1L568.1,242.0L568.1,243.0L569.8,243.7L568.4,246.6L568.6,250.7L569.8,253.0L569.4,254.1L570.7,255.9L570.5,257.0L574.0,260.8L574.8,260.9L576.3,263.2L579.6,265.6L580.8,267.2L581.4,270.1L580.9,270.7L581.7,273.3L582.9,274.5L584.1,273.8L584.6,272.7L585.7,272.6L588.1,273.5L590.3,274.9L590.2,275.9L588.8,277.5L589.2,279.7L588.0,281.4L587.6,283.1L586.3,285.1L586.5,287.7L588.7,290.1L590.1,290.7L592.1,292.7L592.8,294.3L594.5,293.8L597.5,296.2L597.3,296.9L599.7,298.1L600.3,300.2L599.7,301.2L601.2,303.9L601.0,305.0L599.7,306.1L601.9,310.1L601.9,311.0L603.2,311.9L603.7,310.5L605.1,312.4L605.8,312.1L606.3,312.5L605.0,315.6L606.0,316.2L604.9,316.6L605.3,318.3L604.5,320.0L603.7,320.3L602.7,319.0L602.0,319.2L601.2,321.6L600.2,321.6L600.2,320.2L599.0,320.1L599.3,321.6L599.5,324.7L598.2,324.7L599.4,326.0L598.6,326.7L596.7,326.8L598.3,328.0L598.4,329.0L597.1,329.7L596.3,331.3L586.2,331.4L587.1,329.6L590.8,326.0L591.1,323.8L589.8,323.1L589.7,321.6L570.0,321.6L519.5,321.6L519.5,311.8L519.5,292.1L519.6,291.2L519.6,269.4L519.9,268.7L517.2,268.2L516.1,267.4L514.9,264.7L511.9,261.0L513.0,258.3L513.9,258.0L514.2,256.7L515.4,255.0L514.6,253.8L513.3,253.5L512.8,254.3L510.3,253.5L508.6,251.5L506.9,250.5L507.3,249.1L506.0,247.8L505.9,246.4L503.8,245.0L502.5,241.8L502.5,240.6L501.4,240.5Z M708.5,283.5L709.5,283.8L712.8,283.0L713.3,280.4L715.2,279.5L714.4,276.0L715.6,275.1L715.6,273.9L717.4,271.3L718.8,272.0L719.6,274.4L720.8,272.9L721.3,273.4L721.6,271.5L720.8,270.2L721.9,269.9L721.7,268.2L722.9,266.3L724.7,266.4L724.8,265.0L726.2,263.7L727.5,264.9L730.3,263.9L730.9,262.9L734.6,259.4L735.5,259.2L736.3,257.3L735.7,256.5L737.4,253.3L737.7,249.9L739.9,244.9L740.0,241.9L738.8,239.7L739.3,238.8L741.1,238.3L741.1,257.2L757.6,257.2L757.4,267.7L761.1,264.6L762.8,263.6L763.5,262.3L765.7,262.9L768.5,259.2L770.5,261.0L773.4,261.4L775.2,258.8L776.3,259.2L777.9,257.7L779.2,258.1L780.6,259.6L783.4,259.6L782.5,260.5L784.3,262.5L785.2,265.3L783.5,269.2L775.3,262.4L775.4,264.8L774.1,266.6L774.4,268.5L769.5,273.8L768.2,274.4L767.1,276.6L765.1,274.9L763.7,277.5L763.6,278.7L762.6,279.7L761.7,282.1L760.2,283.7L757.6,282.8L756.6,280.9L754.8,280.1L754.1,282.2L754.2,283.3L752.3,285.8L752.6,286.6L750.6,288.4L750.5,289.8L749.1,292.2L746.4,294.9L744.7,298.1L745.9,299.4L744.2,300.6L744.6,301.7L741.9,303.4L741.3,302.3L737.2,304.4L735.8,303.3L735.9,304.9L734.9,305.7L731.8,306.3L730.1,307.1L727.9,305.1L727.0,306.4L725.7,306.7L724.9,307.7L723.0,307.8L721.2,306.1L720.2,306.1L719.0,304.7L718.9,303.2L718.0,302.2L718.4,301.2L716.0,300.7L715.0,299.4L713.3,298.5L712.5,296.2L710.0,293.3L710.6,292.3L709.8,292.0L709.3,290.6L707.8,289.2L708.2,287.2L708.9,286.7Z M569.8,243.7L570.5,243.4L570.6,240.9L570.0,240.3L570.7,239.1L574.5,237.6L574.9,234.4L576.9,232.4L577.2,228.8L574.6,225.8L575.7,222.1L577.5,222.0L578.8,221.3L581.9,221.1L582.8,220.1L584.8,219.9L586.7,218.4L587.2,215.3L589.3,213.8L589.9,209.6L589.6,207.3L586.2,205.3L585.3,203.9L585.5,202.8L583.2,200.5L582.0,199.9L582.0,199.0L597.3,199.1L611.2,199.4L622.1,199.3L626.7,199.4L626.1,203.4L626.7,205.4L628.6,208.2L629.7,213.1L631.0,216.0L631.0,220.6L631.0,242.0L630.9,251.7L630.9,264.8L630.2,265.0L629.7,266.6L630.2,267.4L629.2,268.5L629.3,269.7L630.2,270.7L630.2,272.1L631.2,272.8L630.6,274.7L631.5,277.1L629.9,278.6L629.0,280.6L629.0,281.7L627.6,282.4L627.8,283.1L625.8,286.4L624.7,286.0L623.9,288.0L624.7,289.0L623.0,290.9L623.4,292.4L622.0,293.9L623.1,295.9L622.6,297.1L621.0,298.6L621.4,300.4L622.6,301.6L622.2,302.4L618.8,302.9L617.8,303.8L617.0,303.4L616.0,304.1L615.4,306.2L616.9,308.8L616.3,310.3L614.7,310.3L613.7,309.4L611.7,308.7L609.1,307.3L608.1,307.3L606.6,308.3L605.0,311.2L605.8,312.1L605.1,312.4L603.7,310.5L603.2,311.9L601.9,311.0L601.9,310.1L599.7,306.1L601.0,305.0L601.2,303.9L599.7,301.2L600.3,300.2L599.7,298.1L597.3,296.9L597.5,296.2L594.5,293.8L592.8,294.3L592.1,292.7L590.1,290.7L588.7,290.1L586.5,287.7L586.3,285.1L587.6,283.1L588.0,281.4L589.2,279.7L588.8,277.5L590.2,275.9L590.3,274.9L588.1,273.5L585.7,272.6L584.6,272.7L584.1,273.8L582.9,274.5L581.7,273.3L580.9,270.7L581.4,270.1L580.8,267.2L579.6,265.6L576.3,263.2L574.8,260.9L574.0,260.8L570.5,257.0L570.7,255.9L569.4,254.1L569.8,253.0L568.6,250.7L568.4,246.6Z M292.7,311.8L326.8,311.8L326.9,311.9L354.3,311.9L366.6,311.9L387.7,311.8L387.6,321.6L387.0,321.6L387.1,325.1L387.0,345.8L387.0,370.7L386.7,387.8L386.7,407.2L376.4,407.2L330.8,407.2L330.4,409.1L331.0,410.5L332.2,411.2L305.8,411.2L305.8,419.5L292.6,419.5L292.6,369.7L292.7,359.8Z M519.5,321.6L570.0,321.6L589.7,321.6L589.8,323.1L591.1,323.8L590.8,326.0L587.1,329.6L586.2,331.4L596.3,331.3L597.5,332.8L597.5,333.5L596.2,333.1L595.7,334.0L596.8,334.6L595.0,336.0L593.6,336.0L592.7,336.7L593.1,337.8L594.4,338.3L592.9,339.0L593.3,340.8L592.1,339.8L591.3,340.9L591.8,341.6L591.2,342.9L590.7,341.4L589.4,342.5L590.9,343.3L589.7,345.7L590.9,346.3L590.2,347.0L591.1,348.0L589.3,348.5L588.8,350.1L587.4,349.9L587.2,350.7L588.2,352.4L585.4,353.8L584.6,352.8L585.0,355.6L584.2,355.9L584.0,354.4L583.2,355.7L584.6,356.4L584.0,357.7L582.8,356.9L583.6,359.4L582.8,360.3L583.2,361.6L581.8,362.6L580.3,362.7L580.5,363.9L579.0,364.6L579.3,366.2L578.7,367.1L577.1,367.1L578.4,368.3L577.9,369.3L576.6,369.4L575.0,370.5L576.2,371.1L575.2,372.3L576.5,373.6L576.0,374.2L574.2,373.9L574.1,374.9L575.4,375.1L575.2,376.2L573.9,375.3L572.8,376.0L574.3,377.3L572.7,378.0L573.5,379.0L572.7,380.3L574.4,379.7L573.6,381.4L574.6,381.2L574.2,383.0L574.9,384.4L574.9,386.0L573.5,385.9L573.2,386.5L574.5,387.5L573.8,388.5L561.4,388.4L543.8,388.2L528.6,388.2L528.5,378.2L528.5,378.2L527.3,378.2L526.3,377.4L525.7,378.2L524.5,377.7L523.6,378.4L521.6,376.6L522.0,359.3L522.4,343.1Z M142.4,379.6L146.1,380.9L147.0,382.3L146.7,383.0L144.5,382.4L144.2,380.7ZM142.3,388.0L142.8,387.9L144.1,389.8L146.3,391.9L145.2,392.2L144.2,391.5ZM135.2,379.3L135.2,379.3L135.2,379.3ZM129.4,369.2L129.4,369.2L129.4,369.2ZM127.0,383.3L127.8,383.2L129.4,384.3L127.5,384.2ZM121.7,368.3L124.3,368.6L127.3,369.8L124.8,370.5L122.4,370.1ZM116.5,369.7L119.8,369.0L120.8,370.8L118.5,371.7ZM113.4,369.0L114.6,368.3L115.7,369.3ZM54.2,209.8L62.9,209.9L70.9,209.6L72.5,209.8L81.1,209.6L104.1,210.0L120.4,209.9L120.4,209.9L120.4,236.0L120.5,250.0L120.3,267.3L120.4,271.9L128.4,278.9L138.4,287.9L154.5,302.6L161.7,309.3L179.3,325.9L192.6,338.6L204.8,350.6L204.7,353.0L206.0,355.1L207.3,356.1L209.4,361.1L212.0,363.1L212.6,364.8L207.9,368.1L207.9,369.2L206.3,371.1L206.8,372.3L206.4,373.2L206.9,375.5L206.5,375.7L206.0,378.6L204.4,380.8L203.3,381.0L203.3,382.8L204.1,383.5L203.6,386.9L204.4,388.0L206.6,388.0L207.5,390.2L207.4,391.5L206.5,393.1L203.4,393.8L180.0,395.9L165.6,397.3L165.5,395.7L164.5,394.4L163.7,394.8L163.7,390.9L162.4,386.3L159.7,382.3L157.7,380.5L156.3,379.9L155.3,378.4L153.0,377.2L150.5,374.8L149.1,374.2L147.8,375.3L145.4,374.6L145.7,372.7L144.3,369.8L143.3,369.0L140.1,369.1L139.2,369.7L132.7,366.9L131.8,364.6L128.9,362.6L127.4,361.9L124.7,362.2L122.4,361.9L120.3,361.0L118.2,360.7L113.0,361.2L112.2,359.6L110.3,358.7L111.0,356.3L110.4,355.3L110.8,353.4L109.9,352.5L110.4,350.6L110.4,348.3L109.4,347.3L108.5,347.6L106.3,345.9L106.9,343.7L106.2,342.0L104.6,341.8L102.1,338.4L100.7,338.0L99.8,336.9L99.5,335.5L97.4,333.6L96.8,331.3L95.7,330.8L94.8,329.1L93.4,327.5L90.9,325.7L89.9,322.0L90.0,318.9L91.0,319.5L91.9,318.0L92.3,315.6L91.1,313.1L89.9,312.2L89.4,312.7L87.3,312.6L85.7,311.5L82.6,307.9L82.7,304.7L81.9,302.3L80.9,301.5L81.2,298.6L80.9,296.3L82.6,295.7L83.3,297.6L82.8,297.8L83.3,300.1L84.8,300.5L87.6,302.8L86.3,298.4L85.0,296.7L83.8,296.3L84.3,295.0L83.9,293.8L83.0,293.8L82.2,292.7L83.2,291.7L84.8,291.1L84.3,289.8L82.8,289.1L81.3,289.7L81.1,291.3L81.9,292.2L81.0,293.4L81.5,295.3L80.7,295.6L78.7,293.9L77.9,294.1L76.1,292.0L74.2,291.3L73.1,291.9L74.0,288.9L73.8,286.9L71.2,282.9L68.1,280.6L66.0,277.6L63.0,274.8L61.6,272.8L62.4,270.7L60.7,266.4L60.3,264.5L61.2,260.5L60.9,258.4L60.1,256.8L59.9,254.9L56.7,251.0L55.8,249.4L54.6,248.8L51.8,246.1L51.8,243.8L51.1,242.5L52.4,238.8L54.7,234.1L55.8,230.2L55.1,229.6L55.0,227.8L55.9,226.0L56.6,221.6L56.3,219.4L55.0,215.3L53.5,214.4L54.1,213.1Z M819.1,259.1L819.2,259.5L819.1,259.1ZM815.5,257.2L816.6,255.7L818.8,254.8L821.4,255.5L819.9,257.9L818.3,259.2L819.1,260.4L818.7,262.5L819.9,264.4L821.0,265.5L821.8,267.7L821.6,270.5L822.9,272.1L823.0,273.4L824.9,275.8L826.4,275.8L826.9,278.7L827.1,282.9L817.0,282.7L815.5,258.7Z M794.6,273.2L795.8,272.0L797.9,274.0L795.9,276.1L795.9,274.5Z M490.6,177.7L542.3,177.7L573.0,177.7L573.2,181.0L574.7,181.7L575.5,183.1L573.6,185.7L574.1,190.5L574.8,191.0L575.5,194.1L577.4,195.3L581.0,196.3L582.0,199.0L582.0,199.9L583.2,200.5L585.5,202.8L585.3,203.9L586.2,205.3L589.6,207.3L589.9,209.6L589.3,213.8L587.2,215.3L586.7,218.4L584.8,219.9L582.8,220.1L581.9,221.1L578.8,221.3L577.5,222.0L575.7,222.1L574.6,225.8L577.2,228.8L576.9,232.4L574.9,234.4L574.5,237.6L570.7,239.1L570.0,240.3L570.6,240.9L570.5,243.4L569.8,243.7L568.1,243.0L568.1,242.0L565.6,240.1L564.9,238.8L559.2,239.1L539.5,239.5L519.9,239.7L501.5,239.4L501.1,237.9L499.5,236.6L500.4,235.3L500.2,233.8L500.7,232.9L499.9,230.9L499.6,227.5L498.9,226.7L498.9,224.9L499.6,224.2L498.9,223.2L498.8,221.1L497.7,220.9L496.3,219.7L495.9,218.0L496.4,216.2L496.1,215.2L496.7,214.0L495.2,211.8L495.7,210.4L493.5,208.8L493.5,207.3L492.3,206.3L492.7,204.9L491.3,202.5L491.5,199.5L490.7,199.4L489.7,196.4L487.9,194.8L487.8,193.4L489.2,191.7L489.9,189.4L489.7,187.4L490.9,185.9L490.3,183.7L488.9,183.7L488.7,182.1L489.4,182.0L489.5,180.0L488.3,178.8L488.4,177.7Z M605.8,312.1L605.0,311.2L606.6,308.3L608.1,307.3L609.1,307.3L611.7,308.7L613.7,309.4L614.7,310.3L616.3,310.3L616.9,308.8L615.4,306.2L616.0,304.1L617.0,303.4L617.8,303.8L618.8,302.9L622.2,302.4L622.6,301.6L621.4,300.4L621.0,298.6L622.6,297.1L623.1,295.9L624.4,296.5L625.1,295.7L624.5,294.1L625.6,293.5L626.2,294.4L628.6,293.9L628.7,295.3L630.0,294.7L629.4,293.6L629.8,292.5L631.4,293.8L633.3,293.2L635.8,295.0L636.8,295.2L637.2,296.2L638.3,295.7L638.5,294.1L642.5,292.2L643.2,293.7L644.9,293.8L647.0,293.4L646.8,291.1L647.9,290.9L649.9,288.9L650.7,289.2L650.8,290.8L652.3,291.8L654.5,292.1L656.2,291.4L656.4,288.7L657.7,286.4L659.0,286.6L660.1,285.9L661.2,283.2L662.9,282.6L664.2,281.1L663.6,277.7L664.3,277.2L666.6,277.2L668.3,278.1L671.0,276.3L673.7,276.1L674.1,274.5L672.9,273.9L673.4,272.6L672.3,270.9L673.5,269.7L674.5,268.9L677.0,270.4L679.5,269.5L679.7,270.7L681.3,271.3L682.8,274.2L683.1,275.8L685.3,276.5L687.2,276.2L688.8,277.0L690.1,278.9L691.7,279.4L692.5,278.2L694.0,277.9L696.4,278.8L697.3,279.9L699.7,279.5L701.8,277.3L703.8,276.8L704.6,280.0L706.5,280.8L708.4,282.7L708.5,283.5L708.9,286.7L708.2,287.2L707.8,289.2L709.3,290.6L709.8,292.0L710.6,292.3L710.0,293.3L712.5,296.2L713.3,298.5L715.0,299.4L716.0,300.7L718.4,301.2L712.3,306.5L710.2,307.2L706.5,309.5L706.5,310.9L704.2,312.2L704.1,314.0L701.0,314.6L700.0,316.8L699.1,316.9L695.0,318.4L693.8,318.3L691.5,319.6L691.3,320.0L677.9,319.7L666.1,319.1L663.0,319.3L657.6,319.2L649.8,318.7L645.7,318.6L637.5,318.8L625.8,319.0L625.9,318.4L622.5,318.1L623.0,320.6L622.7,321.6L603.1,321.4L601.2,321.6L602.0,319.2L602.7,319.0L603.7,320.3L604.5,320.0L605.3,318.3L604.9,316.6L606.0,316.2L605.0,315.6L606.3,312.5ZM600.2,321.6L599.3,321.6L599.0,320.1L600.2,320.2Z M812.3,292.9L811.5,292.9L811.9,291.2ZM810.7,289.5L810.8,288.1L811.8,288.4L812.1,290.4ZM806.0,276.5L806.0,276.5L806.0,276.5ZM757.6,257.2L774.8,257.2L788.1,257.2L815.5,257.2L815.5,258.7L817.0,282.7L827.1,282.9L825.2,289.4L824.1,291.4L818.1,292.1L817.4,292.9L815.6,292.5L813.9,293.6L814.2,290.7L815.0,289.3L813.1,289.7L813.1,288.2L814.6,287.8L813.5,286.7L814.4,284.8L813.5,285.2L813.1,287.0L812.1,285.7L812.2,284.5L811.1,286.9L809.6,287.1L806.9,282.1L808.1,281.9L807.4,280.4L808.5,279.4L811.8,280.6L810.9,279.4L809.1,278.5L808.2,277.2L806.9,276.4L808.0,274.9L809.2,275.5L808.6,273.0L806.3,274.9L806.5,273.1L807.4,271.3L807.8,272.2L809.1,271.6L807.8,268.9L809.3,265.4L811.6,264.0L812.7,260.5L810.7,260.9L810.6,263.0L807.8,265.8L807.4,264.1L806.6,263.9L806.8,266.6L805.2,267.9L803.2,266.5L803.9,268.3L805.5,269.2L805.3,270.8L806.0,271.6L804.7,272.4L805.1,273.1L804.1,274.6L804.4,275.5L803.4,276.6L803.9,277.4L804.1,281.2L806.1,284.7L805.4,286.1L807.2,289.2L807.2,291.2L805.3,288.7L804.7,289.9L802.9,287.7L799.7,287.2L799.2,285.0L798.5,285.3L799.0,286.9L796.9,285.0L796.2,283.0L793.2,284.8L792.5,284.3L792.2,282.3L792.8,280.9L794.5,279.2L794.4,278.4L795.8,277.5L795.9,276.1L797.9,274.0L795.8,272.0L794.6,273.2L792.5,272.1L792.6,271.3L791.1,270.6L789.2,270.3L788.3,269.4L789.3,267.2L787.6,265.7L785.2,265.3L784.3,262.5L782.5,260.5L783.4,259.6L780.6,259.6L779.2,258.1L777.9,257.7L776.3,259.2L775.2,258.8L773.4,261.4L770.5,261.0L768.5,259.2L765.7,262.9L763.5,262.3L762.8,263.6L761.1,264.6L757.4,267.7Z M676.2,125.4L677.1,126.3L680.8,127.5L679.9,128.6L678.6,128.3ZM664.5,127.3L664.5,127.3L664.5,127.3ZM662.5,126.2L662.5,126.2L662.5,126.2ZM660.8,131.4L661.8,127.7L662.8,127.9L663.0,131.1L661.9,132.0ZM659.7,128.3L659.7,128.3L659.7,128.3ZM656.8,134.9L656.8,134.9L656.8,134.9ZM653.9,141.6L655.4,141.7L655.0,143.5ZM652.5,144.5L652.5,144.5L652.5,144.5ZM644.1,131.0L644.1,131.0L644.1,131.0ZM642.0,214.9L645.3,212.1L647.3,207.3L649.3,204.7L650.9,200.4L651.7,194.5L651.4,188.2L650.7,185.9L648.8,181.7L646.5,174.2L648.1,171.4L647.7,167.4L646.9,165.8L648.2,164.2L650.8,159.2L651.5,154.4L651.0,151.6L653.6,150.5L653.8,147.3L655.1,147.0L656.0,145.5L658.0,145.9L661.0,140.6L662.4,140.8L661.1,142.2L661.8,143.8L660.4,148.1L661.3,150.0L662.4,147.2L662.5,145.3L663.3,145.0L662.8,148.0L661.6,150.1L662.4,150.3L664.5,146.3L665.0,142.2L664.6,140.5L664.9,138.7L665.9,137.8L668.5,136.5L669.9,136.6L672.0,136.0L672.0,135.4L670.1,135.0L669.3,134.1L668.8,131.9L669.7,130.5L671.6,128.9L670.5,127.7L673.9,128.0L674.3,127.1L679.2,130.2L681.3,129.9L683.1,130.6L685.5,133.8L687.9,133.9L689.5,135.4L690.8,135.5L692.7,136.9L694.4,136.8L696.2,138.8L695.7,139.3L697.1,141.7L697.9,144.3L695.9,143.2L695.0,144.0L695.3,146.1L697.1,147.4L697.9,151.1L697.2,153.7L697.0,159.4L695.5,160.8L693.7,161.4L693.0,165.6L691.5,166.0L691.5,166.9L689.1,167.1L687.9,169.1L687.1,172.2L687.9,173.9L691.4,175.7L693.6,173.2L694.7,172.7L694.4,171.8L695.4,169.3L695.6,170.3L697.0,169.1L698.0,167.4L701.2,166.7L701.7,165.8L703.5,165.3L706.3,167.0L707.8,170.0L708.5,175.7L709.4,179.1L709.6,183.6L710.2,186.3L711.2,188.3L710.3,192.7L710.5,193.6L709.6,196.9L708.6,198.1L707.1,198.8L706.7,197.1L708.1,195.7L706.4,195.3L705.0,196.5L705.6,197.8L704.1,198.7L703.8,201.6L702.8,202.6L701.1,203.1L700.1,204.8L700.1,208.0L699.2,208.4L699.2,209.7L695.2,213.9L695.0,215.4L673.8,216.2L673.8,214.9L658.3,214.9ZM603.8,79.1L605.0,77.7L610.4,74.9L613.2,72.9L616.9,71.7L613.0,76.0L610.2,77.0L607.8,78.4L609.2,78.8L605.9,80.2ZM585.6,109.5L589.5,107.6L591.6,107.0L595.4,103.7L598.1,103.7L601.0,103.2L603.9,101.7L605.6,99.9L608.5,99.3L609.3,97.5L613.2,94.3L614.5,93.8L617.4,90.6L620.7,88.9L623.9,88.4L626.7,88.5L628.0,89.3L628.0,90.2L624.2,90.5L624.5,91.5L622.7,92.6L621.0,94.5L619.9,94.9L619.6,96.4L618.1,97.7L617.8,99.1L616.6,100.1L615.9,103.4L616.4,105.0L617.5,103.3L619.7,101.1L621.3,100.3L619.1,103.3L620.8,101.7L622.2,101.3L626.4,102.0L627.8,103.5L628.7,103.3L629.9,104.5L630.1,105.7L632.2,108.6L633.2,108.8L633.1,110.4L635.2,111.2L637.6,111.0L639.6,110.4L640.4,111.8L642.2,112.4L642.6,111.5L644.0,112.4L643.8,110.0L644.8,109.6L644.8,111.3L645.8,111.8L647.2,110.4L652.8,107.0L653.4,107.4L656.9,106.6L659.5,106.9L663.1,106.8L666.6,105.2L671.5,104.8L670.3,106.4L670.3,111.4L671.7,111.2L673.9,112.2L676.5,111.3L677.1,112.9L678.9,112.5L679.5,111.2L681.8,111.1L682.9,110.2L684.7,110.9L684.1,112.8L684.6,117.0L683.0,117.1L682.5,118.3L684.5,118.2L686.0,119.4L685.3,120.1L686.6,121.6L688.4,122.5L690.1,121.9L689.2,120.0L693.0,120.3L693.8,122.1L694.7,122.7L693.3,124.3L691.8,123.6L690.1,123.9L688.3,123.1L686.2,123.3L684.6,122.8L681.3,123.3L680.5,123.9L677.6,121.6L676.1,121.1L675.7,122.9L674.8,123.6L675.4,125.7L673.4,125.2L670.5,122.1L667.6,121.3L665.7,120.4L662.6,120.2L660.3,123.1L656.7,123.1L656.3,124.2L653.8,123.1L651.9,123.2L649.9,124.5L649.3,127.1L646.8,128.0L645.1,130.0L645.3,131.2L643.7,129.8L645.1,127.3L645.8,127.3L646.7,125.7L645.8,124.6L644.8,126.1L642.7,125.6L642.8,126.6L641.8,128.6L640.1,129.2L639.0,126.0L638.4,126.4L638.3,128.9L636.6,130.0L635.1,132.5L634.1,135.3L629.6,142.0L630.0,142.6L628.9,142.4L627.6,140.4L629.1,137.2L628.3,136.1L627.4,137.0L625.9,137.2L625.9,137.2L625.7,135.1L626.8,133.6L627.1,131.4L626.3,130.0L627.0,129.7L625.5,127.9L624.1,127.8L623.6,127.0L622.4,127.3L621.4,126.4L622.3,125.4L622.0,124.1L619.7,123.2L618.9,123.4L615.6,121.9L613.9,122.6L611.9,121.7L611.2,122.0L606.4,119.2L590.2,114.7L588.7,110.9L586.6,110.1L586.6,110.1Z M615.5,440.0L615.5,440.0L615.5,440.0ZM611.4,439.4L612.3,439.2L614.3,439.9ZM608.0,440.0L608.0,440.0L608.0,440.0ZM605.3,439.6L605.3,439.6L605.3,439.6ZM573.8,388.5L574.5,387.5L573.2,386.5L573.5,385.9L574.9,386.0L574.9,384.4L574.2,383.0L574.6,381.2L573.6,381.4L574.4,379.7L572.7,380.3L573.5,379.0L572.7,378.0L574.3,377.3L572.8,376.0L573.9,375.3L575.2,376.2L575.4,375.1L574.1,374.9L574.2,373.9L576.0,374.2L576.5,373.6L575.2,372.3L576.2,371.1L575.0,370.5L576.6,369.4L577.9,369.3L578.4,368.3L577.1,367.1L578.7,367.1L579.3,366.2L579.0,364.6L580.5,363.9L580.3,362.7L581.8,362.6L583.2,361.6L582.8,360.3L583.6,359.4L582.8,356.9L584.0,357.7L584.6,356.4L583.2,355.7L584.0,354.4L584.2,355.9L585.0,355.6L584.6,352.8L585.4,353.8L588.2,352.4L587.2,350.7L600.2,350.8L620.4,350.7L622.0,352.7L619.9,371.8L618.1,389.9L617.8,393.3L616.1,409.2L617.0,428.1L617.3,437.2L616.1,438.1L613.1,437.3L612.1,437.7L609.5,436.7L606.5,437.2L603.2,438.4L602.9,437.1L602.1,437.5L602.7,438.4L601.2,439.3L600.8,440.5L599.5,440.6L598.1,439.8L597.9,437.7L597.1,435.7L595.1,433.6L594.4,431.9L596.0,426.5L596.0,425.6L566.4,425.7L567.5,424.4L566.6,423.6L567.1,422.5L566.3,420.7L568.3,420.5L568.4,419.9L567.3,418.3L567.8,417.7L568.5,418.9L569.0,418.4L568.2,416.0L570.0,415.2L568.7,414.9L568.5,413.8L570.1,414.2L570.1,412.6L572.3,411.6L570.7,411.5L571.0,410.0L572.2,410.0L573.5,408.7L573.4,407.9L574.9,407.3L575.6,404.9L573.8,404.7L573.9,403.5L575.8,402.7L576.6,403.2L576.7,401.7L577.8,400.9L576.5,400.6L576.5,398.8L574.6,398.4L574.8,397.4L576.0,398.2L575.1,396.9L576.4,395.8L574.5,396.3L574.0,395.3L575.5,393.7L573.8,393.2L574.1,391.5L575.3,390.7L574.9,388.9L574.3,390.0L573.0,390.1Z M182.6,52.5L195.8,52.5L208.9,52.5L219.6,52.6L230.3,52.5L261.9,52.6L274.9,52.5L318.4,51.7L361.8,52.5L371.2,52.5L371.3,67.4L371.3,123.6L371.3,144.7L371.1,144.8L342.9,144.8L341.6,144.9L323.5,144.8L322.7,144.8L292.4,144.8L291.8,144.6L266.5,144.9L261.1,144.7L261.2,156.4L260.0,156.0L258.3,153.9L258.4,153.1L255.9,150.2L253.7,153.7L254.5,154.9L250.8,154.5L249.0,155.6L248.3,154.4L244.5,155.4L241.7,154.3L240.7,155.0L240.1,157.0L238.8,156.3L233.9,156.2L232.9,159.0L230.4,156.9L230.4,155.3L229.2,153.7L229.7,152.8L228.4,149.8L226.6,148.7L225.1,149.5L223.3,147.8L222.7,145.9L223.5,145.7L223.4,143.4L221.4,141.9L221.1,140.5L219.7,139.1L218.9,137.4L219.0,136.1L218.2,134.6L218.5,133.1L217.4,133.1L217.8,131.3L215.0,129.0L212.6,132.3L210.8,132.6L210.7,133.7L209.3,134.5L207.5,132.2L206.1,132.2L205.9,130.5L206.9,128.9L205.9,127.4L206.9,125.7L208.3,125.7L208.3,122.8L207.2,122.3L207.5,120.1L206.7,118.5L207.7,118.4L207.3,116.3L208.1,115.8L208.1,113.5L208.9,112.3L209.7,108.4L209.1,107.1L207.4,108.0L205.1,107.8L205.0,106.2L203.8,105.5L202.7,106.5L202.7,105.0L200.8,103.9L199.9,102.7L200.1,101.3L197.9,99.0L195.9,96.3L194.3,95.1L193.9,93.6L190.8,92.5L190.4,91.4L187.7,89.7L189.0,88.8L188.0,87.1L188.2,85.7L187.6,83.3L186.1,82.0L185.6,80.3L184.8,79.8L182.6,76.8Z M883.0,144.5L883.1,143.2L884.1,141.9L884.9,139.3L886.3,138.0L887.2,139.2L888.8,139.3L889.5,137.9L890.3,152.4L891.2,176.2L891.6,176.6L891.0,180.3L891.5,181.3L893.8,183.7L893.5,185.7L895.5,187.2L893.7,191.2L892.4,190.9L890.3,191.5L889.8,192.7L887.9,193.0L888.0,194.1L886.2,195.0L867.9,194.3L867.0,193.6L866.4,191.7L866.9,189.3L868.1,188.3L868.2,182.9L868.9,181.7L868.6,180.6L869.1,178.1L869.1,176.1L870.0,175.5L870.3,173.4L871.9,171.8L872.2,169.8L873.2,168.5L873.2,166.9L874.6,164.8L874.0,162.7L874.6,159.8L878.0,159.0L878.3,158.0L879.7,157.8L881.8,155.8L882.2,153.0L881.0,150.4L883.1,146.7L882.3,145.0Z M874.5,225.5L874.5,225.5L874.5,225.5ZM872.9,228.8L872.9,228.8L872.9,228.8ZM871.7,227.0L871.7,227.0L871.7,227.0ZM842.5,237.9L842.8,239.0L840.2,241.1L839.6,241.1L840.5,238.5ZM806.3,169.5L806.3,169.5L806.3,169.5ZM805.1,169.2L805.1,169.2L805.1,169.2ZM753.0,204.1L757.9,201.1L759.5,199.4L762.7,198.1L764.3,195.2L767.4,193.1L766.1,189.4L764.8,188.8L764.9,187.1L763.9,186.8L764.4,185.4L763.9,182.8L770.8,180.8L773.1,180.4L779.1,180.4L785.3,181.5L788.1,183.4L790.3,182.5L794.7,182.3L797.2,182.7L801.2,181.1L802.3,179.6L805.6,177.2L808.5,177.1L809.1,174.4L808.6,171.1L807.5,170.3L808.1,169.4L809.0,169.8L810.2,169.0L810.0,168.2L806.3,166.1L806.4,164.6L807.3,162.4L809.6,161.6L809.6,160.7L813.6,158.7L815.0,157.3L815.9,155.5L820.0,151.3L823.1,148.4L826.9,146.3L828.4,145.1L830.6,144.4L833.2,144.8L841.4,145.0L854.0,144.5L854.1,146.6L853.4,148.4L854.2,149.5L853.3,152.8L854.8,157.1L854.1,158.7L854.5,160.8L853.2,162.7L852.5,165.8L853.5,169.5L853.2,170.7L853.9,171.8L853.0,173.6L852.6,175.7L854.6,175.0L855.5,176.5L855.4,182.9L855.0,190.7L854.8,192.7L855.2,193.9L851.4,208.0L851.7,208.8L850.7,224.6L851.8,226.4L848.0,228.7L849.0,231.1L847.5,232.6L847.1,235.1L848.1,233.5L851.5,232.5L851.7,231.9L855.8,232.8L857.2,231.5L862.9,231.5L865.1,231.2L867.6,229.7L869.5,227.9L871.4,227.5L869.9,228.6L871.0,229.9L872.6,229.7L873.5,231.0L876.7,229.1L877.1,229.7L868.9,233.6L861.5,236.4L858.5,237.7L856.1,238.5L854.2,238.4L850.6,239.5L847.2,239.3L844.6,240.3L843.4,239.6L842.9,237.2L844.2,234.5L845.1,230.9L837.7,226.4L832.7,223.3L832.0,221.8L829.6,221.6L826.7,218.1L827.2,217.9L827.1,215.0L826.2,213.2L823.8,212.6L823.4,210.8L822.3,209.8L806.7,209.8L800.4,209.8L780.8,209.8L753.1,209.8Z M706.3,218.2L706.3,218.2L706.3,218.2ZM704.6,217.3L705.0,215.6L705.6,216.3ZM673.8,216.2L695.0,215.4L696.3,216.4L697.0,216.1L699.1,217.6L701.1,218.3L703.2,220.1L704.7,218.5L708.2,221.9L710.3,222.8L712.6,221.8L717.7,220.0L719.8,220.7L722.0,220.6L723.6,219.5L726.6,216.7L729.7,214.9L733.5,212.9L735.2,212.6L741.1,210.3L741.1,238.3L739.3,238.8L738.8,239.7L740.0,241.9L739.9,244.9L737.7,249.9L737.4,253.3L735.7,256.5L736.3,257.3L735.5,259.2L734.6,259.4L730.9,262.9L730.3,263.9L727.5,264.9L726.2,263.7L724.8,265.0L724.7,266.4L722.9,266.3L721.7,268.2L721.9,269.9L720.8,270.2L721.6,271.5L721.3,273.4L720.8,272.9L719.6,274.4L718.8,272.0L717.4,271.3L715.6,273.9L715.6,275.1L714.4,276.0L715.2,279.5L713.3,280.4L712.8,283.0L709.5,283.8L708.5,283.5L708.4,282.7L706.5,280.8L704.6,280.0L703.8,276.8L701.8,277.3L699.7,279.5L697.3,279.9L696.4,278.8L694.0,277.9L692.5,278.2L691.7,279.4L690.1,278.9L688.8,277.0L687.2,276.2L685.3,276.5L683.1,275.8L682.8,274.2L681.3,271.3L679.7,270.7L679.5,269.5L677.0,270.4L674.5,268.9L673.5,269.7L673.6,253.0L673.8,245.3L673.8,220.6Z M64.6,116.4L65.8,116.3L66.5,118.2L67.4,119.0L68.9,119.0L71.5,118.1L74.8,120.4L76.2,123.2L76.5,126.6L77.0,128.3L77.0,130.1L78.8,131.1L83.0,131.9L84.8,132.6L87.4,131.7L90.4,130.1L91.9,128.9L93.1,129.2L96.3,128.5L98.4,129.3L99.4,129.0L101.3,129.8L101.8,131.2L103.7,130.2L106.3,130.4L106.9,129.7L111.6,128.3L112.8,129.2L117.1,128.5L117.7,127.7L120.9,126.3L125.6,125.6L127.2,124.0L128.5,124.5L132.1,123.7L134.1,123.8L136.3,122.3L145.5,122.3L168.9,122.4L169.8,124.5L171.3,126.5L172.4,126.4L174.0,127.3L176.0,131.3L174.7,133.4L172.7,137.8L171.8,141.6L170.0,144.3L170.2,146.3L168.7,149.5L166.9,150.4L165.1,155.3L164.1,156.2L163.8,158.1L164.6,159.4L164.2,160.5L164.9,161.1L166.0,160.7L166.9,161.8L168.0,161.6L169.1,162.9L168.0,164.9L168.6,166.3L167.2,171.0L167.2,209.8L142.4,209.9L140.9,210.0L120.4,209.9L120.4,209.9L120.4,209.9L104.1,210.0L81.1,209.6L72.5,209.8L70.9,209.6L62.9,209.9L54.2,209.8L52.2,207.8L51.9,206.0L51.1,204.5L50.7,200.5L51.4,197.8L51.0,195.8L49.4,194.2L48.8,191.9L50.3,188.5L51.5,182.7L51.2,181.9L52.6,180.1L53.5,177.7L54.4,174.1L55.2,168.8L55.7,160.8L56.3,157.1L56.6,152.3L56.3,149.8L57.9,141.5L58.0,137.3L58.5,130.0L57.8,127.7L58.1,126.0L57.6,123.5L58.5,122.8L58.6,120.7L57.5,117.0L59.0,118.5L61.4,117.5L62.0,118.0Z M596.3,331.3L597.1,329.7L598.4,329.0L598.3,328.0L596.7,326.8L598.6,326.7L599.4,326.0L598.2,324.7L599.5,324.7L599.3,321.6L600.2,321.6L601.2,321.6L603.1,321.4L622.7,321.6L623.0,320.6L622.5,318.1L625.9,318.4L625.8,319.0L637.5,318.8L645.7,318.6L649.8,318.7L657.6,319.2L663.0,319.3L666.1,319.1L677.9,319.7L691.3,320.0L691.5,319.6L698.1,319.7L718.9,319.7L719.1,319.3L723.4,319.4L723.0,319.9L722.7,322.2L721.9,323.5L722.5,324.7L721.1,324.4L719.3,325.4L717.4,328.8L715.8,329.3L714.5,328.2L711.5,329.6L710.7,331.2L709.1,332.2L708.2,331.9L708.0,330.0L706.1,331.2L705.0,332.9L704.1,332.3L703.7,333.8L702.3,335.7L700.9,335.4L699.3,336.6L698.4,336.6L697.2,338.0L695.1,338.9L694.5,339.7L690.0,339.8L688.3,340.7L686.1,342.8L686.1,344.8L684.9,345.9L681.9,346.3L681.4,350.9L661.2,350.9L657.7,350.9L641.4,350.8L632.4,350.6L620.4,350.5L620.4,350.7L600.2,350.8L587.2,350.7L587.4,349.9L588.8,350.1L589.3,348.5L591.1,348.0L590.2,347.0L590.9,346.3L589.7,345.7L590.9,343.3L589.4,342.5L590.7,341.4L591.2,342.9L591.8,341.6L591.3,340.9L592.1,339.8L593.3,340.8L592.9,339.0L594.4,338.3L593.1,337.8L592.7,336.7L593.6,336.0L595.0,336.0L596.8,334.6L595.7,334.0L596.2,333.1L597.5,333.5L597.5,332.8Z M214.1,210.0L217.6,210.1L232.3,209.8L243.5,209.9L261.2,209.8L261.2,219.0L261.2,230.9L273.9,230.9L292.6,230.8L292.6,241.2L292.6,273.8L292.4,277.5L292.4,286.4L292.7,288.7L292.7,311.8L270.3,311.8L269.9,311.7L255.4,311.7L213.9,311.8L213.9,283.9L214.0,278.4L214.0,249.3L214.1,230.8Z M812.2,295.0L812.2,295.0L812.2,295.0ZM817.4,292.9L818.1,292.1L824.1,291.4L822.4,294.4L820.8,294.7L819.1,297.2L818.5,300.4L817.2,302.6L817.6,302.9L815.9,305.7L814.8,308.4L813.8,309.4L812.9,309.4L811.8,306.7L813.4,299.9L815.3,296.7L817.2,294.2L816.0,293.9ZM812.3,292.9L811.5,292.9L812.3,292.9ZM718.4,301.2L718.0,302.2L718.9,303.2L719.0,304.7L720.2,306.1L721.2,306.1L723.0,307.8L724.9,307.7L725.7,306.7L727.0,306.4L727.9,305.1L730.1,307.1L731.8,306.3L734.9,305.7L735.9,304.9L735.8,303.3L737.2,304.4L741.3,302.3L741.9,303.4L744.6,301.7L744.2,300.6L745.9,299.4L744.7,298.1L746.4,294.9L749.1,292.2L750.5,289.8L750.6,288.4L752.6,286.6L752.3,285.8L754.2,283.3L754.1,282.2L754.8,280.1L756.6,280.9L757.6,282.8L760.2,283.7L761.7,282.1L762.6,279.7L763.6,278.7L763.7,277.5L765.1,274.9L767.1,276.6L768.2,274.4L769.5,273.8L774.4,268.5L774.1,266.6L775.4,264.8L775.3,262.4L783.5,269.2L785.2,265.3L787.6,265.7L789.3,267.2L788.3,269.4L789.2,270.3L791.1,270.6L792.6,271.3L792.5,272.1L794.6,273.2L795.9,274.5L795.9,276.1L795.8,277.5L794.4,278.4L794.5,279.2L792.6,280.1L791.6,282.1L791.5,284.3L792.3,285.3L796.3,284.4L796.0,285.7L797.1,287.7L799.0,288.7L802.5,289.0L804.1,291.4L808.5,294.2L807.4,295.7L807.5,298.0L806.5,299.7L804.8,298.6L804.2,299.1L803.0,296.6L800.8,295.2L798.8,292.5L798.0,292.5L799.5,294.0L800.7,296.0L802.5,297.0L803.7,299.6L805.4,299.7L807.5,300.7L808.3,304.1L807.9,305.7L805.7,303.8L805.2,304.5L806.7,306.4L804.5,306.8L806.0,307.3L805.9,308.6L806.7,308.4L808.0,310.1L807.2,311.5L805.5,312.4L804.9,311.2L802.5,309.4L802.0,307.4L800.3,308.0L798.5,306.6L797.3,307.2L799.6,307.9L801.0,308.8L801.4,307.8L801.9,311.0L803.2,311.3L804.6,312.7L804.6,313.8L807.2,314.0L807.0,312.6L808.0,312.5L810.7,313.6L812.3,313.3L812.7,315.5L814.3,320.6L799.5,320.6L797.8,320.7L776.9,320.7L772.7,320.8L757.0,320.8L744.7,320.7L738.3,320.4L736.2,320.4L723.0,319.9L723.4,319.4L719.1,319.3L718.9,319.7L698.1,319.7L691.5,319.6L693.8,318.3L695.0,318.4L699.1,316.9L700.0,316.8L701.0,314.6L704.1,314.0L704.2,312.2L706.5,310.9L706.5,309.5L710.2,307.2L712.3,306.5Z M80.7,91.2L81.5,87.7L82.1,89.9L83.1,90.5L81.8,91.5ZM78.7,63.3L78.7,63.3L78.7,63.3ZM77.6,58.9L77.9,58.6L79.4,61.0ZM77.3,62.4L77.3,62.4L77.3,62.4ZM76.9,70.9L79.4,66.5L79.8,67.9L81.0,69.2L79.2,69.3L77.8,71.2L79.1,71.0L79.7,71.8L80.5,75.8L80.7,73.9L83.1,75.4L83.5,77.3L82.2,78.2L81.6,76.5L79.4,75.5L79.3,72.5L78.3,72.6ZM73.6,57.4L76.1,58.6L74.4,58.3ZM72.1,59.7L72.1,59.7L72.1,59.7ZM71.8,52.4L71.8,52.4L71.8,52.4ZM70.0,62.1L71.6,61.5L73.5,62.9L72.5,61.5L74.6,59.3L77.3,60.6L76.2,61.6L76.9,62.9L76.1,64.7L76.4,66.1L75.2,66.4L74.4,65.3L72.6,65.4L70.9,64.1ZM69.5,59.9L69.5,59.9L69.5,59.9ZM167.1,52.5L167.0,67.5L166.9,73.3L167.0,88.4L167.0,113.1L166.6,114.0L168.2,116.6L168.9,118.6L167.9,120.4L168.9,122.4L145.5,122.3L136.3,122.3L134.1,123.8L132.1,123.7L128.5,124.5L127.2,124.0L125.6,125.6L120.9,126.3L117.7,127.7L117.1,128.5L112.8,129.2L111.6,128.3L106.9,129.7L106.3,130.4L103.7,130.2L101.8,131.2L101.3,129.8L99.4,129.0L98.4,129.3L96.3,128.5L93.1,129.2L91.9,128.9L90.4,130.1L87.4,131.7L84.8,132.6L83.0,131.9L78.8,131.1L77.0,130.1L77.0,128.3L76.5,126.6L76.2,123.2L74.8,120.4L71.5,118.1L68.9,119.0L67.4,119.0L66.5,118.2L65.8,116.3L64.6,116.4L62.7,116.3L61.9,115.5L59.5,116.9L57.2,115.2L56.3,116.3L56.7,111.1L56.4,107.9L57.2,109.1L57.3,113.7L58.2,113.7L57.7,111.0L58.4,111.8L59.2,110.1L58.1,107.8L60.2,106.0L57.2,106.2L56.0,105.3L55.4,101.7L56.8,101.9L59.7,100.7L57.2,99.7L57.1,98.8L55.1,99.0L55.6,100.8L54.9,100.4L54.6,96.4L53.8,92.9L52.5,91.3L51.7,85.6L50.9,82.3L49.8,80.5L47.7,78.8L46.0,72.4L46.7,71.2L47.2,68.4L46.1,67.5L47.2,67.0L51.3,69.4L53.6,70.0L57.9,72.3L62.2,72.3L63.9,73.0L66.4,72.9L67.0,73.5L69.4,73.5L71.0,72.5L72.6,74.3L74.6,74.1L75.2,76.3L76.0,75.1L75.2,73.6L77.0,72.8L76.4,74.2L76.9,75.2L78.0,73.8L78.4,75.8L77.6,76.0L78.7,78.4L77.2,80.9L76.7,83.2L75.9,83.3L76.2,80.7L74.9,83.8L73.7,85.2L71.6,88.9L70.8,91.3L72.8,91.4L74.7,90.5L74.8,89.7L72.4,91.0L71.4,90.4L73.8,85.9L75.5,84.4L77.2,83.9L78.2,80.9L80.0,79.6L79.5,77.6L80.7,78.4L81.5,82.2L80.3,82.2L81.0,83.3L81.2,85.8L80.4,87.4L80.7,88.6L80.0,91.9L80.4,92.9L79.5,94.5L78.0,92.9L78.4,91.0L77.2,93.1L78.9,94.8L77.8,96.5L75.4,93.2L76.8,96.7L78.3,97.1L79.7,95.4L80.7,92.8L82.0,93.3L82.3,92.1L83.9,91.4L83.3,88.4L82.3,86.1L83.6,85.4L82.2,84.2L83.1,82.6L82.8,80.7L83.6,79.8L84.1,77.4L85.4,76.9L85.3,75.5L83.2,73.3L83.3,71.8L81.9,70.7L81.4,71.8L83.1,74.9L80.9,73.1L80.7,70.3L82.6,70.3L83.1,69.4L81.0,67.6L80.3,65.8L78.7,66.5L77.9,64.5L79.3,63.9L80.5,65.2L81.6,65.1L81.0,62.9L82.3,62.0L81.1,60.7L81.3,58.5L77.8,57.5L77.7,56.2L76.5,55.0L76.1,53.5L77.0,52.4L87.4,52.4L92.9,52.6L101.1,52.5L109.1,52.5L148.8,52.5Z M640.0,136.9L640.3,135.4L642.0,135.7L640.7,138.2ZM633.4,140.3L633.4,140.3L633.4,140.3ZM584.8,99.4L585.2,97.8L585.6,99.2ZM583.9,102.3L583.9,102.3L583.9,102.3ZM581.8,101.2L583.8,100.2L583.5,101.4ZM580.1,103.2L580.1,103.2L580.1,103.2ZM580.5,100.3L580.5,100.3L580.5,100.3ZM579.9,98.9L581.9,98.2L583.4,99.5L581.5,100.7ZM579.6,104.4L582.4,102.4L583.2,103.0L581.5,103.7L581.8,104.4L579.7,105.2ZM576.6,99.8L576.6,99.8L576.6,99.8ZM560.4,106.2L561.6,106.8L563.5,106.6L567.3,105.1L568.3,105.1L574.2,102.4L575.6,102.2L576.8,100.8L578.9,100.5L580.3,102.1L578.2,105.1L578.7,106.5L577.1,108.7L577.9,109.1L580.2,107.6L580.5,106.6L582.9,108.7L585.6,109.5L586.6,110.1L586.6,110.1L588.7,110.9L590.2,114.7L606.4,119.2L611.2,122.0L611.9,121.7L613.9,122.6L615.6,121.9L618.9,123.4L619.7,123.2L622.0,124.1L622.3,125.4L621.4,126.4L622.4,127.3L623.6,127.0L624.1,127.8L625.5,127.9L627.0,129.7L626.3,130.0L627.1,131.4L626.8,133.6L625.7,135.1L625.9,137.2L625.9,137.2L627.4,137.0L628.3,136.1L629.1,137.2L627.6,140.4L628.9,142.4L630.0,142.6L629.3,145.3L627.3,145.5L626.1,146.3L626.2,147.2L623.8,151.0L622.9,154.4L624.0,155.2L627.1,152.8L627.9,150.9L629.7,148.4L632.9,146.9L633.6,145.0L635.1,142.9L635.5,141.0L637.4,140.5L638.4,138.2L639.6,138.3L639.5,140.0L638.6,140.1L638.5,142.8L637.4,143.5L636.3,145.5L636.1,147.5L635.0,148.2L633.9,151.0L631.9,154.7L630.7,159.8L631.1,162.9L629.1,164.5L627.7,169.4L628.3,171.9L628.2,173.8L627.0,176.0L626.6,178.5L625.5,180.5L624.9,183.4L625.6,187.1L625.2,188.2L626.0,189.3L626.3,192.0L627.2,193.1L626.4,196.7L626.7,199.4L622.1,199.3L611.2,199.4L597.3,199.1L582.0,199.0L581.0,196.3L577.4,195.3L575.5,194.1L574.8,191.0L574.1,190.5L573.6,185.7L575.5,183.1L574.7,181.7L573.2,181.0L573.0,177.7L572.1,173.9L572.5,171.8L572.0,170.4L569.5,166.8L567.3,166.2L565.1,164.0L562.6,162.4L561.9,159.5L559.8,158.0L557.0,157.0L555.6,154.8L552.1,154.4L551.6,153.5L548.0,149.9L548.6,148.4L548.6,144.1L548.0,143.5L548.9,142.4L548.7,138.3L550.5,135.9L550.5,134.9L548.5,132.1L546.7,131.8L547.1,128.6L548.3,127.7L549.4,124.8L550.6,123.9L553.2,122.9L553.8,121.8L555.1,122.0L556.0,120.6L556.0,107.2L557.3,107.5L557.4,106.3L559.3,105.3Z M371.2,188.5L405.8,188.5L409.3,188.6L433.0,188.5L458.5,188.5L459.0,189.6L464.3,192.3L466.0,193.6L467.8,192.9L468.7,191.3L471.3,191.9L472.3,191.6L475.1,191.8L477.2,191.3L478.6,191.8L480.0,193.4L482.4,193.6L485.1,194.8L485.2,195.6L487.0,195.9L486.6,196.9L488.1,199.1L490.7,199.4L491.5,199.5L491.3,202.5L492.7,204.9L492.3,206.3L493.5,207.3L493.5,208.8L495.7,210.4L495.2,211.8L496.7,214.0L496.1,215.2L496.4,216.2L495.9,218.0L496.3,219.7L497.7,220.9L498.8,221.1L498.9,223.2L499.6,224.2L498.9,224.9L498.9,226.7L499.6,227.5L499.9,230.9L500.7,232.9L500.2,233.8L500.4,235.3L499.5,236.6L501.1,237.9L501.5,239.4L501.4,240.5L502.5,240.6L502.5,241.8L503.8,245.0L505.9,246.4L506.0,247.8L507.3,249.1L506.9,250.5L508.6,251.5L462.4,251.4L437.8,251.5L402.6,251.4L402.6,230.8L371.2,230.8Z M700.4,350.6L705.6,349.0L706.0,349.3L709.2,347.6L713.3,346.8L729.9,347.6L733.0,347.8L733.0,349.8L734.6,348.6L737.0,351.9L736.8,354.1L754.5,354.4L772.3,372.5L769.5,373.5L766.0,376.5L763.7,379.5L762.9,381.0L762.2,383.8L762.4,384.7L761.2,386.2L759.9,386.9L759.4,388.4L757.4,388.5L756.8,387.9L755.4,389.5L756.0,390.3L754.1,391.4L753.6,392.2L751.7,393.2L751.1,394.5L749.3,396.0L747.4,396.2L744.1,398.3L741.7,398.6L742.5,400.0L742.2,401.2L739.3,402.5L738.1,401.2L737.4,402.0L738.8,403.2L738.0,404.2L736.1,405.2L735.4,406.6L733.6,405.4L731.8,405.1L731.1,402.6L731.7,401.9L730.3,399.1L730.5,398.6L729.2,396.9L727.1,395.7L726.9,391.6L725.6,389.5L725.9,388.4L723.9,386.8L721.9,385.9L721.6,384.5L718.8,382.1L719.2,380.3L717.2,378.0L714.8,376.7L714.0,374.4L712.4,372.8L709.1,370.8L708.5,369.1L706.6,366.9L706.2,364.9L704.7,362.8L704.1,360.7L702.1,360.7L700.8,359.9L699.5,358.2L698.5,358.1L696.8,356.7L697.1,354.7L698.5,352.9L700.3,351.8Z M168.9,122.4L167.9,120.4L168.9,118.6L168.2,116.6L166.6,114.0L167.0,113.1L167.0,88.4L166.9,73.3L167.0,67.5L167.1,52.5L182.6,52.5L182.6,76.8L184.8,79.8L185.6,80.3L186.1,82.0L187.6,83.3L188.2,85.7L188.0,87.1L189.0,88.8L187.7,89.7L190.4,91.4L190.8,92.5L193.9,93.6L194.3,95.1L195.9,96.3L197.9,99.0L200.1,101.3L199.9,102.7L200.8,103.9L202.7,105.0L202.7,106.5L203.8,105.5L205.0,106.2L205.1,107.8L207.4,108.0L209.1,107.1L209.7,108.4L208.9,112.3L208.1,113.5L208.1,115.8L207.3,116.3L207.7,118.4L206.7,118.5L207.5,120.1L207.2,122.3L208.3,122.8L208.3,125.7L206.9,125.7L205.9,127.4L206.9,128.9L205.9,130.5L206.1,132.2L207.5,132.2L209.3,134.5L210.7,133.7L210.8,132.6L212.6,132.3L215.0,129.0L217.8,131.3L217.4,133.1L218.5,133.1L218.2,134.6L219.0,136.1L218.9,137.4L219.7,139.1L221.1,140.5L221.4,141.9L223.4,143.4L223.5,145.7L222.7,145.9L223.3,147.8L225.1,149.5L226.6,148.7L228.4,149.8L229.7,152.8L229.2,153.7L230.4,155.3L230.4,156.9L232.9,159.0L233.9,156.2L238.8,156.3L240.1,157.0L240.7,155.0L241.7,154.3L244.5,155.4L248.3,154.4L249.0,155.6L250.8,154.5L254.5,154.9L253.7,153.7L255.9,150.2L258.4,153.1L258.3,153.9L260.0,156.0L261.2,156.4L261.2,174.2L261.2,194.4L261.2,209.8L243.5,209.9L232.3,209.8L217.6,210.1L214.1,210.0L198.5,209.9L177.5,209.9L167.2,209.8L167.2,171.0L168.6,166.3L168.0,164.9L169.1,162.9L168.0,161.6L166.9,161.8L166.0,160.7L164.9,161.1L164.2,160.5L164.6,159.4L163.8,158.1L164.1,156.2L165.1,155.3L166.9,150.4L168.7,149.5L170.2,146.3L170.0,144.3L171.8,141.6L172.7,137.8L174.7,133.4L176.0,131.3L174.0,127.3L172.4,126.4L171.3,126.5L169.8,124.5Z M120.4,209.9L120.4,209.9L140.9,210.0L142.4,209.9L167.2,209.8L177.5,209.9L198.5,209.9L214.1,210.0L214.1,230.8L214.0,249.3L214.0,278.4L213.9,283.9L213.9,311.8L214.0,327.6L212.4,330.9L211.0,331.1L209.8,330.2L208.9,328.5L206.8,328.8L205.8,328.4L202.9,329.6L203.1,331.6L204.3,333.8L203.6,335.1L203.9,338.1L204.4,338.7L204.3,342.0L205.3,343.8L205.8,348.0L204.8,350.6L192.6,338.6L179.3,325.9L161.7,309.3L154.5,302.6L138.4,287.9L128.4,278.9L120.4,271.9L120.3,267.3L120.5,250.0L120.4,236.0Z M854.0,144.5L864.5,144.4L870.3,144.7L883.0,144.5L882.3,145.0L883.1,146.7L881.0,150.4L882.2,153.0L881.8,155.8L879.7,157.8L878.3,158.0L878.0,159.0L874.6,159.8L874.0,162.7L874.6,164.8L873.2,166.9L873.2,168.5L872.2,169.8L871.9,171.8L870.3,173.4L870.0,175.5L869.1,176.1L869.1,178.1L868.6,180.6L868.9,181.7L868.2,182.9L868.1,188.3L866.9,189.3L866.4,191.7L867.0,193.6L867.9,194.3L855.2,193.9L854.8,192.7L855.0,190.7L855.4,182.9L855.5,176.5L854.6,175.0L852.6,175.7L853.0,173.6L853.9,171.8L853.2,170.7L853.5,169.5L852.5,165.8L853.2,162.7L854.5,160.8L854.1,158.7L854.8,157.1L853.3,152.8L854.2,149.5L853.4,148.4L854.1,146.6Z M609.7,442.9L610.7,445.1L610.0,448.3L610.4,444.6ZM602.4,442.8L604.9,441.0L604.2,442.2L605.1,443.1ZM598.0,452.3L598.0,452.3L598.0,452.3ZM586.2,460.0L586.2,460.0L586.2,460.0ZM583.3,460.3L583.3,460.3L583.3,460.3ZM580.3,461.0L580.3,461.0L580.3,461.0ZM560.4,451.3L561.8,450.6L563.0,450.7L565.2,451.9L563.5,453.4L560.2,451.6ZM528.6,388.2L543.8,388.2L561.4,388.4L573.8,388.5L573.0,390.1L574.3,390.0L574.9,388.9L575.3,390.7L574.1,391.5L573.8,393.2L575.5,393.7L574.0,395.3L574.5,396.3L576.4,395.8L575.1,396.9L576.0,398.2L574.8,397.4L574.6,398.4L576.5,398.8L576.5,400.6L577.8,400.9L576.7,401.7L576.6,403.2L575.8,402.7L573.9,403.5L573.8,404.7L575.6,404.9L574.9,407.3L573.4,407.9L573.5,408.7L572.2,410.0L571.0,410.0L570.7,411.5L572.3,411.6L570.1,412.6L570.1,414.2L568.5,413.8L568.7,414.9L570.0,415.2L568.2,416.0L569.0,418.4L568.5,418.9L567.8,417.7L567.3,418.3L568.4,419.9L568.3,420.5L566.3,420.7L567.1,422.5L566.6,423.6L567.5,424.4L566.4,425.7L596.0,425.6L596.0,426.5L594.4,431.9L595.1,433.6L597.1,435.7L597.9,437.7L598.1,439.8L599.5,440.6L598.1,441.1L596.4,442.8L596.6,443.4L595.0,443.1L594.6,444.9L596.4,444.7L596.2,445.6L597.5,446.4L598.5,445.8L598.7,444.0L600.2,442.5L602.0,443.2L601.0,443.8L602.0,445.5L602.9,445.3L603.5,444.0L604.2,445.3L602.8,445.9L603.8,446.4L602.1,446.7L603.0,448.3L601.7,447.7L601.1,448.6L601.0,450.1L599.5,448.9L599.4,450.3L597.3,450.4L598.4,451.5L597.1,451.8L597.7,452.9L598.9,453.1L599.8,455.0L602.9,455.0L604.1,456.4L604.7,455.7L606.0,457.4L606.4,459.0L607.2,459.5L606.1,460.0L605.6,462.1L604.4,461.6L603.8,460.5L601.2,463.2L602.9,460.7L603.4,458.7L601.7,459.7L600.2,458.1L598.3,457.4L597.7,456.7L594.6,456.2L593.9,456.4L591.2,458.7L588.6,460.4L588.0,458.7L586.7,456.8L585.8,457.8L585.3,455.7L584.6,456.7L583.0,456.4L583.2,457.7L582.6,457.7L581.2,459.7L579.7,460.0L579.3,461.2L577.0,458.7L574.9,458.6L572.0,457.5L571.1,456.6L572.2,455.5L573.6,457.2L574.5,457.4L574.3,455.8L572.3,454.1L571.1,454.9L571.3,453.3L570.8,452.7L569.1,453.5L568.0,452.4L567.7,450.6L566.2,450.5L566.6,448.7L564.8,448.5L562.9,449.2L562.5,448.3L563.4,447.7L562.4,446.9L558.9,448.6L557.5,448.4L559.0,450.9L560.1,450.6L560.0,451.4L558.2,451.5L555.6,452.4L551.0,451.4L549.0,450.8L545.8,449.2L542.2,448.1L537.5,448.1L533.2,448.7L531.8,449.5L530.4,447.2L531.4,446.5L532.5,444.1L533.9,442.7L534.1,441.3L533.6,440.1L533.8,438.7L532.9,437.8L534.0,435.9L533.5,433.5L534.3,433.0L535.2,430.4L536.2,428.9L536.0,427.9L536.7,426.9L536.0,426.1L536.8,425.2L536.2,423.9L536.6,422.3L535.5,422.5L535.2,420.7L534.1,420.0L534.5,419.1L531.7,414.6L532.3,412.8L532.0,411.4L530.6,409.2L528.6,407.4Z M887.7,216.7L888.8,217.0L888.9,220.4L887.8,221.2L887.6,218.2L887.0,217.8L887.1,220.7L885.4,220.4L886.8,217.5ZM885.1,217.0L885.1,217.0L885.1,217.0ZM884.5,221.2L884.5,221.2L884.5,221.2ZM881.2,227.5L881.8,226.0L882.2,227.6ZM877.3,224.1L877.6,222.2L878.3,222.1L878.4,215.6L878.3,209.6L884.8,209.4L884.8,212.1L885.5,212.0L885.7,214.5L887.3,215.9L886.3,217.5L886.2,216.1L884.7,214.4L885.0,216.7L884.5,218.5L883.8,218.7L884.2,220.9L883.2,223.0L881.0,223.3L877.4,224.4Z","mexico":"M165.6,397.3L170.1,396.9L174.6,396.5L183.6,395.7L188.1,395.3L197.1,394.5L203.4,393.9L202.4,396.7L201.6,397.8L216.5,403.3L231.4,408.8L246.3,414.2L261.3,419.7L272.4,419.7L277.9,419.7L289.1,419.7L294.6,419.6L300.2,419.6L305.7,419.6L305.8,415.5L305.8,411.3L312.7,411.4L316.1,411.4L323.0,411.4L326.5,411.4L333.4,411.5L333.7,411.6L335.1,413.2L336.5,415.7L338.2,417.4L340.2,418.3L343.5,421.2L348.2,426.0L352.0,429.2L354.7,430.8L356.6,432.1L357.6,433.3L358.9,435.7L361.3,441.5L361.3,444.1L362.2,446.5L364.1,449.7L365.7,451.6L367.1,452.2L368.6,453.3L370.2,455.0L372.2,456.1L374.3,456.7L377.3,458.2L381.0,460.7L383.6,462.0L385.1,462.0L386.3,461.2L387.3,459.6L388.4,458.6L389.4,458.1L389.8,457.3L389.6,456.3L390.3,454.0L391.9,450.3L393.8,448.4L395.9,448.1L397.3,447.4L398.0,446.4L399.2,446.2L400.9,447.1L403.6,447.6L407.3,447.9L409.5,447.8L410.2,447.4L410.6,447.8L411.2,448.0L412.2,448.0L413.2,448.6L414.4,450.5L418.5,453.7L418.9,454.8L420.3,456.3L423.0,458.7L424.5,460.7L424.9,462.5L426.2,465.2L428.6,468.9L429.7,470.9L429.4,471.2L429.6,472.2L430.2,474.0L431.4,475.5L433.1,476.8L434.9,479.0L436.6,482.2L438.7,484.7L441.2,486.3L442.6,487.9L443.0,489.3L443.0,490.5L442.6,491.6L442.7,492.5L443.4,493.5L443.6,494.6L443.4,496.1L443.6,496.9L445.9,499.6L447.0,501.8L447.9,505.2L448.9,507.3L450.4,508.2L452.6,508.5L454.3,509.2L455.4,510.3L456.9,511.0L458.7,511.2L460.4,511.9L462.0,513.2L465.0,514.0L469.5,514.4L472.8,515.4L475.1,517.1L476.4,517.4L476.7,516.7L477.6,516.2L479.8,515.8L479.5,519.4L478.5,522.4L475.4,528.5L474.0,532.3L471.6,543.1L470.8,550.2L470.6,553.5L470.4,554.0L470.6,554.5L470.0,561.8L470.3,568.0L470.1,568.9L469.2,570.8L468.6,573.4L468.8,574.6L468.8,575.4L469.7,579.3L470.0,582.2L472.9,587.3L474.4,589.0L476.4,590.5L477.1,591.4L476.8,593.5L476.0,594.6L475.6,596.3L475.2,594.9L475.3,593.1L476.0,592.1L476.0,591.3L474.8,590.6L472.7,588.1L470.2,583.6L472.0,590.7L472.6,591.9L473.9,592.8L474.2,594.2L476.4,599.2L479.0,604.3L479.1,605.7L480.2,607.4L486.6,614.5L490.6,619.9L492.0,624.9L492.8,626.5L493.2,628.7L495.8,631.1L496.6,632.6L498.0,633.5L499.1,636.1L501.3,637.6L500.8,637.6L498.9,636.9L499.0,637.4L500.6,638.5L503.6,639.5L504.4,639.5L503.2,639.0L502.2,638.2L502.5,638.1L504.7,639.0L510.6,639.3L513.3,641.5L516.7,642.4L518.5,645.2L520.6,648.1L522.0,648.2L523.1,648.2L526.2,647.7L531.2,645.9L532.9,645.0L536.2,643.8L541.3,643.6L542.9,644.0L546.7,643.2L548.6,642.3L549.2,641.5L549.5,640.8L553.7,639.8L557.3,639.6L559.1,639.3L561.0,639.1L562.5,640.4L562.5,641.0L561.5,641.6L562.0,642.2L563.8,643.2L566.9,643.6L568.0,643.4L569.5,642.0L572.1,640.6L572.0,639.0L571.5,638.1L570.8,638.1L570.6,637.6L571.1,636.4L571.0,636.0L569.4,637.2L569.0,637.2L569.5,636.2L574.2,633.8L575.5,632.7L577.1,631.8L580.5,628.5L581.2,622.2L581.9,621.1L584.1,619.2L584.4,618.6L584.5,617.3L584.5,614.0L584.6,611.3L584.5,608.4L584.9,605.7L585.3,605.0L586.6,600.7L589.2,598.9L593.9,596.7L594.9,596.3L609.7,593.9L611.8,593.3L614.4,591.8L616.2,591.3L619.6,591.3L620.6,591.1L620.9,590.7L621.5,590.5L623.4,590.7L627.1,591.6L628.5,591.9L631.7,592.9L635.3,593.4L636.3,592.9L636.7,592.2L636.3,591.7L635.4,592.0L634.6,592.0L633.2,591.6L633.5,591.2L634.9,591.3L635.9,591.1L637.2,590.4L638.7,590.9L640.7,593.1L642.0,593.8L642.1,597.0L642.8,598.4L642.1,600.8L641.4,602.9L640.5,604.5L638.4,607.1L635.8,609.2L632.6,613.8L631.9,616.0L632.0,617.7L632.5,619.4L632.0,620.6L631.3,620.6L630.0,621.4L628.5,623.8L628.4,624.5L629.1,625.2L630.0,624.8L631.2,624.8L631.9,624.6L632.6,624.7L632.4,626.0L631.7,627.0L631.2,627.3L630.4,627.5L629.4,628.0L628.9,628.5L629.0,630.1L629.5,630.2L630.6,629.0L631.3,629.1L631.4,629.6L629.9,633.6L629.0,637.7L627.7,640.1L627.3,643.6L626.6,645.0L625.8,646.5L625.4,646.4L624.2,643.7L622.9,642.9L622.7,642.3L623.4,638.9L623.0,637.0L622.4,637.1L621.5,638.1L620.5,639.0L620.5,640.3L619.2,642.4L618.9,643.1L617.7,643.0L616.3,643.1L615.3,643.6L614.3,646.1L611.9,649.8L610.8,651.5L610.1,652.1L609.4,652.4L607.1,651.0L605.7,651.5L605.2,652.6L605.3,654.0L582.3,654.0L576.5,654.0L576.5,657.2L576.5,660.1L576.5,663.3L569.9,663.2L570.2,663.6L571.3,664.2L572.9,665.6L574.6,667.8L576.8,669.6L579.3,670.9L580.9,672.2L581.7,673.5L582.2,674.6L582.2,675.5L583.1,676.2L584.7,676.7L585.5,677.5L585.5,678.1L585.0,679.6L584.9,681.2L585.1,682.7L583.9,682.7L564.8,682.7L561.3,688.7L557.7,694.9L557.4,695.7L557.4,696.3L559.5,698.9L559.1,699.7L558.4,700.1L558.2,700.8L558.2,701.8L557.7,703.1L558.2,705.2L557.4,707.1L557.0,707.6L556.5,707.2L552.3,702.8L547.9,697.9L546.2,696.3L544.6,695.1L542.3,692.9L536.4,687.9L533.4,685.7L530.5,683.0L528.0,681.5L525.4,680.5L524.3,679.9L523.3,679.2L522.8,679.1L522.5,680.1L523.4,680.6L524.5,681.1L525.3,681.1L526.2,681.5L528.8,682.8L529.2,683.5L521.8,680.8L518.8,680.5L518.5,680.1L520.0,678.7L519.5,678.2L519.0,678.1L517.4,679.1L516.8,679.1L516.7,677.9L515.7,677.0L515.1,677.0L514.5,677.6L513.1,678.8L513.2,679.3L515.9,679.8L516.8,680.1L516.7,680.4L514.3,680.4L511.4,681.0L506.2,684.2L501.3,685.7L494.4,688.9L491.4,689.0L489.7,689.5L485.1,688.3L479.1,685.3L470.2,684.4L464.1,680.5L458.1,678.8L454.3,675.1L452.0,674.9L450.6,674.3L445.1,673.0L439.7,672.0L434.5,668.8L431.0,667.7L428.1,666.4L421.6,664.1L419.1,662.9L416.8,661.0L413.1,659.0L411.5,657.3L409.7,656.7L407.1,653.6L405.8,652.2L404.7,651.6L403.5,651.4L400.0,651.7L394.9,650.3L392.4,649.9L387.4,647.9L380.8,645.6L378.6,642.9L376.7,640.5L373.3,637.2L371.3,635.8L367.6,634.2L365.6,632.9L362.5,631.8L357.2,629.2L355.6,627.0L354.6,625.0L351.8,622.6L348.7,618.1L347.9,616.4L347.3,613.9L346.6,612.4L345.7,611.3L346.2,610.4L347.7,609.4L350.3,609.1L352.2,608.0L352.4,607.1L352.3,606.5L351.1,605.1L349.6,604.7L348.5,604.7L348.2,604.1L349.1,603.6L350.1,602.2L351.5,600.5L352.5,598.9L352.7,596.7L352.6,594.5L353.0,592.6L349.5,590.5L348.0,587.1L346.1,584.2L346.1,578.5L343.8,573.3L341.4,570.8L340.2,569.9L336.8,565.9L334.2,563.7L331.6,559.3L329.1,556.5L325.8,551.9L323.5,549.6L312.8,541.7L313.4,541.7L316.5,543.6L317.0,543.5L317.1,542.5L316.7,541.4L316.2,541.2L315.3,541.4L314.2,541.2L313.6,540.8L312.0,540.6L309.8,539.2L308.9,537.9L308.9,536.3L305.8,533.0L304.7,531.1L305.3,531.3L306.0,532.0L306.9,532.3L307.9,532.3L308.5,532.0L308.3,531.4L307.6,531.0L303.2,529.2L301.7,528.0L298.1,525.9L297.3,525.2L296.7,523.2L295.8,523.1L295.1,523.7L292.9,524.2L292.4,523.6L292.3,523.0L293.8,522.3L295.2,520.5L295.2,519.8L294.4,520.6L293.3,521.4L292.1,521.9L290.3,522.3L289.4,522.0L288.6,521.6L287.3,519.9L286.7,514.6L287.8,512.7L289.1,510.9L290.3,509.8L290.9,510.6L291.6,510.7L291.1,509.8L290.0,508.9L289.6,508.1L289.5,507.3L289.0,505.8L285.8,502.7L282.7,502.9L281.5,502.8L280.4,501.6L279.4,499.7L278.9,498.0L278.8,497.1L278.5,496.2L273.3,494.7L271.7,493.5L270.2,491.9L268.9,489.6L268.4,488.0L268.0,486.0L268.6,483.5L269.3,482.3L265.7,481.4L264.3,481.3L263.1,481.8L262.1,481.2L260.0,480.4L257.5,477.8L254.5,473.0L251.3,471.5L250.2,469.8L248.8,468.3L247.7,466.4L247.5,465.6L247.1,465.1L245.5,463.8L243.7,461.6L243.2,459.8L242.7,457.1L241.5,456.1L240.3,455.7L240.0,454.4L240.1,453.7L239.7,452.3L237.2,449.0L235.9,446.3L235.2,445.4L234.6,444.2L234.3,441.6L233.3,438.4L231.2,434.6L229.6,432.0L228.7,429.4L229.1,426.8L228.8,425.2L228.6,424.8L228.8,424.2L229.4,424.5L229.8,424.1L229.8,422.4L229.2,421.9L227.5,421.3L226.9,421.0L222.9,420.3L220.7,419.3L220.5,417.1L219.4,416.0L218.5,415.4L215.6,414.1L215.1,414.8L214.7,416.0L213.5,416.3L212.4,416.3L210.6,415.5L206.1,412.2L205.2,411.6L203.8,411.3L203.1,410.8L200.1,409.0L200.7,410.0L201.6,410.9L202.4,413.7L201.4,415.7L200.9,422.8L201.5,424.2L202.8,426.4L203.7,430.0L204.0,432.6L204.8,434.7L204.6,439.6L204.8,441.1L206.1,443.5L208.4,445.8L208.9,447.0L211.9,448.7L213.8,451.0L217.5,454.0L218.6,455.4L221.9,460.1L222.0,461.6L222.6,463.3L224.5,462.9L225.3,464.2L225.2,464.9L225.4,465.3L226.4,465.2L227.3,465.6L229.0,470.7L230.0,471.4L231.2,471.7L232.5,472.3L232.5,474.6L233.7,476.2L233.5,478.2L234.4,479.9L234.3,481.6L234.7,483.0L237.5,486.0L241.0,488.3L241.8,491.4L243.2,494.3L244.6,495.0L246.2,496.2L245.9,497.4L246.1,498.2L248.0,500.4L248.4,503.3L250.1,505.1L250.6,505.2L250.9,505.0L249.7,503.1L249.1,501.9L249.0,500.0L249.4,499.7L253.0,502.7L253.4,505.0L254.5,506.3L254.6,508.0L255.3,509.0L255.6,510.5L256.7,513.0L256.7,516.4L257.3,518.8L259.6,522.6L261.4,523.4L261.7,525.3L263.6,530.1L265.7,532.7L266.8,534.9L267.0,536.2L266.2,538.3L266.1,539.7L267.3,544.0L269.0,546.2L271.0,546.7L271.4,547.0L271.2,547.6L271.9,548.1L272.6,547.4L273.0,546.5L272.6,545.4L272.5,544.6L272.9,544.0L273.5,543.9L277.3,546.8L277.9,548.0L279.3,549.3L280.6,550.9L281.1,552.2L282.2,553.2L282.7,555.7L285.3,556.8L286.7,558.8L286.9,560.1L286.2,563.3L285.6,564.3L283.5,565.6L281.9,567.3L280.4,568.3L278.9,568.9L277.6,568.8L276.3,566.9L274.8,561.2L273.8,559.9L273.1,558.1L272.0,556.6L267.7,554.4L265.6,552.0L263.5,550.4L261.3,548.0L255.3,544.2L252.8,542.2L251.2,540.3L250.1,540.3L249.3,540.5L249.0,540.0L248.9,539.0L248.6,538.3L245.1,535.4L244.4,533.7L244.2,531.8L245.0,527.0L245.3,524.1L245.1,522.6L244.8,522.4L244.4,521.6L244.3,519.2L243.4,516.7L240.3,511.4L238.0,510.4L235.9,509.6L230.1,504.9L228.6,502.6L228.2,501.2L228.1,498.5L227.3,500.1L226.2,501.3L223.8,501.2L221.1,502.5L219.4,501.3L218.6,499.9L217.2,498.2L215.8,497.8L214.8,497.8L213.1,495.7L211.6,495.1L209.5,494.8L207.7,493.7L207.2,492.6L206.9,490.9L206.3,490.0L203.5,488.1L201.3,485.9L199.1,484.5L198.5,483.4L198.4,482.7L201.8,482.9L205.8,483.7L207.7,483.5L208.9,482.7L210.1,482.1L210.2,482.7L210.0,483.9L211.1,484.9L212.6,485.7L213.7,485.6L212.7,484.7L212.0,482.9L212.3,482.2L212.3,481.3L210.8,481.5L210.6,481.0L211.9,479.6L213.3,475.9L214.0,472.3L212.5,469.1L209.9,466.8L204.3,460.3L201.0,456.9L200.0,455.6L199.1,455.0L196.4,454.3L194.1,452.4L190.1,449.7L188.4,448.3L187.2,445.1L186.3,444.6L186.6,442.4L186.2,438.4L185.5,437.4L183.4,436.4L182.9,433.7L182.8,431.1L182.3,429.2L178.6,426.2L178.5,424.7L178.5,423.3L178.1,421.9L176.1,419.0L173.7,416.5L172.9,415.3L172.8,412.8L172.0,412.1L173.0,412.0L173.5,411.7L173.5,410.0L170.0,407.3L169.0,403.5L167.0,401.6L166.6,400.8ZM640.2,612.6L639.4,613.1L639.0,611.3L639.6,609.5L640.4,608.5L642.0,608.3L643.0,608.0L643.1,608.5L642.3,609.9ZM332.7,590.6L332.2,592.0L331.0,591.4L330.6,590.6L330.5,589.1L331.1,588.9L332.1,589.5ZM263.3,638.7L262.3,639.0L260.9,638.0L261.3,637.2L262.1,636.7L262.9,637.7ZM268.7,532.5L269.2,534.5L268.4,534.2L267.3,533.1L266.6,531.8L266.8,531.1L268.3,531.8ZM228.1,461.0L227.9,461.3L226.3,460.2L222.7,456.4L221.4,454.5L221.1,453.6L221.3,451.6L222.5,451.9L223.9,453.2L224.6,454.5L224.6,455.9L227.3,456.5L227.7,459.6ZM196.4,478.6L196.1,479.2L193.5,478.0L194.9,475.9L194.7,473.7L195.4,473.3L196.0,474.0L196.7,476.8ZM243.0,461.9L241.8,466.1L240.6,466.0L238.1,464.7L237.8,463.9L238.8,459.0L239.5,458.3L241.8,457.6L242.1,458.2L242.3,459.7ZM148.1,463.0L147.4,463.7L145.6,460.0L145.6,459.1L146.1,458.6L146.9,458.7L146.9,459.6L147.7,460.4L148.0,461.2ZM643.8,596.9L644.0,597.7L643.4,597.0L643.2,596.2L643.4,596.2ZM565.6,639.8L563.9,640.1L563.5,639.8L567.1,638.1L567.9,638.4L566.1,639.2ZM280.7,547.2L280.4,547.3L279.6,546.4L279.2,544.2L279.4,543.9L280.9,546.7ZM203.8,412.7L203.3,412.7L202.4,411.9L202.4,411.1L202.6,411.0L203.6,411.7L203.9,412.3ZM260.4,514.8L260.4,515.6L259.8,515.2L258.7,517.8L258.4,518.0L259.1,514.4L259.7,513.9L260.5,513.8ZM250.9,543.1L250.7,543.9L246.0,540.6L247.1,540.3L248.4,540.6ZM245.3,540.4L245.0,540.6L243.6,538.6L243.4,537.3L242.9,536.7L241.5,536.2L242.7,533.4L243.7,527.6L244.1,528.7L243.1,534.5L243.2,535.3L244.2,537.3L244.2,538.6L245.1,539.8Z"},"facilities":[{"key":"bridgeton","name":"Bridgeton, MO","role":"hub","makes":"HQ · Final assembly & distribution hub","x":585.6,"y":276.6},{"key":"monterrey","name":"Monterrey, MX","role":"plant","makes":"Metal fabrication · cases, exterior parts","x":429.9,"y":520.6},{"key":"suwanee","name":"Suwanee, GA","role":"plant","makes":"Refrigeration systems · condensers, racks","x":685.3,"y":368.8},{"key":"chino","name":"Chino, CA","role":"plant","makes":"Specialty cases · ISLA, Q Series","x":156.8,"y":369.5},{"key":"sarasota","name":"Sarasota, FL","role":"plant","makes":"Doors & Glass · STYLELINE doors, shelving, LED","x":709.5,"y":491.6},{"key":"cumberland","name":"Cumberland City, TN","role":"plant","makes":"Glass · tempered/insulating, EcoVision doors","x":629.1,"y":323.9},{"key":"tijuana","name":"Tijuana, MX","role":"plant","makes":"Refrigerators · household, commercial, biomedical","x":167,"y":397.7}],"storesByOrder":{"ORD-2026-07234":{"name":"Schnucks #047, St. Louis, MO","x":589,"y":279.4},"ORD-2026-06891":{"name":"Kroger #200, Indianapolis, IN","x":652.5,"y":256.2},"ORD-2026-06455":{"name":"Walmart #3847, Phoenix, AZ","x":245,"y":380.2},"ORD-2026-06102":{"name":"Publix #1192, Charlotte, NC","x":736.1,"y":346.3},"ORD-2026-05788":{"name":"Fresh Thyme #12, Chicago, IL","x":629.4,"y":212.4},"ORD-2026-05340":{"name":"Dierbergs #09, Creve Coeur, MO","x":585.3,"y":278.7}}};
+
+</script>
+  <script>
+// ============================================================================
+//  DEMO 3: LIVE ORDER TRACKING — DATA LAYER
+//  ---------------------------------------------------------------------------
+//  This file holds ALL the fake order data for the demo.
+//
+//  WHY THIS FILE EXISTS SEPARATELY:
+//  In a real application, this data would come from Oracle (via an API call).
+//  For the demo, we hardcode it. Keeping it in its own file means that when
+//  Anthony gives us feedback on real serial numbers, part numbers, or order
+//  formats, we ONLY edit this file — the display and interaction code never
+//  changes. This is called "separation of concerns" — data lives in one place,
+//  the logic that displays it lives somewhere else.
+//
+//  PYTHON COMPARISON:
+//  If you were writing this in Python, this would be a list of dictionaries:
+//      ORDERS = [ {"id": "...", "customer": "..."}, {...} ]
+//  In JavaScript, the same structure is an ARRAY of OBJECTS.
+//    - Array  = ordered list, written with [ ]      (like a Python list)
+//    - Object = key/value pairs, written with { }   (like a Python dict)
+//  The syntax difference: JS uses  key: value  (no quotes needed on keys),
+//  Python uses  "key": value  (quotes required on keys).
+// ============================================================================
+
+
+// ----------------------------------------------------------------------------
+//  THE STAGE DEFINITIONS
+//  ---------------------------------------------------------------------------
+//  Every order moves through these 8 stages. We define them ONCE here as a
+//  single source of truth, then each order just stores WHICH stage number it's
+//  currently on. This avoids repeating the stage names inside every order.
+//
+//  Think of it like a train line: the stations (stages) are fixed, and each
+//  train (order) just reports which station it's currently at.
+// ----------------------------------------------------------------------------
+const STAGES = [
+  { num: 1, name: "Order Confirmed",  desc: "PO received, booked in Oracle" },
+  { num: 2, name: "Parts Sourcing",   desc: "Verifying stock, issuing POs" },
+  { num: 3, name: "In Production",     desc: "Plant manufacturing parts" },
+  { num: 4, name: "Quality Check",     desc: "Parts inspected and matched" },
+  { num: 5, name: "Packing",           desc: "Warehouse assembling shipment" },
+  { num: 6, name: "Shipped",           desc: "In transit to store" },
+  { num: 7, name: "Delivered",         desc: "Received at store location" },
+  { num: 8, name: "Install Complete",  desc: "Installation finished, closed" },
+];
+
+
+// ----------------------------------------------------------------------------
+//  THE ORDERS
+//  ---------------------------------------------------------------------------
+//  Each order object has two "faces":
+//    1. Fields the CUSTOMER sees (id, customer, currentStage, shipDate, etc.)
+//    2. A `parts` array the INTERNAL team sees (part-level status + risks)
+//
+//  The `status` field drives the colored badge. We use a small set of allowed
+//  values so the styling stays consistent:
+//    "on_track"  -> green   "at_risk" -> amber
+//    "in_transit"-> blue    "closed"  -> gray
+//
+//  The `riskLevel` on each part also uses a fixed set:
+//    "none" -> no problem   "delayed" -> late but recoverable
+//    "jeopardy" -> will miss the ship date (the critical one)
+// ----------------------------------------------------------------------------
+const ORDERS = [
+
+  // ---- ORDER 1: The new order created in Demo 2 (the "happy path" hand-off) --
+  {
+    id: "ORD-2026-07234",
+    customer: "Schnucks",
+    storeLabel: "Store #047, St. Louis, MO",
+    cases: "1x D5X 8ft Exterior Refresh + LED",
+    currentStage: 1,               // just confirmed — start of the journey
+    shipDate: "Aug 4, 2026",
+    status: "on_track",
+    carrierTracking: null,         // no carrier yet; not shipped
+    // Internal parts detail — this order is brand new so everything is queued
+    parts: [
+      { partNumber: "HUS-BMP-D5X-8W",  desc: "Bumper, 8ft, White",        qty: 1, status: "Queued",       expected: "Jul 14", note: "—",                       riskLevel: "none" },
+      { partNumber: "HUS-FAS-D5X-8W",  desc: "Fascia panel, 8ft, White",  qty: 1, status: "Queued",       expected: "Jul 14", note: "—",                       riskLevel: "none" },
+      { partNumber: "HUS-FPL-D5X-8W",  desc: "Front panel, 8ft, White",   qty: 1, status: "Queued",       expected: "Jul 14", note: "—",                       riskLevel: "none" },
+      { partNumber: "HUS-TRL-D5X-8W",  desc: "Top rail, 8ft, White",      qty: 1, status: "Queued",       expected: "Jul 14", note: "—",                       riskLevel: "none" },
+      { partNumber: "HUS-LED-CAN-8",   desc: "Canopy LED kit, 8ft",       qty: 1, status: "Queued",       expected: "Jul 14", note: "—",                       riskLevel: "none" },
+    ],
+  },
+
+  // ---- ORDER 2: Mid-production, everything healthy -------------------------
+  {
+    id: "ORD-2026-06891",
+    customer: "Kroger",
+    storeLabel: "Store #200, Indianapolis, IN",
+    cases: "4x D5X 12ft Exterior Refresh",
+    currentStage: 3,               // in production
+    shipDate: "Jul 18, 2026",
+    status: "on_track",
+    carrierTracking: null,
+    parts: [
+      { partNumber: "HUS-BMP-D5X-12W", desc: "Bumper, 12ft, White",       qty: 4, status: "In Stock",     expected: "Ready",  note: "—",                       riskLevel: "none" },
+      { partNumber: "HUS-FAS-D5X-12W", desc: "Fascia panel, 12ft, White", qty: 4, status: "In Production", expected: "Jul 12", note: "Cell 41, batch #2811",   riskLevel: "none" },
+      { partNumber: "HUS-TRL-D5X-12W", desc: "Top rail, 12ft, White",     qty: 4, status: "In Production", expected: "Jul 13", note: "Cell 41, batch #2812",   riskLevel: "none" },
+      { partNumber: "HUS-SPG-D5X-12W", desc: "Splashguard, 12ft, White",  qty: 4, status: "In Stock",     expected: "Ready",  note: "—",                       riskLevel: "none" },
+    ],
+  },
+
+  // ---- ORDER 3: The AT-RISK story (competitor case, 2 parts delayed) -------
+  //  This is the order that shows why the internal view matters. The customer
+  //  sees "In Production — On Track" but internally, 2 parts jeopardize the
+  //  ship date. This is the exact scenario Mike described wanting.
+  {
+    id: "ORD-2026-06455",
+    customer: "Walmart",
+    storeLabel: "Store #3847, Phoenix, AZ",
+    cases: "8x Hill Phoenix OSIA-8 (All-Makes Exterior)",
+    currentStage: 4,               // quality check stage (customer-facing)
+    shipDate: "Jul 11, 2026",
+    status: "at_risk",
+    carrierTracking: null,
+    parts: [
+      { partNumber: "HUS-AM-BMP-HP8W", desc: "Bumper, Hill Phoenix 8ft",  qty: 8,  status: "In Stock",     expected: "Ready",  note: "—",                       riskLevel: "none" },
+      { partNumber: "HUS-AM-FAS-HP8W", desc: "Fascia, Hill Phoenix 8ft",  qty: 8,  status: "In Stock",     expected: "Ready",  note: "—",                       riskLevel: "none" },
+      { partNumber: "HUS-AM-FPL-HP8W", desc: "Front panel, HP 8ft",       qty: 8,  status: "In Production", expected: "Jul 8",  note: "Cell 43, batch #2847",   riskLevel: "none" },
+      { partNumber: "HUS-AM-TRL-HP8W", desc: "Top rail, HP 8ft",          qty: 8,  status: "In Stock",     expected: "Ready",  note: "—",                       riskLevel: "none" },
+      { partNumber: "HUS-AM-EPL-HPW",  desc: "End panel, HP (pair)",      qty: 16, status: "In Stock",     expected: "Ready",  note: "—",                       riskLevel: "none" },
+      { partNumber: "HUS-ECV-D5X-30",  desc: "EcoVision door, 30in",      qty: 16, status: "In Production", expected: "Jul 14", note: "Vendor delay, was Jul 9",  riskLevel: "delayed" },
+      { partNumber: "HUS-LED-CAN-8",   desc: "Canopy LED kit, 8ft",       qty: 8,  status: "In Stock",     expected: "Ready",  note: "—",                       riskLevel: "none" },
+      { partNumber: "HUS-FAS-D5X-8SS", desc: "Fascia, SS upgrade",        qty: 8,  status: "Backordered",  expected: "Jul 22", note: "Supplier constraint",     riskLevel: "jeopardy" },
+    ],
+  },
+
+  // ---- ORDER 4: Packing stage, healthy ------------------------------------
+  {
+    id: "ORD-2026-06102",
+    customer: "Publix",
+    storeLabel: "Store #1192, Charlotte, NC",
+    cases: "3x D5LE 8ft Refresh + LED Conversion",
+    currentStage: 5,               // packing
+    shipDate: "Jul 7, 2026",
+    status: "on_track",
+    carrierTracking: null,
+    parts: [
+      { partNumber: "HUS-BMP-D5X-8W",  desc: "Bumper, 8ft, White",        qty: 3, status: "Packed",       expected: "Ready",  note: "Pallet A-12",             riskLevel: "none" },
+      { partNumber: "HUS-FAS-D5X-8W",  desc: "Fascia panel, 8ft, White",  qty: 3, status: "Packed",       expected: "Ready",  note: "Pallet A-12",             riskLevel: "none" },
+      { partNumber: "HUS-LED-CAN-8",   desc: "Canopy LED kit, 8ft",       qty: 3, status: "Packed",       expected: "Ready",  note: "Pallet A-13",             riskLevel: "none" },
+      { partNumber: "HUS-LED-MUL-30",  desc: "Mullion LED, 30in",         qty: 12,status: "Packed",       expected: "Ready",  note: "Pallet A-13",             riskLevel: "none" },
+    ],
+  },
+
+  // ---- ORDER 5: Shipped, in transit (has a carrier tracking number) -------
+  {
+    id: "ORD-2026-05788",
+    customer: "Fresh Thyme",
+    storeLabel: "Store #12, Chicago, IL",
+    cases: "2x GNSA 4ft Glass Door Refresh",
+    currentStage: 6,               // shipped
+    shipDate: "Jun 30, 2026",
+    status: "in_transit",
+    carrierTracking: "FDX-7742-8891-2033",
+    parts: [
+      { partNumber: "HUS-DR-D5X-30W",  desc: "Glass door, 30in, White",   qty: 4, status: "Shipped",      expected: "Delivered Jul 2", note: "FedEx Freight",   riskLevel: "none" },
+      { partNumber: "HUS-GSK-D5X-30",  desc: "Door gasket, 30in",         qty: 4, status: "Shipped",      expected: "Delivered Jul 2", note: "FedEx Freight",   riskLevel: "none" },
+      { partNumber: "HUS-HDL-UNIV-SS", desc: "Door handle, Stainless",    qty: 4, status: "Shipped",      expected: "Delivered Jul 2", note: "FedEx Freight",   riskLevel: "none" },
+    ],
+  },
+
+  // ---- ORDER 6: Completed and closed (shows the end of the lifecycle) -----
+  {
+    id: "ORD-2026-05340",
+    customer: "Dierbergs",
+    storeLabel: "Store #09, Creve Coeur, MO",
+    cases: "6x D5X 8ft Exterior Refresh",
+    currentStage: 8,               // install complete
+    shipDate: "Jun 18, 2026",
+    status: "closed",
+    carrierTracking: "FDX-6610-2245-8890",
+    parts: [
+      { partNumber: "HUS-BMP-D5X-8W",  desc: "Bumper, 8ft, White",        qty: 6, status: "Installed",    expected: "Complete", note: "Install crew #4",       riskLevel: "none" },
+      { partNumber: "HUS-FAS-D5X-8W",  desc: "Fascia panel, 8ft, White",  qty: 6, status: "Installed",    expected: "Complete", note: "Install crew #4",       riskLevel: "none" },
+      { partNumber: "HUS-FPL-D5X-8W",  desc: "Front panel, 8ft, White",   qty: 6, status: "Installed",    expected: "Complete", note: "Install crew #4",       riskLevel: "none" },
+      { partNumber: "HUS-TRL-D5X-8W",  desc: "Top rail, 8ft, White",      qty: 6, status: "Installed",    expected: "Complete", note: "Install crew #4",       riskLevel: "none" },
+    ],
+  },
+
+];
+
+
+// ----------------------------------------------------------------------------
+//  STATUS BADGE CONFIGURATION
+//  ---------------------------------------------------------------------------
+//  Instead of scattering color choices throughout the display code, we define
+//  the look of each status ONCE here. When the display code needs to show a
+//  badge, it looks up the style here. This is the same "single source of truth"
+//  idea as the STAGES array above.
+//
+//  Each status maps to a label (human-readable text) and two colors
+//  (background + text). We'll use these in the CSS/rendering step.
+// ----------------------------------------------------------------------------
+const STATUS_CONFIG = {
+  on_track:   { label: "On Track",   bg: "#E7F4EA", text: "#1E7A34", dot: "#2E9E4A" },
+  at_risk:    { label: "At Risk",    bg: "#FDF0E3", text: "#B4600A", dot: "#E08A16" },
+  in_transit: { label: "In Transit", bg: "#E5EFFB", text: "#1560A8", dot: "#2A7FD4" },
+  closed:     { label: "Closed",     bg: "#EEEEEC", text: "#5F5F5B", dot: "#9A9A94" },
+};
+
+
+// ----------------------------------------------------------------------------
+//  RISK LEVEL CONFIGURATION (for the internal parts table)
+//  ---------------------------------------------------------------------------
+//  Same pattern — defines how each part-level risk looks in the internal view.
+// ----------------------------------------------------------------------------
+const RISK_CONFIG = {
+  none:     { label: "—",         bg: "transparent", text: "#5F5F5B" },
+  delayed:  { label: "Delayed",   bg: "#FDF0E3",     text: "#B4600A" },
+  jeopardy: { label: "Jeopardy",  bg: "#FBE4E4",     text: "#B02020" },
+};
+
+
+// ----------------------------------------------------------------------------
+//  PART ORIGIN MAPPING  (which facility manufactures each part)
+//  ---------------------------------------------------------------------------
+//  The supply-chain MAP needs to know where each part comes from. Rather than
+//  tag all 24 parts by hand, we exploit a fact: the part number ALREADY encodes
+//  the category. "HUS-BMP-D5X-8W" -> the "BMP" segment means bumper.
+//
+//  So we do two things:
+//    1. CATEGORY_ORIGIN — a lookup table: category code -> facility key.
+//       (This is a dict / hash map. Python: CATEGORY_ORIGIN = {"BMP": "monterrey", ...})
+//    2. originForPart() — a small parser that pulls the category out of a part
+//       number and looks up its facility.
+//
+//  NOTE: these facility assignments are our BEST GUESS from the Hussmann
+//  footprint slide. The metal-exterior parts (bumper/fascia/rail/etc.) are the
+//  ones to VALIDATE with Emily — they could be Bridgeton rather than Monterrey.
+//  Because it's all derived from THIS one table, correcting it later is a
+//  single-line edit, not a hunt through the code. (Single source of truth.)
+// ----------------------------------------------------------------------------
+const CATEGORY_ORIGIN = {
+  // Metal exterior fabrication -> Monterrey  [VALIDATE with Emily]
+  BMP: "monterrey",  // bumper
+  FAS: "monterrey",  // fascia (incl. the SS-upgrade jeopardy part)
+  FPL: "monterrey",  // front panel
+  TRL: "monterrey",  // top rail
+  SPG: "monterrey",  // splashguard
+  EPL: "monterrey",  // end panel
+  // Doors, glass units, shelving, lighting -> Sarasota (Doors & Glass plant)
+  DR:  "sarasota",   // glass door (STYLELINE)
+  LED: "sarasota",   // LED / lighting kits
+  SHF: "sarasota",   // shelving
+  GSK: "sarasota",   // door gasket (ships with the doors)
+  // Specialty glass -> Cumberland City, TN
+  ECV: "cumberland", // EcoVision door
+  // Small hardware assembled at the hub itself -> Bridgeton (no inbound leg)
+  HDL: "bridgeton",  // handle
+};
+
+// Parse a part number and return its origin facility key.
+// split("-") turns "HUS-AM-BMP-HP8W" into ["HUS","AM","BMP","HP8W"].
+// For all-makes parts the 2nd segment is "AM", so the category is the 3rd
+// segment; otherwise it's the 2nd. (Python: parts = pn.split("-"); ... )
+function originForPart(partNumber) {
+  const seg = partNumber.split("-");
+  const category = (seg[1] === "AM") ? seg[2] : seg[1];
+  // The || fallback means "if the category isn't in the table, default to the
+  // hub." (Python equivalent: CATEGORY_ORIGIN.get(category, "bridgeton"))
+  return CATEGORY_ORIGIN[category] || "bridgeton";
+}
+
+
+// ----------------------------------------------------------------------------
+//  SAMPLE CUSTOMER EMAILS  (for the Copilot assistant / "Mike's inbox")
+//  ---------------------------------------------------------------------------
+//  These are the fake "where's my order?" emails a sales rep like Mike gets all
+//  day. The Copilot assistant reads one of these, matches it to the order, and
+//  drafts a grounded reply. Keyed by order id so we can look up the email for
+//  whichever order is open. (Object-as-lookup again; Python: a dict keyed by id.)
+//
+//  In PRODUCTION, these wouldn't be hardcoded — Copilot would read the rep's
+//  actual Outlook inbox (it lives in the same M365 tenant). Here we simulate
+//  that with representative samples.
+// ----------------------------------------------------------------------------
+const CUSTOMER_EMAILS = {
+  "ORD-2026-06455": {
+    from: "s.ramirez@walmart-stores.com",
+    fromName: "Sandra Ramirez, Store Ops",
+    subject: "Phoenix #3847 refresh — install scheduling",
+    body: "Hi Mike, we're trying to lock in the install crew for the Phoenix remodel and need a firm ship date for the refresh order. Can you confirm we're still good for the July 11 target? Thanks.",
+  },
+  "ORD-2026-06891": {
+    from: "j.okafor@kroger.com",
+    fromName: "James Okafor, Facilities",
+    subject: "Update on Indianapolis order?",
+    body: "Mike — any update on our Store #200 refresh order? Just want to make sure we're on track before we finalize the store reset calendar. Appreciate it.",
+  },
+  "ORD-2026-07234": {
+    from: "orders@schnucks.com",
+    fromName: "Schnucks Procurement",
+    subject: "New refresh order confirmation + tracking",
+    body: "Hi Mike, confirming we submitted the PO for the St. Louis #047 dairy case refresh. When can we expect this to ship? Also, is there a dashboard where our team can track the order status ourselves instead of emailing each time? Thanks.",
+  },
+  "ORD-2026-06102": {
+    from: "facilities@publix.com",
+    fromName: "Publix Facilities Team",
+    subject: "Charlotte order — almost there?",
+    body: "Hey Mike, our Charlotte #1192 order has been in the works a few weeks. Are we close to shipping? Need to give our install team a heads up.",
+  },
+  "ORD-2026-05788": {
+    from: "store12@freshthyme.com",
+    fromName: "Fresh Thyme Store #12",
+    subject: "Tracking for our door order",
+    body: "Hi Mike, has our glass door refresh order shipped yet? If so could you send tracking so we can plan to receive it? Thanks!",
+  },
+  "ORD-2026-05340": {
+    from: "m.becker@dierbergs.com",
+    fromName: "Mark Becker, Dierbergs",
+    subject: "Creve Coeur refresh — all set?",
+    body: "Mike, just closing the loop on the Creve Coeur #09 refresh. Everything came in and looks great. Anything else we need on our end? Thanks for the smooth project.",
+  },
+};
+
+
+// ----------------------------------------------------------------------------
+//  EXPERT DIRECTORY  (for Copilot's "who should answer this?" routing)
+//  ---------------------------------------------------------------------------
+//  Mike is the front door, but some questions are better answered by a domain
+//  specialist. This directory is the FACTUAL grounding for the routing feature:
+//  who exists, what they own, and the keywords that signal their domain.
+//
+//  WHY THIS IS DATA, NOT CODE: every department can reuse the whole Copilot
+//  idea by swapping THIS list. The routing LOGIC never changes — only the
+//  directory. That separation ("policy in data, mechanism in code") is what
+//  makes a tool generalize. (Same single-source-of-truth principle throughout.)
+//
+//  In PRODUCTION this directory wouldn't be hardcoded — it would come from the
+//  Microsoft 365 org chart / Entra ID / a SharePoint list, so it stays current
+//  as roles change. The LLM would classify the email's topic, then look up the
+//  owner HERE rather than inventing a name (grounding — see the API note in the
+//  response). `keywords` are lowercase on purpose so matching is case-insensitive.
+// ----------------------------------------------------------------------------
+const EXPERT_DIRECTORY = [
+  {
+    name: "Shawn Freeman",
+    role: "Sales Operations Manager, Refresh",
+    email: "s.freeman@hussmann.com",
+    owns: "refresh operations, all-makes / competitor refreshes, install coordination, and package pricing",
+    keywords: ["all-makes", "all makes", "competitor", "hill phoenix", "tyler", "kysor",
+               "install", "installation", "remodel", "package", "upsell", "refurb", "grand opening"],
+  },
+  {
+    name: "Emily Brickler",
+    role: "AI Initiative Lead, Refresh",
+    email: "e.brickler@hussmann.com",
+    owns: "refresh AI initiatives, quote automation, and self-service order tracking / metrics",
+    keywords: ["dashboard", "self-service", "self service", "track our", "tracking portal",
+               "automation", "metrics", "report", "analytics", "ai"],
+  },
+  {
+    name: "Vivek Srinivasan",
+    role: "Lead Refresh Design Engineer",
+    email: "v.srinivasan@hussmann.com",
+    owns: "engineering feasibility, interior / airflow modifications, and competitor case compatibility",
+    keywords: ["interior", "airflow", "engineering", "compatibility", "case design",
+               "modification", "custom", "retrofit", "airspeed", "temperature"],
+  },
+  {
+    name: "Poornachandra Vedagiri",
+    role: "ERP Platform Owner",
+    email: "p.vedagiri@hussmann.com",
+    owns: "Oracle / Adaptia integration, BOM lookup, and order & pricing systems",
+    keywords: ["oracle", "bom", "invoice", "billing", "erp", "adaptia", "system", "integration", "po number"],
+  },
+];
+
+</script>
+  <script>
+// ============================================================================
+//  DEMO 3: LIVE ORDER TRACKING — APPLICATION LOGIC (app.js)
+//  ---------------------------------------------------------------------------
+//  This is the "muscles" of the app. It reads the data (from data.js) and
+//  turns it into what you see and click.
+//
+//  It does four jobs:
+//    1. Render the dashboard (turn the ORDERS array into clickable cards)
+//    2. Open an order's detail view when a card is clicked
+//    3. Switch between the Customer View and Internal View tabs
+//    4. Build the customer-facing progress rail (the FedEx-style tracker)
+//
+//  KEY JAVASCRIPT CONCEPTS USED HERE (with Python comparisons):
+//    - Functions:  function name(args) { ... }   (Python: def name(args):)
+//    - Template strings: `text ${variable} text`  (Python f-string: f"...{x}")
+//    - .map():     transforms every item in an array (Python: list comprehension)
+//    - .join(""):  glues an array of strings together (Python: "".join(list))
+//    - document.getElementById():  finds an HTML element by its id attribute
+//    - .innerHTML = "...":  replaces what's inside an element with new HTML
+//    - addEventListener():  "when X is clicked, run this function"
+// ============================================================================
+
+
+// ----------------------------------------------------------------------------
+//  HELPER 1: Build a status badge (the colored pill)
+//  ---------------------------------------------------------------------------
+//  Takes a status key like "at_risk", looks up its colors in STATUS_CONFIG
+//  (defined in data.js), and returns the HTML string for the pill.
+//
+//  Notice the function RETURNS a string of HTML. It doesn't put anything on
+//  the page itself — it just produces the HTML text. Whoever calls it decides
+//  where to place that text. This keeps each function doing exactly one job.
+// ----------------------------------------------------------------------------
+function renderBadge(statusKey) {
+  // Look up the config for this status. If the key doesn't exist, fall back
+  // to "closed" so the app never crashes on bad data.
+  const cfg = STATUS_CONFIG[statusKey] || STATUS_CONFIG.closed;
+
+  // A "template string" (backticks) lets us embed variables with ${...}.
+  // This is exactly like a Python f-string: f"<span ...>{cfg.label}</span>"
+  return `
+    <span class="badge" style="background:${cfg.bg}; color:${cfg.text};">
+      <span class="dot" style="background:${cfg.dot};"></span>
+      ${cfg.label}
+    </span>
+  `;
+}
+
+
+// ----------------------------------------------------------------------------
+//  HELPER 2: Build one order card for the dashboard
+//  ---------------------------------------------------------------------------
+//  Takes a single `order` object and returns the HTML for its card.
+//  We look up the current stage's NAME from the STAGES array using the
+//  order's currentStage number.
+// ----------------------------------------------------------------------------
+function renderOrderCard(order) {
+  // order.currentStage is a number like 3. STAGES is 0-indexed (starts at 0),
+  // so stage number 3 lives at index 2. We subtract 1 to convert.
+  const stage = STAGES[order.currentStage - 1];
+
+  // The whole card is one big template string. The `data-id` attribute stores
+  // the order's id right on the HTML element — later, when the card is clicked,
+  // we read that attribute to know WHICH order to open.
+  return `
+    <div class="order-card" data-id="${order.id}">
+      <div class="card-top">
+        <div>
+          <div class="cust">${order.customer}</div>
+          <div class="store">${order.storeLabel}</div>
+        </div>
+        ${renderBadge(order.status)}
+      </div>
+      <div class="oid">${order.id}</div>
+      <div class="cases">${order.cases}</div>
+      <div class="card-bottom">
+        <div class="stage-label">
+          Stage ${order.currentStage} of 8 · <strong>${stage.name}</strong>
+        </div>
+        <div class="stage-label">Ships ${order.shipDate}</div>
+      </div>
+    </div>
+  `;
+}
+
+
+// ----------------------------------------------------------------------------
+//  RENDER THE DASHBOARD
+//  ---------------------------------------------------------------------------
+//  This takes the whole ORDERS array and fills the #orderGrid container with
+//  cards — one per order.
+//
+//  THE .map().join("") PATTERN (learn this — it's everywhere in web dev):
+//    ORDERS.map(renderOrderCard)
+//      -> runs renderOrderCard on EVERY order, giving an ARRAY of HTML strings
+//         (Python equivalent: [renderOrderCard(o) for o in ORDERS])
+//    .join("")
+//      -> glues that array into ONE big string (Python: "".join(list))
+//  The result is all 6 cards' HTML concatenated, which we drop into the grid.
+// ----------------------------------------------------------------------------
+function renderDashboard() {
+  const grid = document.getElementById("orderGrid");
+  grid.innerHTML = ORDERS.map(renderOrderCard).join("");
+
+  // Now that the cards exist in the page, attach a click handler to each one.
+  // querySelectorAll finds ALL elements matching ".order-card" and returns a
+  // list we can loop over with forEach (like a Python for-loop).
+  document.querySelectorAll(".order-card").forEach(function (card) {
+    card.addEventListener("click", function () {
+      // Read the order id we stored in the data-id attribute, then open it.
+      const orderId = card.getAttribute("data-id");
+      openOrder(orderId);
+    });
+  });
+}
+
+
+// ----------------------------------------------------------------------------
+//  THE CUSTOMER-FACING PROGRESS RAIL  (the signature FedEx-style tracker)
+//  ---------------------------------------------------------------------------
+//  This draws the 8 stages as a horizontal rail. Stages BEFORE the current one
+//  are "done" (filled navy), the current stage is "active" (highlighted), and
+//  stages AFTER are "upcoming" (faint gray).
+//
+//  We figure out each stage's state by comparing its number to the order's
+//  currentStage:
+//     stage.num <  currentStage  -> done
+//     stage.num == currentStage  -> active
+//     stage.num >  currentStage  -> upcoming
+// ----------------------------------------------------------------------------
+function renderCustomerView(order) {
+  // Build each stage node. .map() gives us access to the stage AND its index.
+  const nodes = STAGES.map(function (stage) {
+    // Decide this stage's state relative to where the order currently is.
+    let state;
+    if (stage.num < order.currentStage) state = "done";
+    else if (stage.num === order.currentStage) state = "active";
+    else state = "upcoming";
+
+    // Return the HTML for one stage node (circle + label).
+    // We tag it with a class we can style differently per state.
+    return `
+      <div class="rail-node ${state}">
+        <div class="rail-dot">
+          ${state === "done" ? "&#10003;" : stage.num}
+        </div>
+        <div class="rail-label">${stage.name}</div>
+      </div>
+    `;
+  }).join("");
+
+  // Figure out how far the connecting line should be "filled." If we're on
+  // stage 4 of 8, roughly 3 of the 7 gaps between nodes are complete.
+  // (currentStage - 1) gaps are done out of (total - 1) gaps.
+  const pct = ((order.currentStage - 1) / (STAGES.length - 1)) * 100;
+
+  // For a shipped order, show the carrier tracking number as an extra detail.
+  const carrierBlock = order.carrierTracking
+    ? `<div class="carrier">
+         <span class="carrier-k">Carrier tracking</span>
+         <span class="carrier-v">${order.carrierTracking}</span>
+       </div>`
+    : "";
+
+  // Assemble the whole customer panel.
+  return `
+    <div class="panel-card">
+      <div class="cust-head">
+        <div>
+          <div class="cust-head-title">Order status</div>
+          <div class="cust-head-sub">
+            Estimated ship date: <strong>${order.shipDate}</strong>
+          </div>
+        </div>
+        ${renderBadge(order.status)}
+      </div>
+
+      <div class="rail">
+        <!-- The track line sits behind the nodes; the fill shows progress -->
+        <div class="rail-track"></div>
+        <div class="rail-fill" style="width:${pct}%;"></div>
+        <div class="rail-nodes">
+          ${nodes}
+        </div>
+      </div>
+
+      ${carrierBlock}
+    </div>
+  `;
+}
+
+
+// ----------------------------------------------------------------------------
+//  THE INTERNAL PARTS VIEW  (the admin table — the "why two layers matter")
+//  ---------------------------------------------------------------------------
+//  This is the view Mike asked for. It shows the SAME order the customer sees,
+//  but with part-level truth: which parts are ready, which are delayed, and
+//  which are in "jeopardy" (will miss the ship date).
+//
+//  The demo story: the customer sees "In Production — At Risk" with no detail,
+//  while internally we can see one backordered part will blow the ship date by
+//  11 days. Keith's manual Excel report is what this replaces.
+//
+//  NEW CONCEPT — DERIVING A SUMMARY FROM DATA:
+//  Instead of hardcoding "1 part in jeopardy," we COUNT them by filtering the
+//  parts array. .filter() keeps only items that pass a test, then .length is
+//  how many survived. (Python: len([p for p in parts if p["riskLevel"]==...]))
+// ----------------------------------------------------------------------------
+function renderInternalView(order) {
+  // --- Step 1: derive the risk counts from the parts array ---
+  // .filter() returns a NEW array containing only the parts that match.
+  const delayedParts  = order.parts.filter(function (p) { return p.riskLevel === "delayed"; });
+  const jeopardyParts = order.parts.filter(function (p) { return p.riskLevel === "jeopardy"; });
+
+  const delayedCount  = delayedParts.length;
+  const jeopardyCount = jeopardyParts.length;
+  const totalParts    = order.parts.length;
+
+  // --- Step 2: build the alert banner based on those counts ---
+  // The banner changes tone depending on severity. This is the moment that
+  // sells the whole demo, so the copy is specific and actionable.
+  let banner;
+  if (jeopardyCount > 0) {
+    // Find the worst part to name it specifically in the warning.
+    const worst = jeopardyParts[0];
+    banner = `
+      <div class="risk-banner jeopardy">
+        <div class="risk-banner-icon">!</div>
+        <div class="risk-banner-body">
+          <div class="risk-banner-title">Ship date in jeopardy</div>
+          <div class="risk-banner-text">
+            ${jeopardyCount} part${jeopardyCount > 1 ? "s" : ""} will miss the
+            ${order.shipDate} ship date. <strong>${worst.desc}</strong>
+            (${worst.partNumber}) is not expected until ${worst.expected}.
+            The customer view still shows "on track" — flag for PM decision.
+          </div>
+        </div>
+      </div>
+    `;
+  } else if (delayedCount > 0) {
+    banner = `
+      <div class="risk-banner delayed">
+        <div class="risk-banner-icon">&#9888;</div>
+        <div class="risk-banner-body">
+          <div class="risk-banner-title">${delayedCount} part${delayedCount > 1 ? "s" : ""} delayed</div>
+          <div class="risk-banner-text">
+            Recoverable within the current ship window, but monitor closely.
+          </div>
+        </div>
+      </div>
+    `;
+  } else {
+    banner = `
+      <div class="risk-banner clear">
+        <div class="risk-banner-icon">&#10003;</div>
+        <div class="risk-banner-body">
+          <div class="risk-banner-title">All parts on track</div>
+          <div class="risk-banner-text">
+            No delays or jeopardy flags. ${totalParts} parts in this order.
+          </div>
+        </div>
+      </div>
+    `;
+  }
+
+  // --- Step 3: build one table row per part ---
+  // We .map() the parts into <tr> rows. Each row's risk cell is colored using
+  // the RISK_CONFIG lookup from data.js.
+  const rows = order.parts.map(function (part) {
+    const risk = RISK_CONFIG[part.riskLevel] || RISK_CONFIG.none;
+
+    // The risk cell: a plain dash for "none", a colored pill otherwise.
+    const riskCell = part.riskLevel === "none"
+      ? `<span class="risk-none">&mdash;</span>`
+      : `<span class="risk-pill" style="background:${risk.bg}; color:${risk.text};">${risk.label}</span>`;
+
+    // Highlight the whole row faintly if it has any risk, to draw the eye.
+    const rowClass = part.riskLevel === "jeopardy" ? "row-jeopardy"
+                   : part.riskLevel === "delayed"  ? "row-delayed"
+                   : "";
+
+    return `
+      <tr class="${rowClass}">
+        <td class="mono">${part.partNumber}</td>
+        <td>${part.desc}</td>
+        <td class="num">${part.qty}</td>
+        <td>${part.status}</td>
+        <td>${part.expected}</td>
+        <td class="note">${part.note}</td>
+        <td>${riskCell}</td>
+      </tr>
+    `;
+  }).join("");
+
+  // --- Step 4: assemble the whole internal panel ---
+  return `
+    <div class="panel-card">
+      ${banner}
+
+      <div class="map-section">
+        <div class="map-section-head">
+          <div class="internal-sub" style="margin-bottom:0">
+            Supply chain &middot; where each part is manufactured and how it converges
+            at the Bridgeton hub. Click a facility to isolate its route.
+          </div>
+        </div>
+        <div class="map-holder">
+          <div class="map-tip" id="mapTip"></div>
+          <div id="orderMap"></div>
+        </div>
+      </div>
+
+      <div class="internal-sub">
+        Part-level status &middot; auto-generated from Oracle inventory and
+        production data. Replaces the manual Refresh Refurb Report.
+      </div>
+
+      <div class="table-wrap">
+        <table class="parts-table">
+          <thead>
+            <tr>
+              <th>Part Number</th>
+              <th>Description</th>
+              <th class="num">Qty</th>
+              <th>Status</th>
+              <th>Expected</th>
+              <th>Buyer Note</th>
+              <th>Risk</th>
+            </tr>
+          </thead>
+          <tbody>
+            ${rows}
+          </tbody>
+        </table>
+      </div>
+
+      ${renderCopilotPanel(order)}
+    </div>
+  `;
+}
+
+
+// ----------------------------------------------------------------------------
+//  THE SUPPLY-CHAIN MAP  (rendered inside the Internal View, per order)
+//  ---------------------------------------------------------------------------
+//  This is the integrated version of the standalone interactive map. Two key
+//  differences from the standalone:
+//    1. It's SCOPED TO ONE ORDER — we're already inside an order's detail view,
+//       so the map shows THIS order's supply chain (not an "all orders" view).
+//    2. Its routes are DERIVED from the order's parts (via originForPart), not
+//       hardcoded. The map and the parts table read the same source, so they
+//       can never disagree.
+//
+//  STATE MODEL (same state -> render pattern, smaller scope):
+//    mapSelected = null            -> show the whole order's supply chain
+//    mapSelected = "monterrey"     -> isolate just that facility's route(s)
+//  A click sets mapSelected and re-renders; clicking empty space clears it.
+// ----------------------------------------------------------------------------
+
+let mapSelected = null;   // which facility is isolated (null = show all legs)
+
+// --- Derive this order's legs from its parts -------------------------------
+// STEP A: group the parts by origin facility, tracking the worst risk in each
+//   group (jeopardy > delayed > none). One inbound leg per origin facility.
+// STEP B: add the final hub -> store leg, whose state comes from the order's
+//   stage (shipped or later = moving/arrived; earlier = still waiting).
+// This is the same "derive a summary from the data" idea as the risk banner:
+// we COMPUTE the routes instead of storing them separately.
+function deriveOrderLegs(order) {
+  // Rank risk so we can keep the "worst" per origin. (An object used as a
+  // lookup of severity — Python: RANK = {"none":0,"delayed":1,"jeopardy":2}.)
+  const RANK = { none: 0, delayed: 1, jeopardy: 2 };
+  const byOrigin = {};   // origin key -> { worstRisk, anyMoving, count }
+
+  order.parts.forEach(function (part) {
+    const origin = originForPart(part.partNumber);
+    if (origin === "bridgeton") return;   // made at the hub -> no inbound leg
+
+    // First time we see this origin, initialize its accumulator.
+    if (!byOrigin[origin]) byOrigin[origin] = { worst: "none", moving: false };
+
+    // Keep the worst risk seen from this origin.
+    if (RANK[part.riskLevel] > RANK[byOrigin[origin].worst]) {
+      byOrigin[origin].worst = part.riskLevel;
+    }
+    // "moving" if any part from here is still in production / queued / backordered.
+    if (["In Production", "Queued", "Backordered"].includes(part.status)) {
+      byOrigin[origin].moving = true;
+    }
+  });
+
+  // Turn the grouped origins into leg objects with a visual state.
+  const legs = [];
+  Object.keys(byOrigin).forEach(function (origin) {
+    const g = byOrigin[origin];
+    // Map the group's condition to one of the four visual leg states.
+    let state;
+    if (g.worst === "jeopardy") state = "stuck";       // red, halted
+    else if (g.worst === "delayed" || g.moving) state = "moving"; // blue, animated
+    else state = "complete";                            // navy, arrived at hub
+    legs.push({ from: origin, to: "bridgeton", state: state });
+  });
+
+  // The final delivery leg: hub -> store. Its state tracks the order's stage.
+  // Stage 6 = Shipped, so >=6 means the truck has left the hub.
+  const finalState = order.currentStage >= 6 ? "moving"
+                   : order.currentStage >= 5 ? "moving"   // packing -> imminent
+                   : "waiting";
+  legs.push({ from: "bridgeton", to: "__store", state: finalState });
+
+  return legs;
+}
+
+// --- Geometry helper: curved path between two projected points -------------
+function mapArc(a, b, curve) {
+  const dx = b.x - a.x, dy = b.y - a.y;
+  const mx = (a.x + b.x) / 2, my = (a.y + b.y) / 2;
+  const cx = mx - dy * curve, cy = my + dx * curve;
+  return "M " + a.x + " " + a.y + " Q " + cx + " " + cy + " " + b.x + " " + b.y;
+}
+
+// Resolve a leg endpoint key to its {x,y}. "__store" is the special token for
+// THIS order's destination store; anything else is a facility.
+function mapNodeXY(key, order) {
+  if (key === "__store") return MAP_GEO.storesByOrder[order.id];
+  return MAP_GEO.facilities.find(function (f) { return f.key === key; });
+}
+
+// --- Build the SVG markup for the whole map, for one order -----------------
+function renderOrderMap(order) {
+  const legs = deriveOrderLegs(order);
+  const store = MAP_GEO.storesByOrder[order.id];
+
+  // Which facilities are actually involved in this order? (Used to keep
+  // uninvolved plants faint — context, not clutter.) A Set holds unique keys.
+  const involved = new Set();
+  legs.forEach(function (l) {
+    if (l.from !== "__store") involved.add(l.from);
+    if (l.to !== "__store") involved.add(l.to);
+  });
+
+  // Legs markup. A leg is "active" (bright) unless a facility is isolated and
+  // this leg doesn't touch it.
+  const legMarkup = legs.map(function (l) {
+    const a = mapNodeXY(l.from, order), b = mapNodeXY(l.to, order);
+    if (!a || !b) return "";
+    const curve = l.from === "bridgeton" ? 0.12 : 0.18;
+    const active = (mapSelected === null) || (l.from === mapSelected || l.to === mapSelected);
+    return '<path class="mleg ' + l.state + (active ? " on" : "") + '" d="' + mapArc(a, b, curve) + '"></path>';
+  }).join("");
+
+  // Facility node markup. Involved facilities are full-strength; others faint.
+  const facMarkup = MAP_GEO.facilities.map(function (f) {
+    const isHub = f.role === "hub";
+    const r = isHub ? 8 : 5.5;
+    const inThis = involved.has(f.key);
+    const isolated = (mapSelected !== null);
+    const on = inThis && (!isolated || f.key === mapSelected || f.key === "bridgeton");
+    return '<g class="mnode facility ' + (inThis ? "involved" : "context") + (on ? " on" : "") + '"'
+         + ' data-key="' + f.key + '" data-name="' + f.name + '" data-makes="' + f.makes + '"'
+         + ' transform="translate(' + f.x + ',' + f.y + ')">'
+         + '<circle class="mhalo" r="' + (r + 6) + '"></circle>'
+         + '<circle class="mdot ' + (isHub ? "hub" : "plant") + '" r="' + r + '"></circle>'
+         + (isHub ? '<circle r="2.5" fill="#fff"></circle>' : "")
+         + '<text class="mlabel" y="' + (r + 13) + '">' + f.name + '</text>'
+         + '</g>';
+  }).join("");
+
+  // The destination store node (diamond).
+  const storeMarkup = store
+    ? '<g class="mnode store on" transform="translate(' + store.x + ',' + store.y + ')">'
+      + '<rect class="mdiamond" x="-5" y="-5" width="10" height="10" transform="rotate(45)"></rect>'
+      + '<text class="mstore-label" y="17">' + store.name.split(",")[0] + '</text>'
+      + '</g>'
+    : "";
+
+  // Assemble the SVG. The `focused` class is on when a facility is isolated.
+  return '<svg class="supply-map ' + (mapSelected ? "focused" : "") + '" viewBox="' + MAP_GEO.viewBox + '" xmlns="http://www.w3.org/2000/svg">'
+       + '<path class="mstate context" d="' + MAP_GEO.paths.mexico + '"></path>'
+       + '<path class="mstate" d="' + MAP_GEO.paths.states + '"></path>'
+       + '<g class="mlegs">' + legMarkup + '</g>'
+       + storeMarkup
+       + facMarkup
+       + '</svg>';
+}
+
+// --- Wire up map interactivity after it's inserted into the page -----------
+// Called each time we (re)draw the map. Attaches click handlers that follow
+// the same rule as every other handler: change state, then re-render.
+function wireMapEvents(order) {
+  const container = document.getElementById("orderMap");
+  if (!container) return;
+
+  // Click a facility node -> isolate it (or clear if it's already selected).
+  container.querySelectorAll(".mnode.facility.involved").forEach(function (node) {
+    node.addEventListener("click", function (e) {
+      e.stopPropagation();
+      const key = node.getAttribute("data-key");
+      mapSelected = (mapSelected === key) ? null : key;   // toggle
+      drawMap(order);                                     // re-render
+    });
+  });
+
+  // Click empty map space -> clear the isolation.
+  const svg = container.querySelector(".supply-map");
+  if (svg) svg.addEventListener("click", function () { mapSelected = null; drawMap(order); });
+
+  // Hover tooltips on facilities.
+  const tip = document.getElementById("mapTip");
+  container.querySelectorAll(".mnode.facility").forEach(function (node) {
+    node.addEventListener("mousemove", function (e) {
+      tip.innerHTML = '<div class="tname">' + node.getAttribute("data-name") + '</div>'
+                    + '<div class="tmakes">' + node.getAttribute("data-makes") + '</div>';
+      const rect = container.getBoundingClientRect();
+      tip.style.left = (e.clientX - rect.left + 14) + "px";
+      tip.style.top = (e.clientY - rect.top + 14) + "px";
+      tip.style.opacity = 1;
+    });
+    node.addEventListener("mouseleave", function () { tip.style.opacity = 0; });
+  });
+}
+
+// Draw (or redraw) the map for an order, then re-attach its events.
+// (We rebuild innerHTML each time, so events must be re-wired after — the old
+//  elements are gone. Simple and correct for a map this size.)
+function drawMap(order) {
+  const container = document.getElementById("orderMap");
+  if (!container) return;
+  container.innerHTML = renderOrderMap(order);
+  wireMapEvents(order);
+}
+
+
+// ----------------------------------------------------------------------------
+//  COPILOT ASSISTANT  ("Mike's inbox" — read email, answer, draft reply)
+//  ---------------------------------------------------------------------------
+//  This simulates Microsoft Copilot grounded in the order data. It shows a
+//  customer email, and on request produces a status answer + a draftable reply.
+//
+//  ARCHITECTURE / THE SWAPPABLE SEAM:
+//    getCopilotAnswer(order) is the ONE function that produces the AI text.
+//    Today it composes the answer LOCALLY from order data (Option B, simulated
+//    — safe + reliable for a live demo). In production you'd replace its body
+//    with a call to your backend proxy (Option A). Everything else stays the
+//    same. This is the "swappable data source" idea again: isolate the thing
+//    that might change behind one function so the rest of the app doesn't care.
+//
+//  WHY NOT CALL THE REAL API HERE? The API key can't live in client-side JS on
+//  GitHub Pages — anyone could read it via View Source and run up charges. See
+//  the fully-commented real-API version at the bottom of this section to learn
+//  how the production path works through a proxy.
+// ----------------------------------------------------------------------------
+
+// --- The "brain": compose a grounded status answer from the order data ------
+// This is template-based natural-language generation. The key idea is
+// GROUNDING: every sentence is derived from real fields on `order`, so the
+// assistant never invents facts. That's exactly what makes enterprise Copilot
+// trustworthy vs. a generic chatbot — it reasons over YOUR data.
+function getCopilotAnswer(order) {
+  const stage = STAGES[order.currentStage - 1];
+  const store = MAP_GEO.storesByOrder[order.id];
+  const storeName = store ? store.name : order.customer;
+
+  // Derive part-status counts (same .filter() pattern as the risk banner).
+  const jeopardy = order.parts.filter(function (p) { return p.riskLevel === "jeopardy"; });
+  const delayed  = order.parts.filter(function (p) { return p.riskLevel === "delayed"; });
+  const ready    = order.parts.filter(function (p) {
+    return ["In Stock", "Ready", "Packed", "Shipped", "Installed"].includes(p.status);
+  });
+
+  // Build the answer in pieces, then join. (Like building a list of sentences
+  // and "\n".join()-ing them in Python.)
+  const lines = [];
+  lines.push("This is " + storeName + " (order " + order.id + ").");
+  lines.push("Current status: " + stage.name + ", stage " + order.currentStage +
+             " of 8. Estimated ship date " + order.shipDate + ".");
+  lines.push(ready.length + " of " + order.parts.length +
+             " parts are ready or already moving.");
+
+  // Risk-aware branch — the assistant gives DIFFERENT advice by situation.
+  if (jeopardy.length > 0) {
+    const j = jeopardy[0];
+    lines.push("\u26A0 Heads up: " + j.desc + " (" + j.partNumber + ") is " +
+               j.status.toLowerCase() + " and not expected until " + j.expected +
+               ", which puts the " + order.shipDate + " ship date at risk.");
+    lines.push("Recommendation: reply to confirm the order is progressing but " +
+               "avoid committing to the exact date until we verify the timeline. " +
+               "Want me to draft a careful holding reply?");
+  } else if (delayed.length > 0) {
+    lines.push("One part is running behind but is still recoverable within the " +
+               "current window. Recommendation: reassure the customer we're on " +
+               "track. Want me to draft a reply?");
+  } else if (order.currentStage >= 6) {
+    lines.push("Good news — this order has shipped" +
+               (order.carrierTracking ? " (tracking " + order.carrierTracking + ")" : "") +
+               ". Want me to draft a reply with the tracking details?");
+  } else {
+    lines.push("Everything is on track. Want me to draft a reply confirming the " +
+               "timeline for the customer?");
+  }
+  return lines.join("\n\n");
+}
+
+// --- CONTACT ROUTING: who should really answer this email? ------------------
+//  The classifier. It scores each expert by how strongly the email (plus the
+//  order's own characteristics) matches their domain, then returns the best
+//  match ONLY IF it clears a confidence bar. Below the bar -> return null,
+//  meaning "no specialist needed, Mike's got this."
+//
+//  THE PATTERN (learn this shape — it's everywhere in data work):
+//    map   -> score every candidate            (Python: list comprehension)
+//    sort  -> order by score, best first        (Python: sorted(key=...))
+//    pick  -> take the top IF it clears a bar    (Python: x if cond else None)
+//  This "score / sort / threshold" trio is the skeleton of ranking, search,
+//  recommendation, and classification systems alike.
+function recommendContact(order, email) {
+  // Build one lowercase "haystack" of everything we can match against: the
+  // email subject + body AND the order's own description (so an all-makes
+  // ORDER routes to Shawn even if the email doesn't say "all-makes"). Grounding
+  // from two sources at once. .toLowerCase() makes matching case-insensitive.
+  const haystack = (email.subject + " " + email.body + " " + order.cases).toLowerCase();
+
+  // Score each expert: +1 for every keyword of theirs that appears.
+  // .map() transforms the directory into a list of {expert, score, hits}.
+  // (Python: scored = [score_one(e) for e in EXPERT_DIRECTORY])
+  const scored = EXPERT_DIRECTORY.map(function (expert) {
+    const hits = expert.keywords.filter(function (kw) { return haystack.includes(kw); });
+    return { expert: expert, score: hits.length, hits: hits };
+  });
+
+  // Sort by score, highest first. (Python: scored.sort(key=lambda s: -s["score"]))
+  // The comparator returns positive/negative to order b before/after a.
+  scored.sort(function (a, b) { return b.score - a.score; });
+
+  // The confidence bar: require at least ONE keyword hit. (Bump to >=2 if you
+  // want to only route on strong signals.) No hit -> Mike handles it himself.
+  const best = scored[0];
+  if (!best || best.score === 0) return null;
+  return best;   // { expert, score, hits }
+}
+
+// --- Compose an INTRO email from Mike to the recommended expert -------------
+// Parallel to getCopilotDraft, but this draft loops in the specialist with
+// context, rather than replying to the customer. Grounded in email + order.
+function getContactIntroDraft(order, rec) {
+  const email = CUSTOMER_EMAILS[order.id];
+  const customerFirst = email.fromName.split(",")[0];
+  const topic = rec.hits.slice(0, 2).join(" / ");   // the matched signals
+  return "Hi " + rec.expert.name.split(" ")[0] + ",\n\n"
+    + "Quick loop-in: " + customerFirst + " at " + order.customer + " (order "
+    + order.id + ") reached out about " + topic + ". Since you own "
+    + rec.expert.owns.split(",")[0] + ", you can speak to this better than I can. "
+    + "Can you take the lead on the answer? Happy to stay cc'd since I've got the "
+    + "account relationship.\n\nThanks,\nMike";
+}
+
+// --- Compose a SANITIZED customer-facing reply ------------------------------
+// The two-layer principle in action: internally we know the jeopardy detail,
+// but the customer draft is diplomatic and does NOT expose the backorder. The
+// PM decides what to disclose. This is why the internal/customer split matters.
+function getCopilotDraft(order) {
+  const store = MAP_GEO.storesByOrder[order.id];
+  const first = "Hi " + (CUSTOMER_EMAILS[order.id] ? CUSTOMER_EMAILS[order.id].fromName.split(",")[0] : "there") + ",";
+  const jeopardy = order.parts.filter(function (p) { return p.riskLevel === "jeopardy"; });
+
+  let middle;
+  if (jeopardy.length > 0) {
+    // Careful, non-committal — does NOT mention the backordered part.
+    middle = "Thanks for checking in. Your " + order.customer + " refresh order is " +
+             "actively in production and progressing well. We're finalizing a couple " +
+             "of components and want to give you an accurate delivery date rather than " +
+             "an estimate \u2014 I'll confirm the firm ship date with you by end of week.";
+  } else if (order.currentStage >= 6) {
+    middle = "Good news \u2014 your order has shipped" +
+             (order.carrierTracking ? " and is on its way. Your tracking number is " + order.carrierTracking + "." : ".") +
+             " We'll keep you posted through delivery.";
+  } else {
+    middle = "Happy to update you. Your " + order.customer + " refresh order is on " +
+             "track and currently in " + STAGES[order.currentStage - 1].name.toLowerCase() +
+             ". We're still targeting a " + order.shipDate + " ship date.";
+  }
+  return first + "\n\n" + middle + "\n\nBest,\nMike";
+}
+
+// --- Render the Copilot panel for an order ----------------------------------
+function renderCopilotPanel(order) {
+  const email = CUSTOMER_EMAILS[order.id];
+  if (!email) return "";
+  return `
+    <div class="copilot">
+      <div class="copilot-head">
+        <div class="copilot-badge">Copilot</div>
+        <div class="copilot-title">Order Assistant</div>
+        <div class="copilot-note">Grounded in this order's live status</div>
+      </div>
+
+      <div class="email-card">
+        <div class="email-meta">
+          <span class="email-from">${email.fromName}</span>
+          <span class="email-addr">&lt;${email.from}&gt;</span>
+        </div>
+        <div class="email-subj">${email.subject}</div>
+        <div class="email-body">${email.body}</div>
+      </div>
+
+      <div class="copilot-actions">
+        <button class="cbtn primary" id="askCopilot">Ask Copilot about this order</button>
+      </div>
+
+      <div class="copilot-response" id="copilotResponse" style="display:none">
+        <div class="copilot-response-inner" id="copilotText"></div>
+
+        <div class="copilot-contact" id="copilotContact" style="display:none">
+          <div class="contact-flag">Suggested contact</div>
+          <div class="contact-card">
+            <div class="contact-main">
+              <div class="contact-name" id="contactName"></div>
+              <div class="contact-role" id="contactRole"></div>
+              <div class="contact-reason" id="contactReason"></div>
+            </div>
+            <button class="cbtn" id="draftIntro">Draft intro</button>
+          </div>
+          <div class="intro-card" id="introCard" style="display:none">
+            <div class="draft-label">Intro to loop them in</div>
+            <div class="draft-body" id="introText"></div>
+          </div>
+        </div>
+
+        <div class="copilot-draft-actions" id="draftActions" style="display:none">
+          <button class="cbtn" id="draftReply">Draft a reply</button>
+        </div>
+        <div class="draft-card" id="draftCard" style="display:none">
+          <div class="draft-label">Suggested reply (customer-facing)</div>
+          <div class="draft-body" id="draftText"></div>
+          <div class="draft-hint">Review before sending \u2014 internal risk detail is intentionally omitted.</div>
+        </div>
+      </div>
+    </div>
+  `;
+}
+
+// --- Typewriter effect: reveal text progressively (feels "live") ------------
+// Reveals `text` one chunk at a time into `el`, then calls done(). Uses
+// setInterval — a browser timer that runs a function repeatedly. (Python's
+// closest analogy is time.sleep in a loop, but JS is non-blocking so we use a
+// timer callback instead of sleeping.)
+function typewriter(el, text, done) {
+  el.textContent = "";
+  let i = 0;
+  const step = 2;                       // characters per tick (speed)
+  const timer = setInterval(function () {
+    i += step;
+    el.textContent = text.slice(0, i);
+    if (i >= text.length) {
+      clearInterval(timer);             // stop the timer when finished
+      if (done) done();
+    }
+  }, 12);
+}
+
+// --- Wire the Copilot buttons after the panel is inserted -------------------
+function wireCopilot(order) {
+  const askBtn = document.getElementById("askCopilot");
+  if (!askBtn) return;
+
+  askBtn.addEventListener("click", function () {
+    const box = document.getElementById("copilotResponse");
+    const textEl = document.getElementById("copilotText");
+    const draftActions = document.getElementById("draftActions");
+    box.style.display = "block";
+    askBtn.disabled = true;
+    askBtn.textContent = "Copilot is reading the order\u2026";
+
+    // Simulate a brief "thinking" delay, then type the grounded answer.
+    // setTimeout runs a function ONCE after a delay (ms). This mimics the
+    // latency of a real API round-trip without actually calling one.
+    setTimeout(function () {
+      const answer = getCopilotAnswer(order);   // <-- the swappable seam
+      typewriter(textEl, answer, function () {
+        draftActions.style.display = "block";   // reveal "Draft a reply" when done
+
+        // ROUTING: after answering, decide if a specialist should be looped in.
+        // recommendContact returns null when Mike's got it (no card shown).
+        const rec = recommendContact(order, CUSTOMER_EMAILS[order.id]);
+        if (rec) {
+          document.getElementById("contactName").textContent = rec.expert.name;
+          document.getElementById("contactRole").textContent = rec.expert.role;
+          document.getElementById("contactReason").textContent =
+            "This email touches " + rec.hits.slice(0, 2).join(" / ") + " \u2014 "
+            + rec.expert.name.split(" ")[0] + " owns " + rec.expert.owns.split(",")[0]
+            + " and can answer this directly.";
+          document.getElementById("copilotContact").style.display = "block";
+        }
+      });
+      askBtn.textContent = "Answered \u2713";
+    }, 650);
+  });
+
+  // "Draft a reply" -> compose + type the sanitized customer email.
+  // We attach DIRECTLY to the button (not to document) so listeners don't
+  // stack up each time a new order opens. The button is recreated per order,
+  // so its handlers are fresh each time. (Attaching to `document` here would
+  // leak a new listener on every openOrder — a common interactive-UI bug.)
+  const draftBtn = document.getElementById("draftReply");
+  if (draftBtn) {
+    draftBtn.addEventListener("click", function () {
+      const card = document.getElementById("draftCard");
+      const draftText = document.getElementById("draftText");
+      card.style.display = "block";
+      typewriter(draftText, getCopilotDraft(order));
+    });
+  }
+
+  // "Draft intro" -> compose + type an intro email to the recommended expert.
+  // Attached directly to the button (same anti-leak reasoning as above).
+  const introBtn = document.getElementById("draftIntro");
+  if (introBtn) {
+    introBtn.addEventListener("click", function () {
+      const rec = recommendContact(order, CUSTOMER_EMAILS[order.id]);
+      if (!rec) return;
+      const card = document.getElementById("introCard");
+      const introText = document.getElementById("introText");
+      card.style.display = "block";
+      typewriter(introText, getContactIntroDraft(order, rec));
+    });
+  }
+}
+
+/*  ========================================================================
+    PRODUCTION VERSION (Option A) — how getCopilotAnswer would REALLY work.
+    ------------------------------------------------------------------------
+    This is here for learning. It is NOT called in the demo. It shows the real
+    API call routed through a BACKEND PROXY so the key never reaches the browser.
+
+    // Browser side: call YOUR proxy (no key here), send the grounded context.
+    async function getCopilotAnswerLive(order) {
+      // We ground the model by putting the real order data in the prompt.
+      const context = JSON.stringify({
+        id: order.id, customer: order.customer, stage: order.currentStage,
+        shipDate: order.shipDate, status: order.status, parts: order.parts,
+      });
+
+      // fetch() is the browser's HTTP client (like Python's requests, but async).
+      // We POST to OUR server endpoint — not api.anthropic.com directly.
+      const resp = await fetch("https://your-worker.example.com/copilot", {
+        method: "POST",
+        headers: { "content-type": "application/json" },  // NOTE: no api-key here!
+        body: JSON.stringify({
+          question: "Summarize this order's status for a sales rep and advise on a reply.",
+          orderContext: context,
+        }),
+      });
+      const data = await resp.json();
+      return data.answer;   // our proxy returns the model's text
+    }
+
+    // Server side (a serverless function — runs on YOUR server, key is safe):
+    //   export async function onRequest(request, env) {
+    //     const { question, orderContext } = await request.json();
+    //     const r = await fetch("https://api.anthropic.com/v1/messages", {
+    //       method: "POST",
+    //       headers: {
+    //         "x-api-key": env.ANTHROPIC_API_KEY,   // <-- key from server env, hidden
+    //         "anthropic-version": "2023-06-01",
+    //         "content-type": "application/json",
+    //       },
+    //       body: JSON.stringify({
+    //         model: "claude-sonnet-4-6",
+    //         max_tokens: 400,
+    //         system: "You are a Hussmann order-status assistant. Use ONLY the "
+    //               + "provided order data. Never invent facts.",
+    //         messages: [{ role: "user",
+    //           content: question + "\n\nOrder data:\n" + orderContext }],
+    //       }),
+    //     });
+    //     const data = await r.json();
+    //     const answer = data.content.filter(b => b.type === "text")
+    //                                .map(b => b.text).join("");
+    //     return new Response(JSON.stringify({ answer }),
+    //                         { headers: { "content-type": "application/json" } });
+    //   }
+    ======================================================================== */
+
+
+// ----------------------------------------------------------------------------
+//  OPEN AN ORDER (switch from dashboard to detail view)
+//  ---------------------------------------------------------------------------
+//  Given an order id, find that order in the data, then:
+//    - hide the dashboard, show the detail section
+//    - fill the detail header
+//    - render the customer view (internal view comes in the next piece)
+//    - reset tabs so we always start on "Customer View"
+// ----------------------------------------------------------------------------
+function openOrder(orderId) {
+  // .find() returns the FIRST array item where the test is true.
+  // (Python: next(o for o in ORDERS if o["id"] == orderId))
+  const order = ORDERS.find(function (o) { return o.id === orderId; });
+  if (!order) return;   // safety: if not found, do nothing
+
+  // Remember which order is open, so the tab switcher knows what to show.
+  currentOrder = order;
+
+  // Toggle the two big sections.
+  document.getElementById("dashboard").classList.add("hidden");
+  document.getElementById("detail").classList.add("active");
+
+  // Fill the detail header with this order's summary.
+  document.getElementById("detailHeader").innerHTML = `
+    <div>
+      <div class="dh-cust">${order.customer}</div>
+      <div class="dh-store">${order.storeLabel}</div>
+      <div class="dh-meta">
+        <div class="item">
+          <div class="k">Order ID</div>
+          <div class="v mono">${order.id}</div>
+        </div>
+        <div class="item">
+          <div class="k">Cases</div>
+          <div class="v">${order.cases}</div>
+        </div>
+        <div class="item">
+          <div class="k">Ship Date</div>
+          <div class="v">${order.shipDate}</div>
+        </div>
+      </div>
+    </div>
+    ${renderBadge(order.status)}
+  `;
+
+  // Render both panels now.
+  document.getElementById("panel-customer").innerHTML = renderCustomerView(order);
+  document.getElementById("panel-internal").innerHTML = renderInternalView(order);
+
+  // Draw the supply-chain map inside the internal panel. Reset the map's
+  // isolation state so each newly opened order starts showing its full chain.
+  mapSelected = null;
+  drawMap(order);
+
+  // Wire the Copilot assistant panel (email -> answer -> draft reply).
+  wireCopilot(order);
+
+  // Always start on the Customer View tab when opening an order.
+  switchTab("customer");
+}
+
+
+// ----------------------------------------------------------------------------
+//  TAB SWITCHING
+//  ---------------------------------------------------------------------------
+//  Shows one panel, hides the other, and moves the active underline. Works by
+//  adding/removing the "active" CSS class on the right elements.
+// ----------------------------------------------------------------------------
+function switchTab(tabName) {
+  // Update the tab BUTTONS (the underline highlight).
+  document.querySelectorAll(".tab").forEach(function (btn) {
+    // .toggle(class, condition) adds the class if condition is true,
+    // removes it if false. Clean way to set exactly one tab active.
+    btn.classList.toggle("active", btn.getAttribute("data-tab") === tabName);
+  });
+
+  // Update the PANELS (which content shows).
+  document.getElementById("panel-customer")
+    .classList.toggle("active", tabName === "customer");
+  document.getElementById("panel-internal")
+    .classList.toggle("active", tabName === "internal");
+}
+
+
+// ----------------------------------------------------------------------------
+//  GO BACK TO THE DASHBOARD
+// ----------------------------------------------------------------------------
+function showDashboard() {
+  document.getElementById("dashboard").classList.remove("hidden");
+  document.getElementById("detail").classList.remove("active");
+}
+
+
+// ----------------------------------------------------------------------------
+//  STARTUP / WIRING
+//  ---------------------------------------------------------------------------
+//  This runs once when the page loads. It renders the dashboard and attaches
+//  the click handlers for the back button and the tabs.
+//
+//  `currentOrder` is declared at the top level so multiple functions can share
+//  it — it remembers which order is currently open. (This is a module-level
+//  variable, like a global in a Python script.)
+// ----------------------------------------------------------------------------
+let currentOrder = null;
+
+function init() {
+  // 1. Draw the dashboard cards.
+  renderDashboard();
+
+  // 2. Back button returns to the dashboard.
+  document.getElementById("backBtn")
+    .addEventListener("click", showDashboard);
+
+  // 3. Each tab button switches tabs when clicked.
+  document.querySelectorAll(".tab").forEach(function (btn) {
+    btn.addEventListener("click", function () {
+      switchTab(btn.getAttribute("data-tab"));
+    });
+  });
+}
+
+// Run init() as soon as the page's HTML is ready.
+// (If the script is at the bottom of <body>, the HTML already exists, but this
+//  guard makes it robust regardless of where the script loads.)
+if (document.readyState === "loading") {
+  document.addEventListener("DOMContentLoaded", init);
+} else {
+  init();
+}
+
+</script>
+
+</body>
+</html>
