@@ -1,0 +1,393 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Hussmann Refresh — Impact &amp; ROI</title>
+
+  <!--
+    ==========================================================================
+    IMPACT & ROI  (reframed)  — standalone proving artifact for Demo 3
+    --------------------------------------------------------------------------
+    The single most important change from v3: the old ROI was a ~10% conversion
+    / sales-lift number. Emily confirmed that conversion (quote->order) CANNOT
+    be tracked — CRM records one opportunity per store, so a won 150-store bid
+    lands as ~75 "yes" records and ZERO "no" records. You cannot compute a rate
+    from a numerator with no denominator; presenting a lift % would be fabricated
+    and, in front of the executive HLT audience, a credibility risk.
+
+    So the value story is rebuilt on defensible ground:
+      - Quote turn-time      : ~5 days -> minutes            (measured process fact)
+      - Travel cost avoided  : itemized T&E per site survey  (estimated from standard rates)
+      - Quoter capacity freed: headcount cost x time saved   (PENDING Emily's number)
+      - Non-financial gains  : choice, stickiness, LTV       (qualitative — Emily strongly urged including)
+
+    Every number is live and inspectable. Emily's headcount cost is isolated as
+    ONE flagged input — when it lands, change one field.
+
+    Same design tokens as Demo 2 / Demo 3.
+    ==========================================================================
+  -->
+
+  <style>
+    :root {
+      --navy:#0B2D4D; --navy-2:#143D63; --blue:#1E6BB8; --blue-soft:#E5EFFB; --gold:#C99A2E;
+      --bg:#F5F3EE; --surface:#FFFFFF; --surface-2:#FAF9F6; --border:#E2DFD8; --border-2:#CFCBC1;
+      --ink:#1A1A18; --ink-2:#5A574F; --ink-3:#8A867B;
+      --green:#2E9E4A; --green-bg:#E7F4EA; --green-ink:#1E7A34;
+      --amber:#E08A16; --amber-bg:#FDF0E3; --amber-ink:#B4600A;
+      --sky:#2A7FD4; --sky-bg:#E5EFFB; --sky-ink:#1560A8;
+      --red:#C62828; --red-bg:#FBE4E4; --red-ink:#B02020;
+      --radius:10px; --radius-lg:14px; --maxw:1080px;
+      --font:"Inter",-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif;
+      --mono:"SF Mono","Roboto Mono",ui-monospace,monospace;
+    }
+    * { margin:0; padding:0; box-sizing:border-box; }
+    body { font-family:var(--font); background:var(--bg); color:var(--ink); line-height:1.5; -webkit-font-smoothing:antialiased; }
+
+    .topbar { background:var(--navy); color:#fff; padding:14px 24px; display:flex; align-items:center; justify-content:space-between; border-bottom:3px solid var(--blue); }
+    .brand { display:flex; align-items:center; gap:12px; }
+    .brand-mark { width:34px; height:34px; border-radius:7px; background:linear-gradient(135deg,var(--blue),var(--navy-2)); display:flex; align-items:center; justify-content:center; font-weight:700; font-size:17px; }
+    .brand-text { display:flex; flex-direction:column; line-height:1.15; }
+    .brand-text .name { font-weight:600; font-size:15px; }
+    .brand-text .sub { font-size:11.5px; color:#A9C4DE; }
+    .env { font-size:11px; font-weight:500; color:#A9C4DE; border:1px solid #2A4E70; padding:4px 10px; border-radius:999px; }
+
+    .page { max-width:var(--maxw); margin:0 auto; padding:28px 24px 64px; }
+    .eyebrow { font-size:12px; font-weight:700; letter-spacing:.08em; text-transform:uppercase; color:var(--blue); }
+    h1 { font-size:27px; letter-spacing:-.01em; margin:6px 0 8px; }
+    .lede { color:var(--ink-2); font-size:15px; max-width:74ch; }
+    .lede b { color:var(--ink); }
+
+    /* honesty callout — why not sales lift */
+    .callout { margin-top:20px; background:var(--surface); border:1px solid var(--border); border-left:4px solid var(--amber); border-radius:var(--radius); padding:15px 18px; }
+    .callout .t { font-weight:700; font-size:14px; color:var(--navy); margin-bottom:4px; }
+    .callout p { font-size:13.5px; color:var(--ink-2); }
+    .callout .mono { font-family:var(--mono); font-size:12.5px; color:var(--ink); }
+
+    /* headline metrics */
+    .headline { margin-top:22px; display:grid; grid-template-columns:repeat(3,1fr); gap:14px; }
+    .hcard { background:var(--surface); border:1px solid var(--border); border-radius:var(--radius-lg); padding:16px 18px; }
+    .hcard .lbl { font-size:11.5px; font-weight:700; letter-spacing:.05em; text-transform:uppercase; color:var(--ink-3); }
+    .hcard .big { font-size:26px; font-weight:800; letter-spacing:-.02em; color:var(--navy); margin-top:6px; line-height:1.05; }
+    .hcard .cap { font-size:12px; color:var(--ink-2); margin-top:4px; }
+    .tag { display:inline-block; font-size:10px; font-weight:800; letter-spacing:.04em; text-transform:uppercase; border-radius:5px; padding:2px 7px; vertical-align:2px; }
+    .tag.measured { color:var(--green-ink); background:var(--green-bg); }
+    .tag.est { color:var(--sky-ink); background:var(--sky-bg); }
+    .tag.pending { color:var(--amber-ink); background:var(--amber-bg); }
+
+    .section-h { margin:30px 0 6px; font-size:16px; font-weight:700; color:var(--navy); }
+    .section-sub { font-size:13px; color:var(--ink-2); margin-bottom:14px; }
+
+    /* model grid: inputs + outputs */
+    .model { display:grid; grid-template-columns:340px 1fr; gap:18px; align-items:start; }
+    .inputs { background:var(--surface); border:1px solid var(--border); border-radius:var(--radius-lg); padding:18px; }
+    .inputs h3 { font-size:13px; font-weight:700; color:var(--navy); margin-bottom:2px; }
+    .inputs .note { font-size:12px; color:var(--ink-3); margin-bottom:14px; }
+    .field { margin-bottom:15px; }
+    .field label { display:block; font-size:12.5px; font-weight:600; color:var(--ink-2); margin-bottom:6px; }
+    .field .row { display:flex; align-items:center; gap:10px; }
+    .field input[type=range] { flex:1; accent-color:var(--blue); }
+    .field .val { font-family:var(--mono); font-size:13px; font-weight:700; color:var(--navy); min-width:64px; text-align:right; }
+    .field.pending { border:1.5px dashed var(--amber); border-radius:var(--radius); padding:12px; background:var(--amber-bg); }
+    .field.pending label { color:var(--amber-ink); }
+    .field.pending .pill { font-size:10px; font-weight:800; text-transform:uppercase; letter-spacing:.04em; color:#fff; background:var(--amber); border-radius:5px; padding:2px 6px; margin-left:6px; }
+    .field.pending input[type=number] { width:100%; margin-top:8px; font-family:var(--mono); font-size:14px; padding:8px 10px; border:1px solid var(--border-2); border-radius:8px; }
+    .field .hint { font-size:11px; color:var(--ink-3); margin-top:5px; }
+
+    .outputs { display:grid; gap:14px; }
+    .ocard { background:var(--surface); border:1px solid var(--border); border-radius:var(--radius-lg); padding:16px 18px; }
+    .ocard .top { display:flex; justify-content:space-between; align-items:baseline; gap:12px; }
+    .ocard .name { font-size:14px; font-weight:700; }
+    .ocard .amount { font-size:22px; font-weight:800; letter-spacing:-.01em; color:var(--navy); }
+    .ocard .formula { font-family:var(--mono); font-size:12px; color:var(--ink-3); margin-top:6px; }
+    .ocard .itemize { margin-top:10px; font-size:12.5px; color:var(--ink-2); }
+    .ocard .itemize .li { display:flex; justify-content:space-between; padding:3px 0; border-bottom:1px dashed var(--border); }
+    .ocard .itemize .li:last-child { border-bottom:none; font-weight:700; color:var(--ink); }
+
+    .blended { margin-top:16px; background:linear-gradient(135deg,var(--navy),var(--navy-2)); color:#fff; border-radius:var(--radius-lg); padding:20px 22px; display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:12px; }
+    .blended .l .k { font-size:12px; font-weight:600; color:#A9C4DE; text-transform:uppercase; letter-spacing:.05em; }
+    .blended .l .v { font-size:32px; font-weight:800; letter-spacing:-.02em; margin-top:2px; }
+    .blended .l .sub { font-size:12px; color:#A9C4DE; margin-top:2px; }
+    .blended .r { font-size:12px; color:#CFE0F0; max-width:34ch; text-align:right; }
+
+    /* non-financial */
+    .nonfin { margin-top:14px; display:grid; grid-template-columns:repeat(3,1fr); gap:14px; }
+    .nf { background:var(--surface); border:1px solid var(--border); border-radius:var(--radius-lg); padding:16px 18px; }
+    .nf .ic { width:34px; height:34px; border-radius:9px; background:var(--blue-soft); color:var(--blue); display:flex; align-items:center; justify-content:center; margin-bottom:10px; }
+    .nf .ic svg { width:19px; height:19px; }
+    .nf .name { font-size:14px; font-weight:700; }
+    .nf .desc { font-size:12.5px; color:var(--ink-2); margin-top:3px; }
+
+    .foot { margin-top:26px; font-size:12px; color:var(--ink-3); border-top:1px solid var(--border); padding-top:14px; }
+    .foot b { color:var(--ink-2); }
+
+    @media (max-width:820px){ .model{grid-template-columns:1fr;} .headline,.nonfin{grid-template-columns:1fr;} }
+  </style>
+</head>
+<body>
+
+  <div class="topbar">
+    <div class="brand">
+      <div class="brand-mark">H</div>
+      <div class="brand-text">
+        <span class="name">Hussmann Refresh</span>
+        <span class="sub">AI Refresh Pipeline · Impact &amp; ROI</span>
+      </div>
+    </div>
+    <span class="env">DEMO · ESTIMATED FIGURES</span>
+  </div>
+
+  <div class="page">
+    <div class="eyebrow">Value Story</div>
+    <h1>Impact &amp; ROI</h1>
+    <p class="lede">
+      The value of this pipeline is measured on <b>defensible ground</b> — time saved, travel
+      avoided, and capacity freed — not a single headline sales-lift number. Every figure below
+      is <b>live and inspectable</b>; adjust the assumptions and watch the model recompute.
+    </p>
+
+    <div class="callout">
+      <div class="t">Why not a sales-lift %?</div>
+      <p>
+        Conversion (quote&nbsp;&rarr;&nbsp;order) can't be tracked: the CRM creates <b>one opportunity per store</b>,
+        so a won 150-store bid records as <span class="mono">~75 "yes" · 0 "no"</span>. A rate needs a
+        denominator, and the losses were never captured — so any lift % would be fabricated. We lead
+        with what we can defend.
+      </p>
+    </div>
+
+    <!-- HEADLINE METRICS -->
+    <div class="headline">
+      <div class="hcard">
+        <div class="lbl">Quote turn-time <span class="tag measured">Measured</span></div>
+        <div class="big">~5 days → minutes</div>
+        <div class="cap">Automation drafts the quote; the quoter reviews and pushes to Oracle.</div>
+      </div>
+      <div class="hcard">
+        <div class="lbl">Annual impact <span class="tag est">Estimated</span></div>
+        <div class="big" id="hBlended">—</div>
+        <div class="cap">Travel avoided + quoter capacity freed. Adjustable below.</div>
+      </div>
+      <div class="hcard">
+        <div class="lbl">Labor input <span class="tag pending">Pending</span></div>
+        <div class="big" id="hPending">Awaiting Emily</div>
+        <div class="cap">Anonymized headcount cost — one field updates the whole model.</div>
+      </div>
+    </div>
+
+    <!-- FINANCIAL MODEL -->
+    <div class="section-h">Financial levers</div>
+    <div class="section-sub">Two quantifiable savings. Set the assumptions on the left; the model recomputes on the right.</div>
+
+    <div class="model">
+      <!-- INPUTS -->
+      <div class="inputs">
+        <h3>Assumptions</h3>
+        <div class="note">Grounded per-unit costs × your volume assumptions.</div>
+
+        <div class="field">
+          <label>Quotes needing a site survey / year</label>
+          <div class="row">
+            <input type="range" id="inQuotes" min="20" max="500" step="10" value="180">
+            <span class="val" id="vQuotes">180</span>
+          </div>
+          <div class="hint">Illustrative volume — replace with the real figure when known.</div>
+        </div>
+
+        <div class="field">
+          <label>Share avoidable via self-service / quick-quote</label>
+          <div class="row">
+            <input type="range" id="inAvoid" min="0" max="100" step="5" value="60">
+            <span class="val" id="vAvoid">60%</span>
+          </div>
+          <div class="hint">George: simple surveys don't need a flown-out visit.</div>
+        </div>
+
+        <div class="field">
+          <label>Quoting time removed by automation</label>
+          <div class="row">
+            <input type="range" id="inTime" min="0" max="90" step="5" value="70">
+            <span class="val" id="vTime">70%</span>
+          </div>
+          <div class="hint">Quoter shifts from the 14-step manual process to review-and-approve.</div>
+        </div>
+
+        <div class="field pending">
+          <label>Annual quoting labor cost <span class="pill">Emily · pending</span></label>
+          <input type="number" id="inHeadcount" value="85000" step="1000" min="0">
+          <div class="hint">Illustrative placeholder ($85,000). Emily is sending the anonymized figure — this is the only number gating the labor lever.</div>
+        </div>
+      </div>
+
+      <!-- OUTPUTS -->
+      <div class="outputs">
+        <div class="ocard">
+          <div class="top">
+            <div class="name">Travel cost avoided <span class="tag est">Estimated</span></div>
+            <div class="amount" id="oTravel">—</div>
+          </div>
+          <div class="formula" id="fTravel">trips avoided × cost per trip</div>
+          <div class="itemize">
+            <div class="li"><span>Airfare (round trip, domestic)</span><span>$400</span></div>
+            <div class="li"><span>Rental car (2 days)</span><span>$120</span></div>
+            <div class="li"><span>Hotel (3 nights × $160)</span><span>$480</span></div>
+            <div class="li"><span>Per diem / meals (3 days × $70)</span><span>$210</span></div>
+            <div class="li"><span>Cost per avoided site-survey trip</span><span id="perTrip">$1,210</span></div>
+          </div>
+        </div>
+
+        <div class="ocard">
+          <div class="top">
+            <div class="name">Quoter capacity freed <span class="tag pending">Pending validation</span></div>
+            <div class="amount" id="oLabor">—</div>
+          </div>
+          <div class="formula" id="fLabor">annual quoting labor cost × time removed</div>
+          <div class="itemize">
+            <div class="li"><span>Framed as capacity redeployed to higher-value work — not headcount cut.</span><span></span></div>
+          </div>
+        </div>
+
+        <div class="blended">
+          <div class="l">
+            <div class="k">Estimated annual impact</div>
+            <div class="v" id="oBlended">—</div>
+            <div class="sub" id="oBlendedSub">travel avoided + capacity freed · estimated · pending validation</div>
+          </div>
+          <div class="r">Deliberately no payback % or sales-lift figure — every dollar here traces to a per-unit cost you can point at.</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- NON-FINANCIAL -->
+    <div class="section-h">Non-financial value <span class="tag est" style="vertical-align:3px">Emily strongly recommended</span></div>
+    <div class="section-sub">Real value that resists a dollar figure — and lands with an executive audience precisely because it isn't overclaimed.</div>
+    <div class="nonfin">
+      <div class="nf">
+        <div class="ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 11l3 3L22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/></svg></div>
+        <div class="name">Customer choice</div>
+        <div class="desc">A fast quote gives customers the refresh-vs-remodel option instead of defaulting to a costly replace — Emily's point.</div>
+      </div>
+      <div class="nf">
+        <div class="ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78L12 21.23l8.84-8.84a5.5 5.5 0 0 0 0-7.78z"/></svg></div>
+        <div class="name">Stickiness</div>
+        <div class="desc">An Amazon/DigiKey-grade experience keeps aftermarket demand inside Hussmann instead of leaking to third parties.</div>
+      </div>
+      <div class="nf">
+        <div class="ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 3v18h18"/><path d="M7 14l4-4 3 3 5-6"/></svg></div>
+        <div class="name">Lifetime value</div>
+        <div class="desc">Refreshing early extends each installed case's productive life and deepens the account relationship over time.</div>
+      </div>
+    </div>
+
+    <div class="foot">
+      <b>Sourcing &amp; honesty.</b> Turn-time is a measured process fact. Travel costs are estimated from standard T&amp;E
+      rates (per-trip figure is grounded; annual total scales with the volume assumption you set). Labor saving awaits
+      Emily's anonymized headcount cost and is labeled pending until it lands. Guardrail: refresh is positioned as
+      refresh-early opportunity, <b>not</b> a substitute for new-equipment sales.
+    </div>
+  </div>
+
+<script>
+// ============================================================================
+//  THE ROI MODEL  —  transparent arithmetic, honestly sourced
+//  ---------------------------------------------------------------------------
+//  The whole point of the reframe: replace one un-inspectable "lift %" with a
+//  handful of numbers you can each point at. So the model is deliberately
+//  simple and fully exposed. Two levers:
+//
+//    travelAvoided = tripsAvoided * COST_PER_TRIP
+//        tripsAvoided = quotesNeedingSurvey * avoidableShare
+//    laborSaved    = annualLaborCost * timeRemovedShare
+//
+//  Python parallel (identical shape):
+//    def roi(quotes, avoid_pct, time_pct, labor_cost, cost_per_trip=1210):
+//        trips_avoided = quotes * avoid_pct
+//        travel = trips_avoided * cost_per_trip
+//        labor  = labor_cost * time_pct
+//        return {"travel": travel, "labor": labor, "total": travel + labor}
+//
+//  EPISTEMIC LABELING (the real lesson): each output carries how much we trust
+//  it. Measured (turn-time) > estimated-from-standard-rates (travel) > provided
+//  (labor, pending Emily) > qualitative (non-financial). Same principle as the
+//  Demo 2 exact-match/upsell work: label a claim by the strength of its evidence
+//  rather than dressing everything up as one confident number.
+//
+//  SOURCING IN PRODUCTION (the data-engineering seam):
+//    - turn-time  : process measurement / timestamps in the quoting system
+//    - travel     : the T&E / expense system (real receipts), not a guess
+//    - labor      : HR headcount cost (Emily's figure) — a single provided input
+//    - volumes    : the quoting system's history (how many quotes need a survey)
+//  Each is a swappable source; the arithmetic never changes.
+// ============================================================================
+
+// Grounded per-trip travel cost (itemized in the UI). This is the defensible
+// unit; only the ANNUAL total depends on the volume assumption.
+var COST_PER_TRIP = 400 + 120 + 480 + 210;   // = 1210
+
+// Format a number as whole dollars with thousands separators.
+function usd(x) {
+  return "$" + Math.round(x).toLocaleString("en-US");
+}
+
+// Read the four inputs, returning plain numbers (ranges are 0-100 -> fractions).
+function readInputs() {
+  return {
+    quotes:     parseInt(document.getElementById("inQuotes").value, 10),
+    avoidPct:   parseInt(document.getElementById("inAvoid").value, 10) / 100,
+    timePct:    parseInt(document.getElementById("inTime").value, 10) / 100,
+    laborCost:  parseFloat(document.getElementById("inHeadcount").value) || 0,
+  };
+}
+
+// The model. Pure function of its inputs -> outputs (easy to test/reason about).
+function computeROI(inp) {
+  var tripsAvoided  = inp.quotes * inp.avoidPct;
+  var travelAvoided = tripsAvoided * COST_PER_TRIP;
+  var laborSaved    = inp.laborCost * inp.timePct;
+  return {
+    tripsAvoided:  tripsAvoided,
+    travelAvoided: travelAvoided,
+    laborSaved:    laborSaved,
+    total:         travelAvoided + laborSaved,
+  };
+}
+
+// Render outputs from a computed result.
+function render() {
+  var inp = readInputs();
+  var r = computeROI(inp);
+
+  // input value readouts
+  document.getElementById("vQuotes").textContent = inp.quotes;
+  document.getElementById("vAvoid").textContent  = Math.round(inp.avoidPct * 100) + "%";
+  document.getElementById("vTime").textContent   = Math.round(inp.timePct * 100) + "%";
+
+  // travel
+  document.getElementById("oTravel").textContent = usd(r.travelAvoided);
+  document.getElementById("fTravel").textContent =
+    Math.round(r.tripsAvoided) + " trips avoided × " + usd(COST_PER_TRIP) + " per trip";
+
+  // labor (pending)
+  document.getElementById("oLabor").textContent = usd(r.laborSaved);
+  document.getElementById("fLabor").textContent =
+    usd(inp.laborCost) + " labor cost × " + Math.round(inp.timePct * 100) + "% time removed";
+
+  // blended + headline mirror
+  document.getElementById("oBlended").textContent = usd(r.total);
+  document.getElementById("hBlended").textContent = usd(r.total) + "/yr";
+
+  // headline pending indicator stays qualitative until Emily's number is real;
+  // here we still show the illustrative labor figure so the model is complete.
+  document.getElementById("hPending").textContent = usd(inp.laborCost);
+}
+
+// Wire every input to re-render live.
+["inQuotes", "inAvoid", "inTime", "inHeadcount"].forEach(function (id) {
+  document.getElementById(id).addEventListener("input", render);
+});
+
+render();   // initial paint
+</script>
+</body>
+</html>

@@ -1,0 +1,722 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Refresh Estimate — Hussmann</title>
+<style>
+  :root{
+    --navy:#0B2D4D;--navy-2:#143D63;--blue:#1E6BB8;--blue-soft:#E5EFFB;--gold:#C99A2E;
+    --bg:#F5F3EE;--surface:#FFFFFF;--surface-2:#FAF9F6;--border:#E2DFD8;--border-2:#CFCBC1;
+    --ink:#1A1A18;--ink-2:#5A574F;--ink-3:#8A867B;
+    --green:#2E9E4A;--green-bg:#E7F4EA;--green-ink:#1E7A34;
+    --amber:#E08A16;--amber-bg:#FDF0E3;--amber-ink:#B4600A;
+    --radius:10px;--radius-lg:14px;--maxw:900px;
+    --font:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;
+    --mono:"SF Mono",ui-monospace,Menlo,Consolas,monospace;
+  }
+  *{margin:0;padding:0;box-sizing:border-box;}
+  body{font-family:var(--font);background:var(--bg);color:var(--ink);line-height:1.5;-webkit-font-smoothing:antialiased;}
+  .topbar{background:var(--navy);color:#fff;padding:14px 24px;display:flex;align-items:center;justify-content:space-between;border-bottom:3px solid var(--gold);}
+  .brand{display:flex;align-items:center;gap:12px;}
+  .brand-mark{width:34px;height:34px;border-radius:7px;background:linear-gradient(135deg,var(--blue),var(--navy-2));display:flex;align-items:center;justify-content:center;font-weight:700;font-size:17px;}
+  .brand-text .name{font-weight:600;font-size:15px;}
+  .brand-text .sub{font-size:11.5px;color:#A9C4DE;}
+  .page{max-width:var(--maxw);margin:0 auto;padding:26px 24px 60px;}
+  .hero{margin-bottom:22px;}
+  .hero h1{font-size:27px;font-weight:600;color:var(--navy);letter-spacing:-0.4px;}
+  .hero p{color:var(--ink-2);font-size:15px;margin-top:6px;max-width:620px;}
+  .layout{display:grid;grid-template-columns:1fr 340px;gap:20px;align-items:start;}
+  @media(max-width:760px){.layout{grid-template-columns:1fr;}}
+
+  .card{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius-lg);padding:22px;margin-bottom:16px;}
+  .q{margin-bottom:22px;}
+  .q:last-child{margin-bottom:0;}
+  .q .label{font-size:14.5px;font-weight:600;color:var(--navy);margin-bottom:4px;}
+  .q .sub{font-size:12.5px;color:var(--ink-3);margin-bottom:10px;}
+  .chips{display:flex;gap:8px;flex-wrap:wrap;}
+  .chip{font-size:13.5px;padding:9px 15px;border-radius:999px;background:var(--surface-2);border:1px solid var(--border-2);cursor:pointer;transition:.12s;user-select:none;}
+  .chip:hover{border-color:var(--blue);}
+  .chip.on{background:var(--navy);color:#fff;border-color:var(--navy);}
+  .chip.multi.on{background:var(--blue);border-color:var(--blue);}
+
+  .count-row{display:flex;align-items:center;gap:14px;}
+  .count-row input[type=range]{flex:1;}
+  .count-val{font-family:var(--mono);font-size:15px;font-weight:700;color:var(--navy);min-width:70px;text-align:right;}
+  select,input[type=text],input[type=email]{width:100%;font-family:var(--font);font-size:14px;padding:11px 13px;border:1px solid var(--border-2);border-radius:var(--radius);background:var(--surface-2);}
+  select:focus,input:focus{outline:none;border-color:var(--blue);background:#fff;}
+  .lead-grid{display:grid;grid-template-columns:1fr 1fr;gap:12px;}
+  @media(max-width:520px){.lead-grid{grid-template-columns:1fr;}}
+
+  /* result panel */
+  .result{position:sticky;top:20px;}
+  .result .rc{background:var(--navy);color:#fff;border-radius:var(--radius-lg);padding:22px;}
+  .result .rc .k{font-size:11.5px;text-transform:uppercase;letter-spacing:1px;color:#A9C4DE;}
+  .result .rc .range{font-size:30px;font-weight:700;letter-spacing:-0.5px;margin:4px 0 2px;}
+  .result .rc .per{font-size:12.5px;color:#C7DBEF;}
+  .rec{margin-top:16px;padding:11px 13px;border-radius:var(--radius);font-size:13px;font-weight:600;}
+  .rec.now{background:var(--amber-bg);color:var(--amber-ink);}
+  .rec.soon{background:var(--blue-soft);color:var(--navy);}
+  .rec.mon{background:var(--green-bg);color:var(--green-ink);}
+  .flagged{margin-top:14px;}
+  .flagged .ft{font-size:11.5px;text-transform:uppercase;letter-spacing:.5px;color:var(--ink-3);margin-bottom:7px;}
+  .flagged .item{font-size:13px;color:var(--ink-2);padding:5px 0;border-bottom:1px solid var(--border);display:flex;justify-content:space-between;gap:10px;}
+  .flagged .item:last-child{border-bottom:none;}
+  .conf{margin-top:14px;}
+  .conf .bar{height:7px;border-radius:999px;background:var(--border);overflow:hidden;margin-top:5px;}
+  .conf .bar>span{display:block;height:100%;background:var(--blue);border-radius:999px;transition:width .4s;}
+  .conf .t{font-size:11.5px;color:var(--ink-3);}
+  .replace{margin-top:12px;padding:11px 13px;border-radius:var(--radius);background:var(--amber-bg);color:var(--amber-ink);font-size:12.5px;line-height:1.5;}
+  .caveat{margin-top:14px;font-size:11.5px;color:var(--ink-3);line-height:1.5;}
+  .btn{width:100%;font-family:var(--font);font-size:14px;font-weight:600;padding:13px;border-radius:var(--radius);border:none;background:var(--gold);color:#fff;cursor:pointer;margin-top:14px;}
+  .btn:hover{background:#b8891f;}
+  .btn:disabled{opacity:.45;cursor:not-allowed;}
+  .placeholder{color:var(--ink-3);font-size:13.5px;text-align:center;padding:20px 0;}
+  .privacy{font-size:11px;color:var(--ink-3);margin-top:14px;line-height:1.5;display:flex;gap:7px;align-items:flex-start;}
+  .privacy .lock{flex-shrink:0;}
+  .sent{background:var(--green-bg);border:1px solid #BFE3C8;color:var(--green-ink);padding:14px;border-radius:var(--radius);font-size:13.5px;display:none;}
+  .sent.show{display:block;}
+</style>
+</head>
+<body>
+  <div class="topbar">
+    <div class="brand"><div class="brand-mark">H</div>
+      <div class="brand-text"><div class="name">Hussmann Refresh</div><div class="sub">Instant estimate</div></div>
+    </div>
+    <span style="font-size:12px;color:#A9C4DE;">A Panasonic Company</span>
+  </div>
+
+  <div class="page">
+    <div class="hero">
+      <h1>Get a refresh estimate for your cases</h1>
+      <p>Answer a few quick questions about your refrigeration cases &mdash; no serial numbers or technical details needed. You&rsquo;ll get an instant estimate range, and a Hussmann specialist will follow up with a precise quote.</p>
+      <p style="margin-top:8px;">Refreshing worn cases can restore their look and extend their life for a fraction of a full remodel &mdash; this helps you see whether a refresh is the right call for yours.</p>
+    </div>
+
+    <div class="layout">
+      <div><!-- left column -->
+      <!-- ============ QUESTIONNAIRE (the public, layperson inputs) ============ -->
+      <div class="card">
+        <div class="q">
+          <div class="label">1. What does this case hold?</div>
+          <div class="sub">Pick the closest match.</div>
+          <div class="chips" id="contentsChips"></div>
+        </div>
+
+        <div class="q">
+          <div class="label">2. Roughly how old is it?</div>
+          <div class="sub">A rough guess is fine.</div>
+          <div class="chips" id="ageChips"></div>
+        </div>
+
+        <!-- PATH A: one field a customer CAN find, unlocking model + verified age -->
+        <div class="q" style="background:var(--blue-soft);border:1px solid #BCD6F2;border-radius:10px;padding:15px;">
+          <div class="label">Have the case&rsquo;s serial or model number? <span style="font-weight:400;color:var(--ink-3);">(optional)</span></div>
+          <div class="sub">It&rsquo;s on a metal plate inside or behind the case. One number makes your estimate far more precise.</div>
+          <input type="text" id="serialInput" placeholder="e.g. HSM-D5X-081247-2017  or  D5X" style="font-family:var(--mono);" autocomplete="off" />
+          <div style="margin-top:9px;">
+            <button type="button" id="scanBtn" style="font-family:var(--font);font-size:12.5px;font-weight:600;color:var(--navy);background:var(--surface);border:1px solid var(--border-2);border-radius:999px;padding:8px 14px;cursor:pointer;">&#128247; Scan the plate</button>
+            <span style="font-size:11.5px;color:var(--ink-3);margin-left:8px;">Point-and-scan (demo) &mdash; reads the serial for you.</span>
+          </div>
+          <div id="serialBanner" style="margin-top:10px;font-size:13px;line-height:1.5;display:none;"></div>
+          <div id="configBlock" style="display:none;margin-top:12px;"></div>
+        </div>
+
+        <div class="q">
+          <div class="label">3. What are you noticing? <span style="font-weight:400;color:var(--ink-3);">(select all that apply)</span></div>
+          <div class="sub">These everyday signs tell us which parts to look at &mdash; no part names required.</div>
+          <div class="chips" id="symptomChips"></div>
+          <div style="margin-top:16px;padding-top:14px;border-top:1px dashed var(--border);font-size:12.5px;color:var(--ink-2);font-weight:600;">Already know what needs attention? Pick the areas directly:</div>
+          <div class="chips" id="concernChips" style="margin-top:9px;"></div>
+        </div>
+
+        <div class="q">
+          <div class="label">4. How many cases like this?</div>
+          <div class="sub">We&rsquo;ll estimate for the whole set.</div>
+          <div class="count-row">
+            <input type="range" id="countRange" min="1" max="30" step="1" value="1" />
+            <span class="count-val" id="countVal">1 case</span>
+          </div>
+        </div>
+
+        <div class="q">
+          <div class="label">5. Where is the store?</div>
+          <div class="sub">Climate affects how fast cases wear. We only use your region.</div>
+          <select id="regionSelect">
+            <option value="">Select a region&hellip;</option>
+            <option value="gulf_coast">Gulf Coast / coastal</option>
+            <option value="southeast">Southeast / humid</option>
+            <option value="midwest">Midwest</option>
+            <option value="northeast">Northeast</option>
+            <option value="mountain">Mountain / dry</option>
+            <option value="west_coast">West Coast</option>
+          </select>
+        </div>
+
+        <div class="q">
+          <div class="label">6. Where should we send your estimate?</div>
+          <div class="sub">A specialist will follow up with a precise quote.</div>
+          <div class="lead-grid">
+            <input type="text" id="leadName" placeholder="Your name" />
+            <input type="email" id="leadEmail" placeholder="Email" />
+            <input type="text" id="leadCompany" placeholder="Store or company (optional)" style="grid-column:1/-1;" />
+          </div>
+        </div>
+      </div><!-- questionnaire card -->
+
+      <!-- ============ OPTIONAL TARGETING (feeds the internal predictive model) ============ -->
+      <div class="card">
+        <div style="font-size:13.5px;font-weight:600;color:var(--navy);">Optional — helps us prepare</div>
+        <div style="font-size:12.5px;color:var(--ink-3);margin:2px 0 16px;">A few extra details get you a faster, more tailored follow-up. Skip any you&rsquo;re unsure of.</div>
+        <div class="q">
+          <div class="label">Planning a store remodel?</div>
+          <div class="sub">Your strongest signal for timing — helps us reach you at the right moment.</div>
+          <div class="chips" id="remodelChips"></div>
+        </div>
+        <div class="q">
+          <div class="label">Roughly how many refrigeration cases in the whole store?</div>
+          <div class="count-row">
+            <input type="range" id="storeRange" min="0" max="120" step="5" value="0" />
+            <span class="count-val" id="storeVal">&mdash;</span>
+          </div>
+        </div>
+        <div class="q" style="margin-bottom:0;">
+          <div class="label">Are you already a Hussmann customer?</div>
+          <div class="chips" id="customerChips"></div>
+          <div id="accountBlock" style="display:none;margin-top:14px;padding-top:14px;border-top:1px solid var(--border);"></div>
+        </div>
+      </div>
+      </div><!-- left column -->
+
+      <!-- ============ RESULT (estimate RANGE, not a quote) ============ -->
+      <div class="result">
+        <div class="card" style="padding:18px;">
+          <div id="placeholder" class="placeholder">Answer questions 1&ndash;3 to see your estimate.</div>
+          <div id="resultBody" style="display:none;">
+            <div class="rc">
+              <div class="k" id="rcLabel">Estimated range</div>
+              <div class="range" id="rangeText">&mdash;</div>
+              <div class="per" id="perText"></div>
+            </div>
+            <div class="rec" id="recBox"></div>
+            <div class="flagged" id="flaggedBox"></div>
+            <div id="climateNote" style="display:none;font-size:12px;color:var(--ink-2);margin-top:8px;padding:9px 12px;background:var(--surface-2);border:1px solid var(--border);border-radius:8px;"></div>
+            <div class="replace" id="replaceBox" style="display:none;"></div>
+            <div class="conf">
+              <div class="t" id="confText">Estimate confidence</div>
+              <div class="bar"><span id="confBar" style="width:0%"></span></div>
+            </div>
+            <div class="caveat">This is an estimate range based on your answers, not a quote. The more you tell us, the tighter the range. A specialist confirms the exact price after an on-site survey.</div>
+            <button class="btn" id="submitBtn" disabled>Request my specialist</button>
+            <div class="sent" id="sentMsg"></div>
+            <div class="privacy"><span class="lock">&#128274;</span><span>Your answers stay within Hussmann&rsquo;s systems and are used only to prepare your estimate.</span></div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+<!-- ============================================================================
+     SCRIPT 1 — DATA + DOMAIN. The customer speaks in SYMPTOMS; we translate to
+     PARTS. Everything here is pure logic (no UI), same as the internal demos.
+     ========================================================================= -->
+<script>
+// SYMPTOM_MAP — the heart of a public survey. A layperson observation maps to a
+// likely part + a rough installed cost range. This is the "WebMD" step: the
+// customer never names a gasket; they say "doors don't seal" and we infer it.
+// (Python parallel: a dict of dicts.)
+const SYMPTOM_MAP = {
+  foggy_glass: { label:"Foggy / cloudy glass",     part:"door_glass", low:500,  high:1100, zone:"exterior" },
+  worn_trim:   { label:"Worn or scuffed trim",     part:"bumper",     low:150,  high:400,  zone:"exterior" },
+  dim_lights:  { label:"Dim or flickering lights", part:"led_kit",    low:350,  high:700,  zone:"interior" },
+  bad_seal:    { label:"Doors don't seal well",    part:"gasket",     low:200,  high:500,  zone:"interior" },
+  loud_warm:   { label:"Running loud or warm",     part:"compressor", low:1500, high:3200, zone:"interior" },
+  frost_ice:   { label:"Frost or ice buildup",     part:"coil",       low:700,  high:1600, zone:"interior" },
+};
+
+// PART_CONCERNS — George's DIRECT self-service path. Some customers don't want
+// to describe symptoms; they can already see what's worn ("the bumper and fascia
+// are scuffed"). So they pick the AREA directly. Each concern maps to the SAME
+// canonical `part` key the symptom path uses where they overlap (bumper, glass,
+// lighting, seals) so the two paths DEDUP cleanly and never double-count; the
+// exterior-only areas (front panel, fascia, shelves, wire racks) get their own
+// keys. Same downstream engine — just a second, more direct on-ramp.
+const PART_CONCERNS = {
+  bumper:      { label:"Bumper / trim",        part:"bumper",     low:150, high:400,  zone:"exterior" },
+  front_panel: { label:"Front panel",          part:"front_panel",low:300, high:800,  zone:"exterior" },
+  fascia:      { label:"Fascia (front frame)", part:"fascia",     low:250, high:650,  zone:"exterior" },
+  shelves:     { label:"Shelves",              part:"shelves",    low:200, high:600,  zone:"interior" },
+  wire_racks:  { label:"Wire racks / baskets", part:"wire_racks", low:150, high:450,  zone:"interior" },
+  doors_glass: { label:"Doors / glass",        part:"door_glass", low:500, high:1100, zone:"exterior" },
+  lighting:    { label:"Lighting",             part:"led_kit",    low:350, high:700,  zone:"interior" },
+  seals:       { label:"Door seals",           part:"gasket",     low:200, high:500,  zone:"interior" },
+};
+
+// rough install labor per case (unknown case size on a public form -> a range)
+const LABOR = { low:600, high:1200 };
+
+// older cases lean toward a fuller refresh -> nudge the estimate up.
+const AGE_BUMP = { under5:1.0, y5_10:1.05, y10_15:1.15, y15plus:1.30, unsure:1.15 };
+
+// region -> climate, INTERNAL lookup (no external weather API; nothing leaves
+// the tenant). Climate mainly drives URGENCY here, not price.
+const REGION_CLIMATE = {
+  gulf_coast:"coastal", southeast:"humid", midwest:"temperate",
+  northeast:"temperate", mountain:"dry", west_coast:"temperate",
+};
+
+// CLIMATE_SEVERITY — how hard a climate is on a case (0..1). Used ONLY to nudge
+// urgency, and (per George) weighted DOWN for exterior/aesthetic work: climate
+// wears INTERIOR/functional components far more than it does trim and panels.
+const CLIMATE_SEVERITY = { coastal:1.0, humid:0.7, temperate:0.25, dry:0.15 };
+
+// CASES — the PATH A unlock. A recognized serial gives us model + year (age)
+// with certainty, replacing several guessed answers with one verified fact.
+// In production this lookup happens at the GATEWAY (rate-limited so nobody can
+// enumerate serials to scrape the install base) and returns only customer-safe
+// fields — model name + rough age — never the full BOM or pricing.
+const CASES = {
+  "HSM-D5X-081247-2017":  { model:"D5X",  name:"D5X Multi-Deck",       year:2017 },
+  "HSM-D5LE-121892-2019": { model:"D5LE", name:"D5LE Multi-Deck (LE)", year:2019 },
+};
+
+// CASE_CONFIG — serial -> CONFIGURATION -> likely refresh KITS (George's lineage).
+// ---------------------------------------------------------------------------
+// This is the CUSTOMER-SAFE result of a resolution that, in production, runs
+// SERVER-SIDE at the gateway using the SAME engine as Demo 2:
+//     serial -> raw config BOM -> resolveBOM() -> filterRefreshParts() -> groupIntoKits()
+// The client must never see the raw BOM, part numbers, quantities, or pricing
+// (a public page's source is readable by anyone). So the gateway strips all of
+// that and returns ONLY what's safe to show a customer: the plain build summary
+// and kit NAMES with plain-language coverage. Same engine, filtered surface —
+// exactly the safe/unsafe boundary the account-gated pricing also rides on.
+const CASE_CONFIG = {
+  "HSM-D5X-081247-2017": {
+    build: "Stainless bumper, heavy-duty brackets, and high-CRI lighting",
+    kits: [
+      { name: "Bumper Refresh Kit",     covers: "The exterior bumper, its brackets, hanger, and mounting hardware" },
+      { name: "Front Panel Refresh Kit", covers: "The front panel, surrounding fascia, and top rail" },
+    ],
+  },
+};
+
+// NATIONAL_ACCOUNTS — contracted pricing tiers (a rate multiplier off street price).
+// ---------------------------------------------------------------------------
+// SECURITY-CRITICAL: a pricing tier is NEVER granted on an unauthenticated client
+// claim. "Are you a customer? -> yes" is a self-report anyone can click; trusting
+// it would let any visitor pull national pricing. In production these rates live
+// SERVER-SIDE and the gateway applies them ONLY AFTER verifying the account's
+// identity (SSO/OAuth against the customer portal). They appear in the client here
+// purely for the demo, gated behind a mocked verification step. This is the same
+// trust boundary as the serial->config->kit lineage, applied to price.
+const NATIONAL_ACCOUNTS = {
+  walmart: { name:"Walmart", rate:0.82 },
+  kroger:  { name:"Kroger",  rate:0.85 },
+  target:  { name:"Target",  rate:0.84 },
+};
+
+// pull a 4-digit year out of any serial (formats drift, so we search, not slice)
+function extractYear(s) { const m = String(s).match(/\b(19|20)\d{2}\b/); return m ? parseInt(m[0], 10) : null; }
+
+// map a manufacture year to the same age buckets the customer picks from
+function ageBucketFromYear(y) {
+  if (!y) return null;
+  const a = new Date().getFullYear() - y;
+  if (a < 5) return "under5"; if (a < 10) return "y5_10"; if (a < 15) return "y10_15"; return "y15plus";
+}
+
+// resolve a typed serial into { verified, model, name, year }.
+// verified = exact catalog hit (highest trust); partial = we parsed a year only.
+function resolveSerial(raw) {
+  const s = (raw || "").trim().toUpperCase();
+  if (!s) return null;
+  if (CASES[s]) return Object.assign({ serial:s, verified:true, config: CASE_CONFIG[s] || null }, CASES[s]);
+  const yr = extractYear(s);
+  const model = s.split("-")[1] || null;
+  if (yr || model) return { serial:s, verified:false, model:model, name:(model ? model + " (from number)" : "Hussmann case"), year:yr };
+  return { serial:s, verified:false, model:null, year:null };
+}
+
+// --- turn selected symptoms AND directly-picked concerns into one deduped list
+// of likely parts + cost ranges. Both on-ramps feed the same list; the `seen`
+// guard on the canonical `part` key means a symptom and a direct pick that point
+// to the SAME part are counted once (e.g. "worn trim" + "Bumper / trim").
+function flaggedParts(symptoms, concerns) {
+  const seen = {}; const out = [];
+  function add(part, label, low, high, zone) {
+    if (seen[part]) return;
+    seen[part] = true;
+    out.push({ part:part, label:label, low:low, high:high, zone:zone });
+  }
+  (symptoms || []).forEach(function (s) { const m = SYMPTOM_MAP[s];   if (m) add(m.part, m.label, m.low, m.high, m.zone); });
+  (concerns || []).forEach(function (c) { const m = PART_CONCERNS[c]; if (m) add(m.part, m.label, m.low, m.high, m.zone); });
+  return out;
+}
+
+// --- completeness: how much did they actually tell us? Drives range width.
+// "not sure" answers DON'T count. (Python: sum of truthy checks / total.)
+function completeness(st) {
+  let have = 0; const total = 5;
+  if (st.contents) have++;
+  if (st.age && st.age !== "unsure") have++;
+  if (st.symptoms.length || st.concerns.length) have++;
+  if (st.count > 0) have++;
+  if (st.region) have++;
+  return have / total;
+}
+
+// --- per-case estimate. Sum flagged parts + labor, nudge by age, then WIDEN
+// the high side as completeness drops. Less data -> wider range = honesty.
+function estimateCase(flagged, ageBucket, comp, verified) {
+  let low  = flagged.reduce(function (s,f){ return s + f.low;  }, 0) + LABOR.low;
+  let high = flagged.reduce(function (s,f){ return s + f.high; }, 0) + LABOR.high;
+  const bump = AGE_BUMP[ageBucket] || 1.0;
+  low  = low  * bump;
+  high = high * bump;
+  // unknowns rarely make a job CHEAPER, so we widen upward only. A VERIFIED
+  // serial means model + age are known, so the range widens far less.
+  const widenRate = verified ? 0.15 : 0.4;
+  high = high * (1 + (1 - comp) * widenRate);
+  return { low: round100(low), high: round100(high) };
+}
+
+// --- recommendation: WHEN to act, from issue count + age (the lifecycle read),
+// with an optional climateBoost (0..1) that can pull a borderline case up. The
+// boost is already interior-weighted by the caller, so an exterior-only refresh
+// barely moves — George's point that climate isn't what drives aesthetic work.
+function recommendation(issueCount, ageBucket, climateBoost) {
+  climateBoost = climateBoost || 0;
+  const old = ageBucket === "y10_15" || ageBucket === "y15plus";
+  if (ageBucket === "y15plus" && issueCount >= 3)
+    return { cls:"now", text:"Refresh recommended now", replace:true };
+  if (issueCount >= 3 || old)
+    return { cls:"now", text:"Refresh recommended", replace:false };
+  if (issueCount >= 1) {
+    if (climateBoost >= 0.6)
+      return { cls:"now", text:"Refresh recommended — climate is accelerating wear", replace:false };
+    return { cls:"soon", text:"Refresh advisable within 1–2 years", replace:false };
+  }
+  return { cls:"mon", text:"Monitoring — no immediate action", replace:false };
+}
+
+function round100(x) { return Math.round(x / 100) * 100; }
+function money(x) { return "$" + x.toLocaleString("en-US"); }
+</script>
+
+<!-- ============================================================================
+     SCRIPT 2 — UI wiring + the (simulated) public submission.
+     ========================================================================= -->
+<script>
+const state = { contents:null, age:null, symptoms:[], concerns:[], count:1, region:null,
+                serial:"", serialInfo:null,                       // Path A
+                remodel:null, storeCases:0, existingCustomer:null, // targeting extras
+                accountVerified:false, accountKey:null,            // account-gated pricing
+                name:"", email:"", company:"" };
+const AGE_OPTS = [["under5","Under 5 yrs"],["y5_10","5–10 yrs"],["y10_15","10–15 yrs"],["y15plus","15+ yrs"],["unsure","Not sure"]];
+const $ = function (id){ return document.getElementById(id); };
+
+// single-select chip group
+function singleChips(containerId, options, key) {
+  const box = $(containerId);
+  box.innerHTML = options.map(function (o, i) {
+    return '<div class="chip' + (state[key]===o[0]?' on':'') + '" data-i="'+i+'">'+o[1]+'</div>';
+  }).join("");
+  box.querySelectorAll(".chip").forEach(function (el) {
+    el.addEventListener("click", function () {
+      state[key] = options[parseInt(el.getAttribute("data-i"),10)][0];
+      singleChips(containerId, options, key); recompute();
+    });
+  });
+}
+// multi-select chip group (symptoms) — toggles membership in an array
+function multiChips(containerId, options, key) {
+  const box = $(containerId);
+  box.innerHTML = options.map(function (o, i) {
+    const on = state[key].indexOf(o[0]) > -1;
+    return '<div class="chip multi'+(on?' on':'')+'" data-i="'+i+'">'+o[1]+'</div>';
+  }).join("");
+  box.querySelectorAll(".chip").forEach(function (el) {
+    el.addEventListener("click", function () {
+      const v = options[parseInt(el.getAttribute("data-i"),10)][0];
+      const arr = state[key]; const idx = arr.indexOf(v);
+      if (idx > -1) arr.splice(idx,1); else arr.push(v);   // toggle
+      multiChips(containerId, options, key); recompute();
+    });
+  });
+}
+
+function recompute() {
+  updateAccountVisibility();
+  const verified = !!(state.serialInfo && state.serialInfo.verified);
+  const ready = state.contents && state.age && (state.symptoms.length > 0 || state.concerns.length > 0);
+  $("placeholder").style.display = ready ? "none" : "block";
+  $("resultBody").style.display  = ready ? "block" : "none";
+  $("submitBtn").disabled = !(ready && state.name && state.email);
+  if (!ready) return;
+
+  const flagged = flaggedParts(state.symptoms, state.concerns);
+  const comp = completeness(state);
+  const per = estimateCase(flagged, state.age, comp, verified);
+  const total = { low: per.low * state.count, high: per.high * state.count };
+
+  // Account-gated pricing: a VERIFIED national account sees its contracted rate;
+  // everyone else sees the anonymous street range. (In production the rate is
+  // applied server-side after auth — see NATIONAL_ACCOUNTS note.)
+  const acct = (state.accountVerified && state.accountKey) ? NATIONAL_ACCOUNTS[state.accountKey] : null;
+  const rate = acct ? acct.rate : 1;
+  const showTotal = { low: round100(total.low * rate), high: round100(total.high * rate) };
+  const showPer   = { low: round100(per.low  * rate), high: round100(per.high  * rate) };
+
+  $("rcLabel").textContent = acct ? ("National-account pricing · " + acct.name) : "Estimated range";
+  $("rangeText").textContent = money(showTotal.low) + " – " + money(showTotal.high);
+  $("perText").textContent = state.count > 1
+    ? state.count + " cases · " + money(showPer.low) + "–" + money(showPer.high) + " each"
+    : "for 1 case, installed";
+
+  // Environment refinement (George): climate accelerates wear mostly on INTERIOR
+  // components; exterior/aesthetic refresh is far less climate-driven. So weight
+  // the climate nudge by the INTERIOR share of the flagged issues.
+  const climate = REGION_CLIMATE[state.region];
+  const severity = CLIMATE_SEVERITY[climate] || 0;
+  const interiorCount = flagged.filter(function (f) { return f.zone === "interior"; }).length;
+  const interiorShare = flagged.length ? interiorCount / flagged.length : 0;
+  const climateBoost = severity * interiorShare;               // 0..1, interior-weighted
+
+  const rec = recommendation(flagged.length, state.age, climateBoost);
+  $("recBox").className = "rec " + rec.cls;
+  $("recBox").textContent = rec.text;
+
+  // "what we'd look at" — the inferred parts, in plain language
+  $("flaggedBox").innerHTML = '<div class="ft">What we&rsquo;d look at</div>' +
+    flagged.map(function (f) {
+      return '<div class="item"><span>'+f.label+'</span><span>'+money(f.low)+'–'+money(f.high)+'</span></div>';
+    }).join("");
+
+  // climate transparency (George's environment refinement) — explain the nudge
+  // in BOTH directions so the interior-vs-exterior weighting is visible.
+  const cn = $("climateNote");
+  if (state.region && flagged.length && severity >= 0.7) {
+    if (climateBoost >= 0.6) {
+      cn.style.display = "block";
+      cn.innerHTML = 'Your ' + climate + ' climate accelerates wear on interior components \u2014 we\u2019ve factored that into the timing above.';
+    } else if (interiorShare < 0.5) {
+      cn.style.display = "block";
+      cn.innerHTML = 'Your refresh is mostly exterior / aesthetic, which climate affects far less \u2014 so your ' + climate + ' climate didn\u2019t change the timing.';
+    } else { cn.style.display = "none"; }
+  } else { cn.style.display = "none"; }
+
+  // HONEST replace note (the 75–77% rule, surfaced to the customer)
+  if (rec.replace) {
+    $("replaceBox").style.display = "block";
+    $("replaceBox").innerHTML = "At this age and condition, a brand-new case may be more cost-effective than a full refresh. Your specialist will compare both options honestly.";
+  } else { $("replaceBox").style.display = "none"; }
+
+  // confidence = completeness. Fewer answers -> lower confidence, wider range.
+  const pct = Math.round(comp * 100);
+  $("confBar").style.width = pct + "%";
+  $("confText").textContent = verified
+    ? "Estimate confidence: " + pct + "% — verified from your serial number"
+    : "Estimate confidence: " + pct + "%" + (pct < 100 ? " — answer question " + nextMissing() + " to tighten it" : "");
+}
+
+function nextMissing() {
+  if (!state.contents) return "1"; if (!state.age || state.age==="unsure") return "2";
+  if (!state.symptoms.length && !state.concerns.length) return "3"; if (!state.count) return "4"; return "5";
+}
+
+// ---- the public SUBMISSION. In production this POSTs to the gateway, which
+// validates, rate-limits, writes the lead to CRM (feeding Step 1 targeting),
+// and returns ONLY the filtered estimate — never internal cost or margin.
+function submitLead() {
+  // API NOTE — production shape (client holds NO secrets):
+  //   POST https://refresh.hussmann.com/api/estimate   (public, rate-limited)
+  //   body: { contents, age, symptoms, count, region, lead:{name,email,company} }
+  //   gateway -> validate -> CRM lead + estimate service -> filtered response
+  // PROVENANCE MATTERS: the internal models must know which features are
+  // VERIFIED (trust) vs. CUSTOMER-STATED (discount). We tag age's source so a
+  // confident guess can't pollute a confident fact.
+  const verified = !!(state.serialInfo && state.serialInfo.verified);
+  const payload = {
+    case: { serial: state.serial || null,
+            model: state.serialInfo ? state.serialInfo.model : null,
+            ageSource: verified ? "verified_serial" : "customer_stated",
+            configRecognized: !!(state.serialInfo && state.serialInfo.config),
+            likelyKits: (state.serialInfo && state.serialInfo.config)
+                          ? state.serialInfo.config.kits.map(function (k) { return k.name; })
+                          : [] },
+    survey: { contents: state.contents, age: state.age, symptoms: state.symptoms, concerns: state.concerns, count: state.count },
+    // -> feeds the QUOTING model (what/how much)
+    targeting: { region: state.region, climate: REGION_CLIMATE[state.region] || "unknown",
+                 remodel: state.remodel, storeCases: state.storeCases,
+                 existingCustomer: state.existingCustomer },
+    // pricing tier is ADVISORY here; the gateway re-derives it from the verified
+    // identity server-side and never trusts a client-sent tier.
+    pricing: { tier: (state.accountVerified && state.accountKey) ? "national_account" : "anonymous_street",
+               account: state.accountVerified ? state.accountKey : null },
+    // -> feeds the PREDICTIVE-TARGETING model (who/when)
+    lead: { name: $("leadName").value, email: $("leadEmail").value, company: $("leadCompany").value },
+  };
+  console.log("POST /api/estimate", payload);   // stand-in for the gateway call
+  const s = $("sentMsg");
+  s.className = "sent show";
+  s.textContent = "Thanks, " + (payload.lead.name || "there") + "! A Hussmann refresh specialist will follow up at " + (payload.lead.email || "your email") + " with a precise quote.";
+  $("submitBtn").disabled = true;
+}
+
+// PATH A banner: recognized serial -> verified model+age (tightens estimate);
+// parsed year -> partial; nothing -> graceful fallback to the symptom path.
+// A RECOGNIZED serial also resolves to its configuration and likely refresh
+// kits (the customer-safe lineage), shown in #configBlock below the banner.
+function renderSerial() {
+  const info = state.serialInfo, b = $("serialBanner"), cfg = $("configBlock");
+  if (!state.serial) { b.style.display = "none"; cfg.style.display = "none"; return; }
+  b.style.display = "block";
+  const now = new Date().getFullYear();
+  if (info && info.verified) {
+    state.age = ageBucketFromYear(info.year);                 // verified age wins
+    singleChips("ageChips", AGE_OPTS, "age");                 // reflect it in the chips
+    b.innerHTML = '<span style="color:var(--green-ink);font-weight:600;">&#10003; Recognized: ' + info.name + ', built ' + info.year + ' (~' + (now - info.year) + ' yrs).</span> We have this model on file — your estimate just got more precise.';
+  } else if (info && info.year) {
+    state.age = ageBucketFromYear(info.year);
+    singleChips("ageChips", AGE_OPTS, "age");
+    b.innerHTML = '<span style="color:var(--navy);font-weight:600;">Got it.</span> Looks like a ~' + info.year + ' case (~' + (now - info.year) + ' yrs). We&rsquo;ll confirm on-site.';
+  } else {
+    b.innerHTML = '<span style="color:var(--ink-3);">We couldn&rsquo;t match that number — no problem, your answers below still give a solid estimate.</span>';
+  }
+
+  // Config -> kit lineage: only for a recognized serial whose build is on file.
+  if (info && info.verified && info.config) {
+    cfg.style.display = "block";
+    cfg.innerHTML = renderConfigHTML(info.config);
+  } else {
+    cfg.style.display = "none";
+  }
+}
+
+// Customer-safe rendering of the serial -> config -> kit result. NAMES and
+// plain coverage only — never part numbers, quantities, or pricing.
+function renderConfigHTML(config) {
+  const kitItems = config.kits.map(function (k) {
+    return '<div style="display:flex;gap:9px;align-items:flex-start;padding:8px 0;border-top:1px solid var(--border);">'
+      + '<span style="color:var(--blue);font-weight:700;flex-shrink:0;line-height:1.4;">&#10003;</span>'
+      + '<div><div style="font-weight:600;font-size:13px;color:var(--navy);">' + k.name + '</div>'
+      + '<div style="font-size:12px;color:var(--ink-2);">' + k.covers + '</div></div></div>';
+  }).join("");
+  return '<div style="background:var(--surface);border:1px solid #BCD6F2;border-radius:8px;padding:14px 15px;">'
+    + '<div style="font-size:12px;color:var(--ink-3);text-transform:uppercase;letter-spacing:.04em;font-weight:700;">Your case&rsquo;s build</div>'
+    + '<div style="font-size:13.5px;font-weight:600;color:var(--navy);margin-top:3px;">' + config.build + '</div>'
+    + '<div style="font-size:12.5px;color:var(--ink-2);margin-top:11px;margin-bottom:2px;">A refresh for this build usually involves:</div>'
+    + kitItems
+    + '<div style="font-size:11.5px;color:var(--ink-3);margin-top:10px;">Exact parts and pricing are confirmed by your specialist — this is a plain-language summary of your case&rsquo;s likely refresh.</div>'
+    + '</div>';
+}
+
+// ---- Account-gated pricing UI. The block is built ONCE (so an in-progress
+// selection isn't wiped on every recompute); recompute only toggles visibility.
+function setAcctStatus(html) { $("acctStatus").innerHTML = html; }
+
+function wireSignOut() {
+  const so = document.getElementById("acctSignOut");
+  if (so) so.addEventListener("click", function (e) {
+    e.preventDefault();
+    state.accountVerified = false; state.accountKey = null;
+    setAcctStatus(""); recompute();
+  });
+}
+
+function buildAccountBlock() {
+  const box = $("accountBlock");
+  const opts = Object.keys(NATIONAL_ACCOUNTS).map(function (k) {
+    return '<option value="' + k + '">' + NATIONAL_ACCOUNTS[k].name + '</option>';
+  }).join("");
+  box.innerHTML =
+      '<div style="font-size:12.5px;color:var(--ink-2);margin-bottom:8px;">National accounts have contracted pricing. Verify your account to see it applied.</div>'
+    + '<div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center;">'
+    + '  <select id="acctSelect" style="max-width:210px;"><option value="">Select your account&hellip;</option>' + opts + '</select>'
+    + '  <button class="btn" id="acctVerifyBtn" style="width:auto;padding:9px 16px;margin:0;">Verify account</button>'
+    + '</div>'
+    + '<div id="acctStatus" style="margin-top:9px;font-size:12.5px;line-height:1.5;"></div>'
+    + '<div style="margin-top:6px;font-size:11px;color:var(--ink-3);">Demo verification. In production this is a secure sign-in &mdash; contract pricing is applied server-side only after your identity is confirmed, never on a self-reported claim.</div>';
+
+  $("acctVerifyBtn").addEventListener("click", function () {
+    const k = $("acctSelect").value;
+    if (!k) { setAcctStatus('<span style="color:var(--amber-ink);">Select your account first.</span>'); return; }
+    // MOCK verification. Real flow: OAuth/SSO -> gateway confirms identity ->
+    // gateway returns the tier. The client never self-grants a discount.
+    state.accountVerified = true; state.accountKey = k;
+    setAcctStatus('<span style="color:var(--green-ink);font-weight:600;">&#10003; Verified: ' + NATIONAL_ACCOUNTS[k].name
+      + ' &mdash; national-account pricing applied.</span> <a href="#" id="acctSignOut" style="color:var(--blue);">Sign out</a>');
+    wireSignOut();
+    recompute();
+  });
+}
+
+// Show the account block only when the visitor says they're a customer; reset
+// any verification if they switch away (so pricing can't stick after opt-out).
+function updateAccountVisibility() {
+  const box = $("accountBlock");
+  if (state.existingCustomer === "yes") {
+    box.style.display = "block";
+  } else {
+    box.style.display = "none";
+    if (state.accountVerified) { state.accountVerified = false; state.accountKey = null; setAcctStatus(""); }
+  }
+}
+
+function init() {
+  singleChips("contentsChips", [["frozen","Frozen"],["dairy","Dairy"],["produce","Produce"],["deli","Deli / prepared"],["drinks","Drinks"],["fresh_food","Fresh food"]], "contents");
+  singleChips("ageChips", AGE_OPTS, "age");
+  singleChips("remodelChips", [["none","No"],["lt12","Within 12 months"],["y1_3","1–3 years"],["exploring","Just exploring"]], "remodel");
+  singleChips("customerChips", [["yes","Yes"],["no","No"],["unsure","Not sure"]], "existingCustomer");
+  multiChips("symptomChips", [["foggy_glass","Foggy / cloudy glass"],["worn_trim","Worn or scuffed trim"],["dim_lights","Dim or flickering lights"],["bad_seal","Doors don't seal well"],["loud_warm","Running loud or warm"],["frost_ice","Frost or ice buildup"]], "symptoms");
+  multiChips("concernChips", [["bumper","Bumper / trim"],["front_panel","Front panel"],["fascia","Fascia"],["shelves","Shelves"],["wire_racks","Wire racks"],["doors_glass","Doors / glass"],["lighting","Lighting"],["seals","Door seals"]], "concerns");
+
+  $("countRange").addEventListener("input", function () {
+    state.count = parseInt(this.value,10);
+    $("countVal").textContent = this.value + (this.value === "1" ? " case" : " cases");
+    recompute();
+  });
+  $("regionSelect").addEventListener("change", function () { state.region = this.value; recompute(); });
+  $("serialInput").addEventListener("input", function () {
+    state.serial = this.value.trim();
+    state.serialInfo = resolveSerial(this.value);
+    renderSerial(); recompute();
+  });
+  $("storeRange").addEventListener("input", function () {
+    state.storeCases = parseInt(this.value, 10);
+    $("storeVal").textContent = this.value === "0" ? "—" : (this.value + "+");
+    recompute();
+  });
+  ["leadName","leadEmail","leadCompany"].forEach(function (id) {
+    $(id).addEventListener("input", function () { state[id.replace("lead","").toLowerCase()] = this.value; recompute(); });
+  });
+  buildAccountBlock();
+
+  // Photo/QR plate scan (George's field-capture idea). MOCK: a real build would
+  // open the camera, capture the plate, and OCR the serial. Here we simulate the
+  // capture delay, then fill the serial and run the normal resolution path — so
+  // the scan reuses the exact serial->config->kit lineage, no separate code path.
+  $("scanBtn").addEventListener("click", function () {
+    const b = $("serialBanner");
+    b.style.display = "block";
+    $("configBlock").style.display = "none";
+    b.innerHTML = '<span style="color:var(--navy);font-weight:600;">&#128247; Reading the serial plate&hellip;</span>';
+    this.disabled = true; this.textContent = "Scanning\u2026";
+    const btn = this;
+    setTimeout(function () {
+      const scanned = "HSM-D5X-081247-2017";              // what the OCR "read"
+      $("serialInput").value = scanned;
+      state.serial = scanned;
+      state.serialInfo = resolveSerial(scanned);
+      renderSerial(); recompute();
+      btn.disabled = false; btn.innerHTML = "&#128247; Scan the plate";
+    }, 1100);
+  });
+
+  $("submitBtn").addEventListener("click", submitLead);
+  recompute();
+}
+init();
+</script>
+</body>
+</html>

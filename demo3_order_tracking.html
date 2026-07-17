@@ -668,6 +668,99 @@
       .detail-header { flex-direction: column; gap: 14px; }
       .detail-header .dh-meta { flex-wrap: wrap; gap: 16px; }
     }
+    /* ======================================================================
+       ADDED FEATURES — portfolio strip, triage, SLA, grouping, toast,
+       impact panel, bottleneck, install block
+       ====================================================================== */
+    .pf-strip { display:flex; gap:12px; flex-wrap:wrap; margin-bottom:16px; }
+    .pf { flex:1; min-width:130px; background:var(--surface); border:1px solid var(--border);
+          border-radius:var(--radius); padding:12px 14px; }
+    .pf-n { font-size:20px; font-weight:700; color:var(--navy); letter-spacing:-0.3px; }
+    .pf-n.pf-risk { color:var(--red-ink); }
+    .pf-n.pf-warn { color:var(--amber-ink); }
+    .pf-l { font-size:11.5px; color:var(--ink-3); margin-top:2px; }
+
+    .triage { display:flex; gap:12px; align-items:flex-end; flex-wrap:wrap; margin-bottom:16px; }
+    .tri-field { display:flex; flex-direction:column; gap:5px; font-size:11px; font-weight:600;
+                 letter-spacing:.4px; text-transform:uppercase; color:var(--ink-3); }
+    .tri-field select { font-family:var(--font); font-size:13px; padding:8px 11px; border-radius:8px;
+                        border:1px solid var(--border-2); background:var(--surface); color:var(--ink); cursor:pointer; }
+    .tri-group { font-family:var(--font); font-size:13px; font-weight:600; padding:9px 15px; border-radius:8px;
+                 border:1px solid var(--border-2); background:var(--surface); color:var(--navy); cursor:pointer; }
+    .tri-group.on { background:var(--navy); color:#fff; border-color:var(--navy); }
+
+    .nat-tag { font-size:9.5px; font-weight:700; letter-spacing:.4px; text-transform:uppercase;
+               color:var(--sky-ink); background:var(--sky-bg); padding:2px 6px; border-radius:4px; vertical-align:middle; }
+
+    .card-meta { display:flex; align-items:center; justify-content:space-between; margin:10px 0 4px; }
+    .card-value { font-size:15px; font-weight:700; color:var(--navy); }
+    .sla-chip { font-size:11px; font-weight:700; padding:3px 9px; border-radius:999px; white-space:nowrap; }
+    .sla-met    { background:var(--gray-bg);  color:var(--gray-ink); }
+    .sla-ok     { background:var(--green-bg); color:var(--green-ink); }
+    .sla-tight  { background:var(--amber-bg); color:var(--amber-ink); }
+    .sla-breach { background:var(--red-bg);   color:var(--red-ink); }
+
+    .acct-group { margin-bottom:22px; }
+    .acct-head { display:flex; align-items:baseline; justify-content:space-between; gap:12px;
+                 padding:0 2px 8px; border-bottom:2px solid var(--border); margin-bottom:14px; }
+    .acct-name { font-size:16px; font-weight:700; color:var(--navy); }
+    .acct-meta { font-size:12.5px; color:var(--ink-2); }
+    .acct-risk { color:var(--red-ink); font-weight:600; }
+
+    #toastWrap { position:fixed; right:20px; bottom:20px; display:flex; flex-direction:column;
+                 gap:10px; z-index:9999; }
+    .toast { background:var(--navy); color:#fff; border-left:3px solid var(--sky); border-radius:10px;
+             padding:12px 16px; min-width:250px; max-width:340px; box-shadow:0 6px 20px rgba(11,45,77,.22);
+             animation:toastIn .3s ease; }
+    .toast.resolve { border-left-color:var(--green); }
+    .toast-t { font-size:11px; font-weight:700; letter-spacing:.5px; text-transform:uppercase; color:#A9C4DE; }
+    .toast-m { font-size:13.5px; margin-top:2px; }
+    @keyframes toastIn { from { opacity:0; transform:translateY(10px); } to { opacity:1; transform:none; } }
+
+    .impact { margin-top:18px; border:1px solid var(--border); border-radius:var(--radius); overflow:hidden; }
+    .impact-head { display:flex; align-items:center; justify-content:space-between; gap:10px;
+                   background:var(--blue-soft); padding:11px 16px; }
+    .impact-title { font-size:13.5px; font-weight:700; color:var(--navy); }
+    .impact-tag { font-size:10.5px; font-weight:600; text-transform:uppercase; letter-spacing:.4px;
+                  color:var(--amber-ink); background:var(--amber-bg); padding:3px 8px; border-radius:5px; }
+    .impact-grid { display:flex; gap:8px; padding:16px; flex-wrap:wrap; }
+    .impact-grid > div { flex:1; min-width:100px; }
+    .impact-n { font-size:22px; font-weight:700; color:var(--navy); letter-spacing:-0.4px; }
+    .impact-l { font-size:11.5px; color:var(--ink-3); margin-top:2px; }
+    .impact-note { font-size:11px; color:var(--ink-3); padding:0 16px 14px; line-height:1.5; }
+
+    /* installation guides (customer view) */
+    .cust-manuals { margin-top:18px; border:1px solid var(--border); border-radius:var(--radius); overflow:hidden; }
+    .cm-head { padding:12px 16px; border-bottom:1px solid var(--border); background:var(--surface-2); }
+    .cm-title { font-size:13.5px; font-weight:700; color:var(--navy); }
+    .cm-sub { font-size:11.5px; color:var(--ink-3); margin-top:2px; }
+    .cm-list { padding:12px 16px 14px; display:grid; gap:8px; }
+    .cm-item { display:flex; align-items:center; gap:10px; text-decoration:none;
+               padding:9px 11px; border:1px solid var(--border); border-radius:8px;
+               background:var(--surface); transition:border-color .12s; }
+    .cm-item:hover { border-color:var(--blue); }
+    .cm-ic { font-size:14px; }
+    .cm-name { flex:1; font-size:12.5px; color:var(--navy); font-weight:500; }
+    .cm-meta { font-size:10.5px; font-weight:700; color:var(--blue); }
+    /* where status signals originate (Emily's realism note) */
+    .cust-provenance { margin-top:12px; font-size:11px; color:var(--ink-3); line-height:1.5; }
+
+    .bottleneck { display:flex; align-items:center; gap:12px; background:var(--amber-bg);
+                  border:1px solid #F0D2A6; border-radius:var(--radius); padding:12px 15px; margin-bottom:14px; }
+    .bn-icon { font-size:18px; color:var(--amber-ink); flex-shrink:0; }
+    .bn-body { flex:1; }
+    .bn-title { font-size:13.5px; font-weight:700; color:var(--amber-ink); }
+    .bn-note { font-size:12.5px; color:var(--ink-2); margin-top:1px; }
+    .bn-tag { font-size:10px; font-weight:700; text-transform:uppercase; letter-spacing:.4px;
+              color:var(--amber-ink); border:1px solid #E7B87A; border-radius:5px; padding:3px 7px; flex-shrink:0; }
+
+    .install-block { border:1px solid var(--border); border-radius:var(--radius); padding:14px 16px; margin-bottom:16px; }
+    .ib-head { font-size:12px; font-weight:700; text-transform:uppercase; letter-spacing:.5px;
+               color:var(--ink-3); margin-bottom:10px; }
+    .ib-grid { display:flex; gap:20px; flex-wrap:wrap; }
+    .ib-l { font-size:11.5px; color:var(--ink-3); }
+    .ib-v { font-size:14px; font-weight:600; color:var(--ink); margin-top:1px; }
+
   </style>
 </head>
 
@@ -699,12 +792,34 @@
       <div class="section-head">
         <div class="eyebrow">Active Refresh Projects</div>
         <h1>Order Dashboard</h1>
-        <p>Real-time status across all active refresh orders. Select an order to view details.</p>
+        <p>Your refresh portfolio across every store. Triage by risk, value, or ship date; group by account.</p>
       </div>
-      <!-- The grid starts EMPTY. JavaScript reads the ORDERS array from
-           data.js and fills this container with cards. This is called
-           "rendering" — turning data into visible HTML. -->
-      <div class="order-grid" id="orderGrid"></div>
+
+      <!-- Portfolio summary — the numbers a rep triages on -->
+      <div class="pf-strip" id="pfSummary"></div>
+
+      <!-- Triage controls -->
+      <div class="triage">
+        <label class="tri-field">Sort
+          <select id="triageSort">
+            <option value="risk">Risk first</option>
+            <option value="ship">Ship date (soonest)</option>
+            <option value="value">Value (highest)</option>
+          </select>
+        </label>
+        <label class="tri-field">Show
+          <select id="triageFilter">
+            <option value="all">All orders</option>
+            <option value="at_risk">At risk only</option>
+            <option value="open">Open (not closed)</option>
+            <option value="national">National accounts</option>
+          </select>
+        </label>
+        <button class="tri-group" id="triageGroup">Group by account</button>
+      </div>
+
+      <!-- The grid starts EMPTY. JavaScript fills it based on the triage state. -->
+      <div id="orderGrid"></div>
     </section>
 
     <!-- ---- DETAIL VIEW (hidden until an order is clicked) ---- -->
@@ -738,6 +853,9 @@
     </section>
 
   </main>
+
+  <!-- Live push notifications land here (webhook-style updates) -->
+  <div id="toastWrap"></div>
 
   <!-- ======================================================================
        SCRIPTS — order matters!
@@ -793,7 +911,9 @@ const STAGES = [
   { num: 5, name: "Packing",           desc: "Warehouse assembling shipment" },
   { num: 6, name: "Shipped",           desc: "In transit to store" },
   { num: 7, name: "Delivered",         desc: "Received at store location" },
-  { num: 8, name: "Install Complete",  desc: "Installation finished, closed" },
+  { num: 8, name: "Install Scheduled", desc: "Crew and date confirmed" },
+  { num: 9, name: "Installation",      desc: "Crew on site, fitting parts" },
+  { num: 10, name: "Project Closed",   desc: "Signed off, warranty registered" },
 ];
 
 
@@ -932,6 +1052,78 @@ const ORDERS = [
   },
 
 ];
+
+
+// ============================================================================
+//  ADDED FEATURES — enrichment layer (financial, SLA, account, install,
+//  bottleneck). Rather than edit every order literal above, we attach the new
+//  fields here in one pass. In production these come from Oracle + CRM.
+// ============================================================================
+
+// A fixed "today" so the SLA math is deterministic in the demo.
+const DEMO_TODAY = new Date("2026-07-08T00:00:00");
+
+// Two more orders so national accounts (Kroger, Walmart) show as portfolios,
+// not single cards — that's what makes account grouping meaningful.
+ORDERS.push(
+  {
+    id: "ORD-2026-06990", customer: "Kroger", storeLabel: "Store #305, Columbus, OH",
+    cases: "3x D5X 12ft Exterior Refresh", currentStage: 2, shipDate: "Jul 22, 2026",
+    status: "on_track", carrierTracking: null,
+    parts: [
+      { partNumber: "HUS-BMP-D5X-12W", desc: "Bumper, 12ft, White",       qty: 3, status: "In Stock", expected: "Ready",  note: "—", riskLevel: "none" },
+      { partNumber: "HUS-FAS-D5X-12W", desc: "Fascia panel, 12ft, White", qty: 3, status: "Queued",   expected: "Jul 15", note: "—", riskLevel: "none" },
+      { partNumber: "HUS-TRL-D5X-12W", desc: "Top rail, 12ft, White",     qty: 3, status: "Queued",   expected: "Jul 15", note: "—", riskLevel: "none" },
+    ],
+  },
+  {
+    id: "ORD-2026-06520", customer: "Walmart", storeLabel: "Store #2140, Dallas, TX",
+    cases: "6x Hussmann OSIA (All-Makes Exterior)", currentStage: 3, shipDate: "Jul 16, 2026",
+    status: "at_risk", carrierTracking: null,
+    parts: [
+      { partNumber: "HUS-AM-BMP-HP8W", desc: "Bumper, all-makes 8ft",  qty: 6,  status: "In Stock",     expected: "Ready",  note: "—", riskLevel: "none" },
+      { partNumber: "HUS-AM-FAS-HP8W", desc: "Fascia, all-makes 8ft",  qty: 6,  status: "In Production", expected: "Jul 12", note: "Cell 43, batch #2902", riskLevel: "none" },
+      { partNumber: "HUS-ECV-D5X-30",  desc: "EcoVision door, 30in",   qty: 12, status: "In Production", expected: "Jul 15", note: "Vendor delay, was Jul 11", riskLevel: "delayed" },
+      { partNumber: "HUS-LED-CAN-8",   desc: "Canopy LED kit, 8ft",    qty: 6,  status: "In Stock",     expected: "Ready",  note: "—", riskLevel: "none" },
+    ],
+  }
+);
+
+// One row of metadata per order. value = order $; shipISO = machine-readable
+// ship date for SLA math; bottleneck = an active internal blocker (or null).
+const ORDER_META = {
+  "ORD-2026-07234": { value: 4200,   shipISO: "2026-08-04", shipDate: "Aug 4, 2026",  national: false, installDate: "Aug 11, 2026", installCrew: null,     bottleneck: null },
+  "ORD-2026-06891": { value: 61800,  shipISO: "2026-07-18", shipDate: "Jul 18, 2026", national: true,  installDate: "Jul 25, 2026", installCrew: null,     bottleneck: { team: "Parts ID team", note: "Awaiting BOM sign-off on 1 configured line" } },
+  "ORD-2026-06455": { value: 128500, shipISO: "2026-07-11", shipDate: "Jul 11, 2026", national: true,  installDate: "Jul 18, 2026", installCrew: null,     bottleneck: { team: "Oracle BGN", note: "Configured-parts re-order pending (2-Oracle hop)" } },
+  "ORD-2026-06102": { value: 18900,  shipISO: "2026-07-15", shipDate: "Jul 15, 2026", national: false, installDate: "Jul 21, 2026", installCrew: null,     bottleneck: null },
+  "ORD-2026-05788": { value: 9600,   shipISO: "2026-06-30", shipDate: "Jun 30, 2026", national: false, installDate: "Jul 12, 2026", installCrew: null,     bottleneck: null },
+  "ORD-2026-05340": { value: 34200,  shipISO: "2026-06-18", shipDate: "Jun 18, 2026", national: false, installDate: "Jun 24, 2026", installCrew: "Crew #4", bottleneck: null, currentStage: 10 },
+  "ORD-2026-06990": { value: 47500,  shipISO: "2026-07-22", shipDate: "Jul 22, 2026", national: true,  installDate: "Jul 29, 2026", installCrew: null,     bottleneck: null },
+  "ORD-2026-06520": { value: 96000,  shipISO: "2026-07-16", shipDate: "Jul 16, 2026", national: true,  installDate: "Jul 23, 2026", installCrew: null,     bottleneck: { team: "Parts ID team", note: "Serial match unconfirmed on 2 competitor cases" } },
+};
+ORDERS.forEach(function (o) { Object.assign(o, ORDER_META[o.id] || {}); });
+
+// Give the two new orders map coordinates so the supply-chain map still works.
+MAP_GEO.storesByOrder["ORD-2026-06990"] = { name: "Kroger #305, Columbus, OH", x: 665, y: 250 };
+MAP_GEO.storesByOrder["ORD-2026-06520"] = { name: "Walmart #2140, Dallas, TX", x: 470, y: 430 };
+
+// ---- helpers ---------------------------------------------------------------
+function fmtMoney(n) { return "$" + Math.round(n).toLocaleString("en-US"); }
+
+// SLA: days from today to the ship date, plus a flag.
+//   met = already shipped/closed · breach = past due & not shipped
+//   tight = <=3 days left · ok = comfortable
+function slaFor(order) {
+  const ship = new Date(order.shipISO + "T00:00:00");
+  const days = Math.round((ship - DEMO_TODAY) / 86400000);
+  const shipped = order.currentStage >= 6;   // stage 6 = Shipped
+  let flag;
+  if (order.status === "closed" || shipped) flag = "met";
+  else if (days < 0) flag = "breach";
+  else if (days <= 3) flag = "tight";
+  else flag = "ok";
+  return { days: days, shipped: shipped, flag: flag };
+}
 
 
 // ----------------------------------------------------------------------------
@@ -1190,21 +1382,34 @@ function renderOrderCard(order) {
     <div class="order-card" data-id="${order.id}">
       <div class="card-top">
         <div>
-          <div class="cust">${order.customer}</div>
+          <div class="cust">${order.customer}${order.national ? ' <span class="nat-tag">National</span>' : ''}</div>
           <div class="store">${order.storeLabel}</div>
         </div>
         ${renderBadge(order.status)}
       </div>
       <div class="oid">${order.id}</div>
       <div class="cases">${order.cases}</div>
+      <div class="card-meta">
+        <span class="card-value">${fmtMoney(order.value)}</span>
+        ${renderSlaChip(order)}
+      </div>
       <div class="card-bottom">
         <div class="stage-label">
-          Stage ${order.currentStage} of 8 · <strong>${stage.name}</strong>
+          Stage ${order.currentStage} of ${STAGES.length} · <strong>${stage.name}</strong>
         </div>
         <div class="stage-label">Ships ${order.shipDate}</div>
       </div>
     </div>
   `;
+}
+
+// A small colored SLA chip: days remaining + on-time signal.
+function renderSlaChip(order) {
+  const sla = slaFor(order);
+  if (sla.flag === "met") return '<span class="sla-chip sla-met">On time</span>';
+  if (sla.flag === "breach") return '<span class="sla-chip sla-breach">' + Math.abs(sla.days) + 'd overdue</span>';
+  const cls = sla.flag === "tight" ? "sla-tight" : "sla-ok";
+  return '<span class="sla-chip ' + cls + '">Ships in ' + sla.days + 'd</span>';
 }
 
 
@@ -1222,19 +1427,75 @@ function renderOrderCard(order) {
 //      -> glues that array into ONE big string (Python: "".join(list))
 //  The result is all 6 cards' HTML concatenated, which we drop into the grid.
 // ----------------------------------------------------------------------------
-function renderDashboard() {
-  const grid = document.getElementById("orderGrid");
-  grid.innerHTML = ORDERS.map(renderOrderCard).join("");
+// dashboard state: how the rep wants their portfolio triaged.
+const dashState = { sort: "risk", filter: "all", group: false };
 
-  // Now that the cards exist in the page, attach a click handler to each one.
-  // querySelectorAll finds ALL elements matching ".order-card" and returns a
-  // list we can loop over with forEach (like a Python for-loop).
+// a numeric priority so at-risk / breaching orders sort to the top.
+function statusRank(o) {
+  if (o.status === "closed") return 9;
+  if (o.status === "at_risk") return 0;
+  const f = slaFor(o).flag;
+  return f === "breach" ? 1 : f === "tight" ? 2 : 3;
+}
+
+// apply the current filter + sort to the order list.
+function applyTriage(list) {
+  let out = list.slice();
+  if (dashState.filter === "at_risk")  out = out.filter(function (o) { return o.status === "at_risk"; });
+  else if (dashState.filter === "open") out = out.filter(function (o) { return o.currentStage < 10; });
+  else if (dashState.filter === "national") out = out.filter(function (o) { return o.national; });
+
+  if (dashState.sort === "risk")
+    out.sort(function (a, b) { return statusRank(a) - statusRank(b) || slaFor(a).days - slaFor(b).days; });
+  else if (dashState.sort === "ship")
+    out.sort(function (a, b) { return new Date(a.shipISO) - new Date(b.shipISO); });
+  else if (dashState.sort === "value")
+    out.sort(function (a, b) { return b.value - a.value; });
+  return out;
+}
+
+// the portfolio strip: the numbers a rep triages on. Computed over ALL orders.
+function renderPortfolioSummary() {
+  const total   = ORDERS.reduce(function (s, o) { return s + o.value; }, 0);
+  const atRisk  = ORDERS.filter(function (o) { return o.status === "at_risk"; });
+  const riskVal = atRisk.reduce(function (s, o) { return s + o.value; }, 0);
+  const open    = ORDERS.filter(function (o) { return o.currentStage < 10; });
+  const onTime  = open.filter(function (o) { return slaFor(o).flag !== "breach"; }).length;
+  const pct     = open.length ? Math.round(onTime / open.length * 100) : 100;
+  return `
+    <div class="pf"><div class="pf-n">${open.length}</div><div class="pf-l">Active orders</div></div>
+    <div class="pf"><div class="pf-n">${fmtMoney(total)}</div><div class="pf-l">Portfolio value</div></div>
+    <div class="pf"><div class="pf-n ${riskVal ? 'pf-risk' : ''}">${fmtMoney(riskVal)}</div><div class="pf-l">Revenue at risk</div></div>
+    <div class="pf"><div class="pf-n ${pct < 100 ? 'pf-warn' : ''}">${pct}%</div><div class="pf-l">On-time (open)</div></div>`;
+}
+
+function renderDashboard() {
+  document.getElementById("pfSummary").innerHTML = renderPortfolioSummary();
+  const list = applyTriage(ORDERS);
+  const grid = document.getElementById("orderGrid");
+
+  if (dashState.group) {
+    // group orders by account (national customers become a portfolio, not a card)
+    const groups = {};
+    list.forEach(function (o) { (groups[o.customer] = groups[o.customer] || []).push(o); });
+    grid.innerHTML = Object.keys(groups).map(function (acct) {
+      const os = groups[acct];
+      const val  = os.reduce(function (s, o) { return s + o.value; }, 0);
+      const risk = os.filter(function (o) { return o.status === "at_risk"; }).length;
+      return `<div class="acct-group">
+        <div class="acct-head">
+          <div class="acct-name">${acct}${os[0].national ? ' <span class="nat-tag">National</span>' : ''}</div>
+          <div class="acct-meta">${os.length} order${os.length > 1 ? 's' : ''} · ${fmtMoney(val)}${risk ? ` · <span class="acct-risk">${risk} at risk</span>` : ''}</div>
+        </div>
+        <div class="order-grid">${os.map(renderOrderCard).join("")}</div>
+      </div>`;
+    }).join("");
+  } else {
+    grid.innerHTML = `<div class="order-grid">${list.map(renderOrderCard).join("")}</div>`;
+  }
+
   document.querySelectorAll(".order-card").forEach(function (card) {
-    card.addEventListener("click", function () {
-      // Read the order id we stored in the data-id attribute, then open it.
-      const orderId = card.getAttribute("data-id");
-      openOrder(orderId);
-    });
+    card.addEventListener("click", function () { openOrder(card.getAttribute("data-id")); });
   });
 }
 
@@ -1309,8 +1570,98 @@ function renderCustomerView(order) {
       </div>
 
       ${carrierBlock}
+      ${renderImpactPanel(order)}
+      ${customerManuals(order)}
+      <div class="cust-provenance">Status updates come from Oracle (order &amp; fulfillment) and the carrier&rsquo;s tracking API. A live carrier feed is rolling out &mdash; shipping status may update on a short delay until then.</div>
     </div>
   `;
+}
+
+// ----------------------------------------------------------------------------
+//  INSTALLATION GUIDES  (George's explicit ask: "here's the manual for your parts")
+//  ---------------------------------------------------------------------------
+//  DERIVED, not hardcoded: we read this order's own parts and pull the component
+//  name out of each description ("Bumper, 8ft, White" -> "Bumper"), dedup, and
+//  list one guide per component. So every order automatically shows the right
+//  guides, and a data change can't leave a stale hardcoded list behind.
+//
+//  CUSTOMER-SAFE: component names only — never the internal part numbers that
+//  the INTERNAL view shows. Same two-layer principle the rest of the demo uses.
+//
+//  Python parallel (dedup while preserving order):
+//    seen, guides = set(), []
+//    for p in order["parts"]:
+//        comp = p["desc"].split(",")[0].strip()
+//        if comp and comp not in seen:
+//            seen.add(comp); guides.append(comp)
+// ----------------------------------------------------------------------------
+function customerManuals(order) {
+  const seen = {}; const guides = [];
+  (order.parts || []).forEach(function (p) {
+    const comp = String(p.desc || "").split(",")[0].trim();   // "Bumper, 8ft, White" -> "Bumper"
+    if (!comp || seen[comp]) return;
+    seen[comp] = true;
+    guides.push(comp);
+  });
+  if (!guides.length) return "";
+  return `
+    <div class="cust-manuals">
+      <div class="cm-head">
+        <div class="cm-title">Installation guides for your order</div>
+        <div class="cm-sub">The manual for each part in your refresh.</div>
+      </div>
+      <div class="cm-list">
+        ${guides.map(function (g) {
+          return `<a class="cm-item" href="#" onclick="return false;">
+                    <span class="cm-ic">&#128196;</span>
+                    <span class="cm-name">${g} &mdash; Installation Guide</span>
+                    <span class="cm-meta">PDF</span>
+                  </a>`;
+        }).join("")}
+      </div>
+    </div>`;
+}
+
+
+// ----------------------------------------------------------------------------
+//  CUSTOMER REFRESH SUMMARY  (reframed — was "Projected store impact")
+//  ---------------------------------------------------------------------------
+//  WHY THIS CHANGED. This panel used to claim an "8–12% refresh sales lift" and
+//  a "~2.4 yr payback." Emily's ROI meeting established those can't be validated:
+//  conversion (quote -> order) isn't measurable because the CRM records one
+//  opportunity per store, so a won 150-store bid lands as ~75 "yes" and ZERO
+//  "no" records. A rate needs a denominator, and the losses were never captured.
+//  The payback figure was derived FROM the lift, so it inherits the same defect.
+//  Showing a fabricated number to a customer is a credibility risk we don't need.
+//
+//  THE REFRAME (the transferable idea): the qualitative DIRECTION is defensible
+//  even when the precise NUMBER is not. A refresh genuinely does cost and disrupt
+//  less than a full replacement — every internal estimate agrees on the direction
+//  and only disagrees on the magnitude (~50% per Emily vs. 75–77% per refresh
+//  leadership). So we state the direction and drop the number. Everything in the
+//  grid below is now read straight from the customer's own order — no estimates.
+//
+//  Program-level ROI (quote turn-time, travel avoided, quoter capacity) is a
+//  HUSSMANN-internal story for a different audience — it lives in the separate
+//  impact dashboard, not in a customer's order tracker.
+// ----------------------------------------------------------------------------
+function renderImpactPanel(order) {
+  // Every figure here is a FACT from this order, not a projection.
+  const partCount = (order.parts || []).length;
+  const installLabel = order.installDate || "To be scheduled";
+  return `
+    <div class="impact">
+      <div class="impact-head">
+        <span class="impact-title">Your refresh at a glance</span>
+        <span class="impact-tag">From your order</span>
+      </div>
+      <div class="impact-grid">
+        <div><div class="impact-n">${fmtMoney(order.value)}</div><div class="impact-l">Refresh investment</div></div>
+        <div><div class="impact-n">${partCount}</div><div class="impact-l">Parts included</div></div>
+        <div><div class="impact-n" style="font-size:17px;">${installLabel}</div><div class="impact-l">Install scheduled</div></div>
+      </div>
+      <div class="impact-note">A refresh restores the appearance of your existing cases and extends their service life &mdash; with less cost and less disruption to the store than a full case replacement.</div>
+    </div>`;
 }
 
 
@@ -1330,6 +1681,41 @@ function renderCustomerView(order) {
 //  parts array. .filter() keeps only items that pass a test, then .length is
 //  how many survived. (Python: len([p for p in parts if p["riskLevel"]==...]))
 // ----------------------------------------------------------------------------
+// ----------------------------------------------------------------------------
+//  BOTTLENECK + INSTALL/CLOSEOUT blocks (added features)
+//  ---------------------------------------------------------------------------
+//  These surface the two real refresh delays the team described: waiting on the
+//  Parts ID team, and the configured-parts re-order hop through Oracle BGN.
+//  The install block extends tracking past "Delivered" into the closeout tail.
+// ----------------------------------------------------------------------------
+function renderBottleneck(order) {
+  if (!order.bottleneck) return "";
+  return `<div class="bottleneck">
+      <span class="bn-icon">&#9888;</span>
+      <div class="bn-body">
+        <div class="bn-title">Blocked &middot; waiting on ${order.bottleneck.team}</div>
+        <div class="bn-note">${order.bottleneck.note}</div>
+      </div>
+      <span class="bn-tag">tracked blocker</span>
+    </div>`;
+}
+
+function renderInstallBlock(order) {
+  const s = order.currentStage;
+  const statusText = s >= 10 ? "Complete &middot; project closed"
+                   : s === 9 ? "In progress &middot; crew on site"
+                   : s === 8 ? "Scheduled"
+                   : "Not yet scheduled";
+  return `<div class="install-block">
+      <div class="ib-head">Install &amp; closeout</div>
+      <div class="ib-grid">
+        <div><div class="ib-l">Install date</div><div class="ib-v">${order.installDate || "TBD"}</div></div>
+        <div><div class="ib-l">Crew</div><div class="ib-v">${order.installCrew || "Unassigned"}</div></div>
+        <div><div class="ib-l">Status</div><div class="ib-v">${statusText}</div></div>
+      </div>
+    </div>`;
+}
+
 function renderInternalView(order) {
   // --- Step 1: derive the risk counts from the parts array ---
   // .filter() returns a NEW array containing only the parts that match.
@@ -1420,6 +1806,8 @@ function renderInternalView(order) {
   return `
     <div class="panel-card">
       ${banner}
+      ${renderBottleneck(order)}
+      ${renderInstallBlock(order)}
 
       <div class="map-section">
         <div class="map-section-head">
@@ -2111,6 +2499,64 @@ function showDashboard() {
 // ----------------------------------------------------------------------------
 let currentOrder = null;
 
+// ----------------------------------------------------------------------------
+//  LIVE PUSH UPDATES (webhook simulation) — added feature
+//  ---------------------------------------------------------------------------
+//  A real tracker doesn't wait for you to refresh — the SERVER pushes an event
+//  when something changes (a webhook). That's the inverse of the request/response
+//  you normally fetch: the update comes TO you. We simulate it with a scripted
+//  queue that fires on a timer, mutates the order, re-renders, and toasts.
+// ----------------------------------------------------------------------------
+const PUSH_EVENTS = [
+  { id: "ORD-2026-06990", kind: "stage",   to: 3, label: "Kroger #305 entered production" },
+  { id: "ORD-2026-06455", kind: "resolve", label: "Walmart #3847 — Oracle BGN re-order cleared" },
+  { id: "ORD-2026-06102", kind: "stage",   to: 6, label: "Publix #1192 shipped — carrier assigned", carrier: "FDX-8821-4407-1190" },
+  { id: "ORD-2026-06891", kind: "stage",   to: 4, label: "Kroger #200 passed quality check" },
+  { id: "ORD-2026-06520", kind: "resolve", label: "Walmart #2140 — Parts ID confirmed serial match" },
+  { id: "ORD-2026-05788", kind: "stage",   to: 7, label: "Fresh Thyme #12 delivered to store" },
+];
+let pushIndex = 0;
+
+function applyPushEvent(ev) {
+  const o = ORDERS.find(function (x) { return x.id === ev.id; });
+  if (!o) return false;
+  if (ev.kind === "stage") {
+    if (o.currentStage >= ev.to) return false;          // already past — skip
+    o.currentStage = ev.to;
+    if (ev.carrier) o.carrierTracking = ev.carrier;
+    if (ev.to >= 7 && o.status === "at_risk") o.status = "on_track";
+  } else if (ev.kind === "resolve") {
+    if (!o.bottleneck) return false;
+    o.bottleneck = null;
+    if (o.status === "at_risk") o.status = "on_track";
+  }
+  return true;
+}
+
+function showToast(label, kind) {
+  const el = document.createElement("div");
+  el.className = "toast" + (kind === "resolve" ? " resolve" : "");
+  el.innerHTML = '<div class="toast-t">Live update</div><div class="toast-m">' + label + '</div>';
+  document.getElementById("toastWrap").appendChild(el);
+  setTimeout(function () {
+    el.style.transition = "opacity .4s"; el.style.opacity = "0";
+    setTimeout(function () { el.remove(); }, 400);
+  }, 4200);
+}
+
+function startLivePush() {
+  setInterval(function () {
+    if (pushIndex >= PUSH_EVENTS.length) return;        // queue drained
+    const ev = PUSH_EVENTS[pushIndex++];
+    if (!applyPushEvent(ev)) return;
+    showToast(ev.label, ev.kind);
+    renderDashboard();
+    // if the changed order is open in the detail view, rebuild it live
+    if (currentOrder && currentOrder.id === ev.id) openOrder(ev.id);
+  }, 6000);
+}
+
+
 function init() {
   // 1. Draw the dashboard cards.
   renderDashboard();
@@ -2125,6 +2571,22 @@ function init() {
       switchTab(btn.getAttribute("data-tab"));
     });
   });
+
+  // 4. Triage controls re-render the dashboard on change.
+  document.getElementById("triageSort").addEventListener("change", function () {
+    dashState.sort = this.value; renderDashboard();
+  });
+  document.getElementById("triageFilter").addEventListener("change", function () {
+    dashState.filter = this.value; renderDashboard();
+  });
+  document.getElementById("triageGroup").addEventListener("click", function () {
+    dashState.group = !dashState.group;
+    this.classList.toggle("on", dashState.group);
+    renderDashboard();
+  });
+
+  // 5. Start the live push feed (webhook simulation).
+  startLivePush();
 }
 
 // Run init() as soon as the page's HTML is ready.

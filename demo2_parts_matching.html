@@ -431,6 +431,9 @@
     .pop-row { display: flex; justify-content: space-between; gap: 12px; padding: 3px 0; }
     .pop-total { border-top: 1px solid #2A4E70; margin-top: 6px; padding-top: 7px; font-weight: 700; color: #fff; }
     .pop-note { margin-top: 8px; font-size: 10.5px; color: #A9C4DE; font-style: italic; }
+    .pop-caveat { margin-top: 8px; font-size: 10.5px; color: #E8B98A; line-height: 1.5; }
+    .scope-note { margin-top: 12px; font-size: 12.5px; line-height: 1.55; color: var(--navy-2); background: var(--blue-soft); border: 1px solid #C9DEF5; border-radius: var(--radius); padding: 11px 14px; }
+    .scope-note b { color: var(--navy); }
 
     /* confidence donut */
     .donut-wrap { position: relative; text-align: center; }
@@ -520,6 +523,9 @@
     }
     .ribbon.ai { background: var(--blue); }
     .ribbon.quoter { background: #7B4FD0; }
+    .ribbon.exact { background: var(--green); }
+    .ribbon.alt { background: var(--ink-3); }
+    .ribbon.upgrade { background: var(--gold); }
 
     .pcard-img {
       width: 64px; height: 64px; align-self: center;
@@ -538,6 +544,17 @@
     }
     .fit.exact { background: var(--green-bg); color: var(--green-ink); border: 1px solid #C4E4CC; }
     .fit.sub   { background: var(--surface-2); color: var(--ink-2); border: 1px dashed var(--border-2); }
+    /* on-case = PROVENANCE (literally on this case per resolved BOM), stronger
+       than fitment. Heavier border + weight to read as authoritative fact. */
+    .fit.oncase { background: var(--green-bg); color: var(--green-ink); border: 1.5px solid var(--green); font-weight: 700; }
+    .verified-strip {
+      font-size: 11.5px; font-weight: 700; color: var(--green-ink);
+      background: var(--green-bg); border: 1px solid #C4E4CC;
+      border-radius: 7px; padding: 8px 10px; width: 100%;
+    }
+    .delta { font-size: 12px; font-weight: 700; margin-bottom: 6px; }
+    .delta.up { color: var(--amber-ink); }
+    .delta.down { color: var(--ink-3); }
 
     .pcard-chips { display: flex; flex-wrap: wrap; gap: 6px; }
     .chip {
@@ -570,6 +587,50 @@
       .conf { width: 100%; }
       .results-head { flex-direction: column; align-items: flex-start; gap: 12px; }
     }
+    /* ===== Incoming survey context (the Step 2 -> Step 3 hand-off) ===== */
+    .survey-section { display: none; margin-top: 22px; }
+    .survey-section.show { display: block; }
+    .survey-panel { margin-top: 8px; background: var(--surface); border: 1px solid var(--border);
+                    border-left: 4px solid var(--gold); border-radius: var(--radius); padding: 14px 16px; }
+    .sv-head { display: flex; justify-content: space-between; align-items: baseline; gap: 12px; flex-wrap: wrap; }
+    .sv-title { font-size: 13.5px; font-weight: 700; color: var(--navy); }
+    .sv-meta { font-size: 11.5px; color: var(--ink-3); }
+    .sv-chips { margin-top: 10px; display: flex; flex-wrap: wrap; gap: 6px; }
+    .sv-chip { font-size: 12px; font-weight: 600; color: var(--navy-2); background: var(--blue-soft);
+               border: 1px solid #C9DEF5; border-radius: 999px; padding: 4px 10px; }
+    .sv-effect { margin-top: 11px; font-size: 12.5px; line-height: 1.55; color: var(--ink-2); }
+    .sv-effect b { color: var(--navy); }
+    .kit-badge.reported { color: #fff; background: var(--gold); border-color: var(--gold); }
+    .comp-card.reported { border-color: var(--gold); }
+    .kit-why { margin-top: 7px; font-size: 11.5px; font-weight: 600; }
+    .kit-why.yes { color: var(--green-ink); }
+    .kit-why.no { color: var(--ink-3); }
+
+    /* ===== Resolve-the-BOM stage (added: the AI-match differentiator) ===== */
+    .resolve-section { display: none; margin-top: 22px; }
+    .resolve-section.show { display: block; }
+    .resolve-panel { margin-top: 8px; }
+    .funnel { display: grid; grid-template-columns: 1fr auto 1fr auto 1fr; gap: 8px; align-items: stretch; }
+    .fstep { background: var(--surface-2); border: 1px solid var(--border); border-radius: var(--radius); padding: 12px 10px; text-align: center; }
+    .fnum { font-size: 26px; font-weight: 800; letter-spacing: -.02em; line-height: 1; color: var(--navy); }
+    .flbl { font-size: 11.5px; font-weight: 600; color: var(--ink-2); margin-top: 5px; }
+    .fsub { font-size: 10.5px; color: var(--ink-3); margin-top: 1px; }
+    .farrow { align-self: center; color: var(--border-2); font-weight: 700; font-size: 18px; }
+    .recon-badge { margin-top: 12px; font-size: 12.5px; font-weight: 600; padding: 9px 13px; border-radius: var(--radius); }
+    .recon-badge.ok { background: var(--green-bg); color: var(--green-ink); border: 1px solid #BFE3C8; }
+    .recon-badge.fail { background: var(--red-bg); color: var(--red-ink); border: 1px solid #EDBCBC; }
+    .resolve-detail { margin-top: 12px; font-size: 13px; }
+    .resolve-detail summary { cursor: pointer; color: var(--blue); font-weight: 600; padding: 4px 0; }
+    .rd-table { width: 100%; border-collapse: collapse; margin-top: 8px; }
+    .rd-table td { padding: 6px 10px; border-bottom: 1px solid var(--border); font-size: 12.5px; }
+    .rd-table .mono { font-family: var(--mono); font-size: 12px; }
+    .rd-table td.num { text-align: right; color: var(--ink-3); }
+    .rd-drop td { color: var(--ink-3); text-decoration: line-through; }
+    /* kit cards reuse .comp-card; add a verified badge + parts subtotal line */
+    .kit-badge { position: absolute; top: 10px; right: 10px; font-size: 9.5px; font-weight: 800; letter-spacing: .04em; text-transform: uppercase; color: var(--green-ink); background: var(--green-bg); border: 1px solid #BFE3C8; border-radius: 5px; padding: 2px 6px; }
+    .kit-sub { margin-top: 8px; font-size: 12px; font-weight: 600; color: var(--navy-2); }
+    .verified { color: var(--green-ink); font-weight: 600; }
+
   </style>
 </head>
 
@@ -593,9 +654,11 @@
     <div class="steps" id="steps">
       <div class="step active"><span class="step-dot">1</span><span class="step-lbl">Identify case</span></div>
       <div class="step-line"></div>
-      <div class="step"><span class="step-dot">2</span><span class="step-lbl">AI parts match</span></div>
+      <div class="step"><span class="step-dot">2</span><span class="step-lbl">Resolve BOM</span></div>
       <div class="step-line"></div>
-      <div class="step"><span class="step-dot">3</span><span class="step-lbl">Quote &amp; order</span></div>
+      <div class="step"><span class="step-dot">3</span><span class="step-lbl">AI parts match</span></div>
+      <div class="step-line"></div>
+      <div class="step"><span class="step-dot">4</span><span class="step-lbl">Quote &amp; order</span></div>
     </div>
 
     <!-- ============ SCREEN 1: IDENTIFY CASE + PICK COMPONENT ============ -->
@@ -654,9 +717,21 @@
         <div class="case-card" id="caseCard"></div>
         <div class="case-error" id="caseError"></div>
 
+        <!-- NEW: incoming survey context (shown when the case came in from a lead) -->
+        <div class="survey-section" id="surveySection">
+          <div class="field-label" style="margin-top:4px">Customer survey</div>
+          <div class="survey-panel" id="surveyPanel"></div>
+        </div>
+
+        <!-- NEW: resolved-BOM provenance (shown for cases with a raw config BOM) -->
+        <div class="resolve-section" id="resolveSection">
+          <div class="field-label" style="margin-top:4px">Resolved bill of materials</div>
+          <div class="resolve-panel" id="resolvePanel"></div>
+        </div>
+
         <!-- appears only after a case with BOM data resolves -->
         <div class="component-section" id="componentSection">
-          <div class="field-label" style="margin-top:4px">Which component needs refreshing?</div>
+          <div class="field-label" id="componentLabel" style="margin-top:4px">Which component needs refreshing?</div>
           <div class="component-grid" id="componentGrid"></div>
         </div>
       </div>
@@ -841,11 +916,13 @@ const BOM_CATALOG = {
   D5X: {
     // ----- Parts for a BUMPER refresh -----
     bumper: [
+      { partNumber: "HUS-BMP-D5X-8SS", desc: "Bumper, 8 ft, Stainless",      price: 214.00, stock: "In Stock",  matchType: "exact",        historicalUses: 52 },
       { partNumber: "HUS-BMP-D5X-8W",  desc: "Bumper, 8 ft, White",          price: 189.00, stock: "In Stock",  matchType: "exact",        historicalUses: 47 },
       { partNumber: "HUS-BMP-D5X-8B",  desc: "Bumper, 8 ft, Black",          price: 189.00, stock: "In Stock",  matchType: "exact",        historicalUses: 12 },
       { partNumber: "HUS-BMP-D512-8W", desc: "Bumper, 8 ft, White (D512 fit)",price: 176.00, stock: "In Stock",  matchType: "substitution", historicalUses: 8  },
     ],
     bracket: [
+      { partNumber: "HUS-BRK-D5X-HD",  desc: "Mounting bracket, heavy-duty", price: 46.00,  stock: "In Stock",  matchType: "exact",        historicalUses: 55 },
       { partNumber: "HUS-BRK-D5X-STD", desc: "Mounting bracket, standard",   price: 34.00,  stock: "In Stock",  matchType: "exact",        historicalUses: 51 },
       { partNumber: "HUS-BRK-UNIV",    desc: "Mounting bracket, universal",  price: 28.00,  stock: "In Stock",  matchType: "substitution", historicalUses: 19 },
     ],
@@ -885,6 +962,190 @@ const BOM_CATALOG = {
     ],
   },
 };
+
+
+// ============================================================================
+//  RESOLVE-THE-BOM + KIT MODEL  (added — the AI-match differentiator)
+//  ---------------------------------------------------------------------------
+//  Everything above answers "given a component, what candidate parts?" This
+//  block answers the deeper question a judge asks: "how do you know these parts
+//  are on THIS case?" We resolve the case's RAW configuration BOM (which carries
+//  +1/-1 kit-substitution lines) DOWN to the true net parts, then group them UP
+//  into kits. Proven in isolation in bom_resolver.html / kit_grouper.html; the
+//  functions here are the same, composed into one pipeline: getCaseRefresh().
+// ============================================================================
+
+// RAW config BOM per serial. In production this is a fetch from the case-config
+// BOM tool:  GET /api/config-bom?serial=...   (Authorization: Bearer <token>)
+// returning exactly this array shape. Only the primary demo case is filled in;
+// any case without a raw BOM falls back to the generic component picker, so no
+// existing behavior changes.
+const RAW_BOM_BY_SERIAL = {
+  "HSM-D5X-081247-2017": [
+    { partNumber:"HUS-BMP-D5X-8B",  desc:"Bumper, 8 ft, Black",         category:"bumper",       source:"Base configuration",     qty: 1 },
+    { partNumber:"HUS-BRK-D5X-STD", desc:"Mounting bracket, standard",  category:"bracket",      source:"Base configuration",     qty: 1 },
+    { partNumber:"HUS-HNG-D5X-8",   desc:"Bumper hanger, 8 ft",         category:"hanger",       source:"Base configuration",     qty: 1 },
+    { partNumber:"HUS-FST-KIT-A",   desc:"Fastener kit A",              category:"fastener_kit", source:"Base \u2014 bumper assy", qty: 1 },
+    { partNumber:"HUS-FST-KIT-A",   desc:"Fastener kit A",              category:"fastener_kit", source:"Base \u2014 panel assy",  qty: 1 },
+    { partNumber:"HUS-FPL-D5X-8W",  desc:"Front panel, 8 ft, White",    category:"panel",        source:"Base configuration",     qty: 1 },
+    { partNumber:"HUS-FAS-D5X-8W",  desc:"Fascia panel, 8 ft, White",   category:"fascia",       source:"Base configuration",     qty: 1 },
+    { partNumber:"HUS-TRL-D5X-8W",  desc:"Top rail, 8 ft, White",       category:"top_rail",     source:"Base configuration",     qty: 1 },
+    { partNumber:"HUS-LED-D5X-8",   desc:"LED light strip, 8 ft",       category:"lighting",     source:"Base configuration",     qty: 1 },
+    { partNumber:"HUS-GSK-D5X-8",   desc:"Case gasket, 8 ft",           category:"gasket",       source:"Base configuration",     qty: 1 },
+    { partNumber:"HUS-BMP-D5X-8B",  desc:"Bumper, 8 ft, Black",         category:"bumper",       source:"Stainless Bumper Kit",   qty:-1 },
+    { partNumber:"HUS-BMP-D5X-8SS", desc:"Bumper, 8 ft, Stainless",     category:"bumper",       source:"Stainless Bumper Kit",   qty: 1 },
+    { partNumber:"HUS-BRK-D5X-STD", desc:"Mounting bracket, standard",  category:"bracket",      source:"Heavy-Duty Bracket Kit", qty:-1 },
+    { partNumber:"HUS-BRK-D5X-HD",  desc:"Mounting bracket, heavy-duty",category:"bracket",      source:"Heavy-Duty Bracket Kit", qty: 1 },
+    { partNumber:"HUS-LED-D5X-8",   desc:"LED light strip, 8 ft",       category:"lighting",     source:"High-CRI Lighting Kit",  qty:-1 },
+    { partNumber:"HUS-LED-D5X-8HC", desc:"LED strip, 8 ft, High-CRI",   category:"lighting",     source:"High-CRI Lighting Kit",  qty: 1 },
+  ],
+};
+
+// Which categories a REFRESH replaces. A business RULE (deterministic), not AI.
+const REFRESH_CATEGORIES = new Set(["bumper","bracket","hanger","fastener_kit","panel","fascia","top_rail"]);
+
+// Kits defined by member categories. `component` maps each kit back to the
+// existing COMPONENT_RULES matcher, so selecting a kit reuses the AI-match flow
+// unchanged. fastener_kit is intentionally a member of BOTH kits (membership,
+// not partition) — which reconciles with its resolved net qty of 2.
+const KIT_CATALOG = {
+  "KIT-BUMPER": { code:"BK", name:"Bumper Refresh Kit",     component:"bumper",
+                  note:"Bumper, bracket, hanger, and fasteners.",
+                  memberCategories:["bumper","bracket","hanger","fastener_kit"] },
+  "KIT-PANEL":  { code:"PK", name:"Front Panel Refresh Kit", component:"panel",
+                  note:"Front panel, fascia, top rail, and fasteners.",
+                  memberCategories:["panel","fascia","top_rail","fastener_kit"] },
+};
+
+// Single source of truth for prices: flatten BOM_CATALOG once into a lookup.
+// (Better than a second price map that could drift out of sync.)
+const PRICE_INDEX = (function buildPriceIndex() {
+  const idx = {};
+  Object.keys(BOM_CATALOG).forEach(function (model) {
+    Object.keys(BOM_CATALOG[model]).forEach(function (cat) {
+      BOM_CATALOG[model][cat].forEach(function (part) { idx[part.partNumber] = part.price; });
+    });
+  });
+  return idx;
+})();
+
+// --- resolveBOM: net qty per part (accumulator), split kept vs. cancelled -----
+//  Python: netted = defaultdict(int); for l in raw: netted[l.pn] += l.qty
+function resolveBOM(rawLines) {
+  const acc = {};
+  rawLines.forEach(function (line) {
+    const k = line.partNumber;
+    if (!acc[k]) acc[k] = { partNumber:k, desc:line.desc, category:line.category, net:0 };
+    acc[k].net += line.qty;                 // the one line that matters
+  });
+  const all = Object.values(acc);
+  return { kept: all.filter(function (p) { return p.net !== 0; }),
+           dropped: all.filter(function (p) { return p.net === 0; }) };
+}
+
+// --- filterRefreshParts: keep refresh-relevant categories only ---------------
+function filterRefreshParts(parts) {
+  return parts.filter(function (p) { return REFRESH_CATEGORIES.has(p.category); });
+}
+
+// --- groupIntoKits: group parts UP into kits (membership, not partition) ------
+//  Python: kits = defaultdict(list); for kit: for p in parts if p.cat in kit
+function groupIntoKits(refreshParts, catalog) {
+  const kits = [];
+  const placed = new Set();
+  Object.keys(catalog).forEach(function (kitId) {
+    const kit = catalog[kitId];
+    const memberSet = new Set(kit.memberCategories);
+    const members = refreshParts.filter(function (p) { return memberSet.has(p.category); });
+    if (members.length === 0) return;       // this case has no parts for this kit
+    members.forEach(function (p) { placed.add(p.partNumber); });
+    const subtotal = members.reduce(function (s, p) { return s + (PRICE_INDEX[p.partNumber] || 0); }, 0);
+    kits.push(Object.assign({ kitId:kitId, members:members, partCount:members.length, subtotal:subtotal }, kit));
+  });
+  const leftover = refreshParts.filter(function (p) { return !placed.has(p.partNumber); });
+  return { kits: kits, leftover: leftover };
+}
+
+// --- reconcileKits: a resolved part's net qty should equal the # of kits that
+//     consume it. The fastener (net 2, in 2 kits) is the proof. -------------
+function reconcileKits(refreshParts, catalog) {
+  const rows = refreshParts.map(function (p) {
+    const using = Object.values(catalog).filter(function (k) {
+      return k.memberCategories.indexOf(p.category) !== -1;
+    }).length;
+    return { part:p.partNumber, netQty:p.net, kitsUsing:using, ok: using === p.net };
+  });
+  return { rows: rows, allOk: rows.every(function (r) { return r.ok; }) };
+}
+
+// --- getCaseRefresh: the COMPOSED pipeline for a serial ----------------------
+//  resolveBOM -> filterRefreshParts -> groupIntoKits (+ reconcile).
+//  Returns null if this case has no raw BOM (caller falls back to the generic
+//  component grid, so existing cases behave exactly as before).
+function getCaseRefresh(serial) {
+  const raw = RAW_BOM_BY_SERIAL[(serial || "").trim().toUpperCase()];
+  if (!raw) return null;
+  const resolved = resolveBOM(raw);
+  const refreshParts = filterRefreshParts(resolved.kept);
+  const grouped = groupIntoKits(refreshParts, KIT_CATALOG);
+  const recon = reconcileKits(refreshParts, KIT_CATALOG);
+  return {
+    serial: serial,
+    counts: { raw: raw.length, resolved: resolved.kept.length, refresh: refreshParts.length },
+    resolvedParts: resolved.kept,
+    droppedParts: resolved.dropped,
+    refreshParts: refreshParts,
+    kits: grouped.kits,
+    leftover: grouped.leftover,
+    reconcile: recon,
+  };
+}
+
+
+// ============================================================================
+//  INCOMING SURVEY  —  the hand-off from Step 2 (public_smart_survey_v2)
+//  ---------------------------------------------------------------------------
+//  This is the payload the smart survey already builds and submits. In
+//  production the quoter opens this case FROM the lead, so the survey arrives
+//  as data:
+//      GET /api/leads/{leadId}   ->   exactly this shape
+//  Keyed by serial so the demo can look it up; only the primary demo case has a
+//  survey attached, so any other case behaves exactly as before.
+//
+//  WHY THIS MATTERS: the BOM tells us what the case CAN take. The survey tells
+//  us what the customer actually COMPLAINED about. Those are different, and the
+//  difference is what the AI should recommend first.
+// ============================================================================
+const INCOMING_SURVEY = {
+  "HSM-D5X-081247-2017": {
+    submitted: "Jul 14, 2026",
+    contact: "Store manager, Schnucks #047",
+    age: "y5_10",
+    // what the customer reported. `symptoms` = plain-language signs they picked;
+    // `concerns` = part areas they flagged directly. Both map to part CATEGORIES.
+    symptoms: [
+      { key: "worn_trim", label: "Worn or scuffed trim", category: "bumper" },
+    ],
+    concerns: [
+      { key: "bumper", label: "Bumper / trim", category: "bumper" },
+    ],
+  },
+};
+
+// Which part CATEGORIES did the customer actually flag? (deduped)
+// Python: {s["category"] for s in symptoms} | {c["category"] for c in concerns}
+function surveyFlaggedCategories(survey) {
+  const set = new Set();
+  if (!survey) return set;
+  (survey.symptoms || []).forEach(function (s) { set.add(s.category); });
+  (survey.concerns || []).forEach(function (c) { set.add(c.category); });
+  return set;
+}
+
+// Does this kit contain any category the customer complained about?
+function kitIsReported(kit, flaggedCats) {
+  return kit.memberCategories.some(function (c) { return flaggedCats.has(c); });
+}
 
 
 // ============================================================================
@@ -1197,7 +1458,7 @@ function matchParts(serialNumber, component) {
 //       information (consistent hue per category), drawings-as-code thumbnails.
 // ============================================================================
 
-let ui = { caseInfo: null, component: null, match: null, overrides: {} };
+let ui = { caseInfo: null, component: null, match: null, overrides: {}, refresh: null, survey: null };
 
 function money(x) { return "$" + x.toFixed(2); }
 function pct(x)   { return Math.round(x * 100) + "%"; }
@@ -1264,7 +1525,11 @@ function doLookup() {
   card.classList.remove("show");
   err.classList.remove("show");
   compSection.classList.remove("show");
+  document.getElementById("resolveSection").classList.remove("show");
   ui.caseInfo = null;
+  ui.refresh = null;
+  ui.survey = null;
+  document.getElementById("surveySection").classList.remove("show");
 
   if (!info.resolved) {
     err.textContent = "No case found for \u201C" + serial + "\u201D. Check the serial number and try again.";
@@ -1290,7 +1555,40 @@ function doLookup() {
     + '</div>';
   card.classList.add("show");
 
-  renderComponentGrid();
+  // NEW: if this case has a raw configuration BOM, resolve it and offer KITS
+  // built from the real net parts. Otherwise fall back to the generic component
+  // picker (unchanged behavior for cases without a raw BOM).
+  const refresh = getCaseRefresh(info.serial);
+  ui.refresh = refresh;
+  ui.survey = INCOMING_SURVEY[(info.serial || "").trim().toUpperCase()] || null;
+  const resolveSection = document.getElementById("resolveSection");
+  const surveySection = document.getElementById("surveySection");
+  const componentLabel = document.getElementById("componentLabel");
+  if (refresh) {
+    renderResolvePanel(refresh);
+    resolveSection.classList.add("show");
+
+    // The survey (if this case came in from a lead) explains WHY we lead with
+    // one kit over another. Without it, the kit grid still works — it just
+    // can't prioritize.
+    if (ui.survey) {
+      renderSurveyPanel(ui.survey, refresh);
+      surveySection.classList.add("show");
+      componentLabel.textContent = "Refresh kits \u2014 survey-matched first, all BOM-verified";
+    } else {
+      surveySection.classList.remove("show");
+      componentLabel.textContent = "Choose a refresh kit \u2014 built from this case\u2019s resolved BOM";
+    }
+
+    renderKitGrid(refresh);
+    setStep(2);                        // rail: Resolve BOM
+  } else {
+    resolveSection.classList.remove("show");
+    surveySection.classList.remove("show");
+    componentLabel.textContent = "Which component needs refreshing?";
+    renderComponentGrid();
+    setStep(1);
+  }
   compSection.classList.add("show");
 }
 
@@ -1314,6 +1612,132 @@ function renderComponentGrid() {
 }
 
 
+// --- renderResolvePanel: the funnel + reconciliation + collapsible detail ----
+function renderResolvePanel(r) {
+  const c = r.counts, rec = r.reconcile;
+
+  function fstep(n, label, sub) {
+    return '<div class="fstep"><div class="fnum">' + n + '</div>'
+      + '<div class="flbl">' + label + '</div><div class="fsub">' + sub + '</div></div>';
+  }
+  const funnel = '<div class="funnel">'
+    + fstep(c.raw, "Raw BOM lines", "adds + deletes")
+    + '<div class="farrow">\u2192</div>'
+    + fstep(c.resolved, "Resolved parts", "net, non-zero")
+    + '<div class="farrow">\u2192</div>'
+    + fstep(c.refresh, "Refresh parts", "feed the kits")
+    + '</div>';
+
+  const badge = '<div class="recon-badge ' + (rec.allOk ? 'ok' : 'fail') + '">'
+    + (rec.allOk
+        ? '\u2713 BOM \u2194 kits reconciled \u2014 every part\u2019s net qty matches the number of kits consuming it'
+        : '\u2717 Reconciliation mismatch \u2014 kit definitions disagree with the BOM')
+    + '</div>';
+
+  const refreshRows = r.refreshParts.map(function (p) {
+    return '<tr><td class="mono">' + p.partNumber + '</td><td>' + p.desc
+      + '</td><td class="num">\u00d7' + p.net + '</td></tr>';
+  }).join('');
+  const dropRows = r.droppedParts.map(function (p) {
+    return '<tr class="rd-drop"><td class="mono">' + p.partNumber + '</td><td>' + p.desc
+      + '</td><td class="num">cancelled</td></tr>';
+  }).join('');
+  const detail = '<details class="resolve-detail"><summary>View resolved parts ('
+    + r.refreshParts.length + ' refresh \u00b7 ' + r.droppedParts.length + ' cancelled to zero)</summary>'
+    + '<table class="rd-table"><tbody>' + refreshRows + dropRows + '</tbody></table></details>';
+
+  // CORE-CASE SCOPING (George): reaching this panel means the case HAS a
+  // resolvable config BOM — i.e. it's a core case. Say so explicitly: that's the
+  // ground for the confidence. Cases outside core coverage never get here; they
+  // fall back to the generic picker (and, in production, a specialist).
+  const scope = '<div class="scope-note">'
+    + '<b>Core case.</b> This build is one of the core configurations \u2014 about 70% of refresh volume \u2014 '
+    + 'that resolves to &gt;99% BOM accuracy. That\u2019s why the matches are <b>BOM-verified, not predicted</b>. '
+    + 'Cases outside core coverage route to a specialist.'
+    + '</div>';
+
+  document.getElementById("resolvePanel").innerHTML = funnel + badge + scope + detail;
+}
+
+// --- renderKitGrid: kit cards (from the resolved BOM) as the component picker -
+//  Reuses .comp-card styling. Each kit maps to a component, so clicking a kit
+//  runs the EXISTING matcher — no downstream change.
+function renderKitGrid(r) {
+  const grid = document.getElementById("componentGrid");
+
+  // The survey narrows the BOM. The BOM says which kits this case CAN take;
+  // the survey says which ones the customer actually complained about. Sort the
+  // reported kits first so the AI leads with what was asked for.
+  const flaggedCats = surveyFlaggedCategories(ui.survey);
+  const kits = r.kits.slice().sort(function (a, b) {
+    return (kitIsReported(b, flaggedCats) ? 1 : 0) - (kitIsReported(a, flaggedCats) ? 1 : 0);
+  });
+
+  grid.innerHTML = kits.map(function (kit) {
+    const color = catColor(kit.component);
+    const reported = kitIsReported(kit, flaggedCats);
+
+    // The badge tells the quoter WHY this kit is here — BOM-verified either way,
+    // but "the customer reported this" is a different, stronger reason to lead.
+    const badge = reported
+      ? '<div class="kit-badge reported">Customer reported</div>'
+      : '<div class="kit-badge">Verified from BOM</div>';
+
+    const why = ui.survey
+      ? (reported
+          ? '<div class="kit-why yes">\u2713 Matches the survey \u2014 recommended</div>'
+          : '<div class="kit-why no">Not reported \u2014 optional upgrade</div>')
+      : "";
+
+    return '<button class="comp-card' + (reported ? " reported" : "") + '" data-component="' + kit.component + '" style="--accent:' + color + '">'
+      + badge
+      + '<div class="comp-icon" style="color:' + color + '">' + catIcon(kit.component) + '</div>'
+      + '<div class="comp-name">' + kit.name + '</div>'
+      + '<div class="comp-desc">' + kit.note + '</div>'
+      + '<div class="kit-sub">' + kit.partCount + ' parts \u00b7 ' + money(kit.subtotal) + ' parts subtotal</div>'
+      + why
+      + '</button>';
+  }).join("");
+
+  grid.querySelectorAll(".comp-card").forEach(function (btn) {
+    btn.addEventListener("click", function () {
+      runMatch(btn.getAttribute("data-component"));
+    });
+  });
+}
+
+// --- renderSurveyPanel: what the customer told us, and what it changes -------
+function renderSurveyPanel(survey, refresh) {
+  const flaggedCats = surveyFlaggedCategories(survey);
+  const reported = refresh.kits.filter(function (k) { return kitIsReported(k, flaggedCats); });
+  const other    = refresh.kits.filter(function (k) { return !kitIsReported(k, flaggedCats); });
+
+  const items = []
+    .concat((survey.symptoms || []).map(function (s) { return s.label; }))
+    .concat((survey.concerns || []).map(function (c) { return c.label; }));
+  // dedupe the plain-language list (symptom + direct pick can overlap)
+  const seen = {};
+  const chips = items.filter(function (t) {
+    if (seen[t]) return false; seen[t] = true; return true;
+  }).map(function (t) { return '<span class="sv-chip">' + t + '</span>'; }).join("");
+
+  const effect = '<div class="sv-effect">'
+    + '<b>What this changes:</b> the resolved BOM says this case can take '
+    + refresh.kits.length + ' kits. The customer only reported '
+    + Array.from(flaggedCats).join(", ") + ' \u2014 so '
+    + (reported.length ? '<b>' + reported.map(function (k) { return k.name; }).join(", ") + '</b> leads' : 'nothing matched')
+    + (other.length ? ', and ' + other.map(function (k) { return k.name; }).join(", ")
+        + ' is offered as an optional upgrade rather than pushed.' : '.')
+    + '</div>';
+
+  document.getElementById("surveyPanel").innerHTML =
+      '<div class="sv-head"><span class="sv-title">From the customer\u2019s smart survey</span>'
+    + '<span class="sv-meta">' + survey.contact + ' \u00b7 ' + survey.submitted + '</span></div>'
+    + '<div class="sv-chips">' + chips + '</div>'
+    + effect;
+}
+
+
 // ----------------------------------------------------------------------------
 //  SCREEN 2 — run the match and render results
 // ----------------------------------------------------------------------------
@@ -1322,7 +1746,7 @@ function runMatch(component) {
   ui.overrides = {};                 // fresh match -> no quoter overrides yet
 
   showScreen("screen-results");
-  setStep(2);                        // rail: now in the AI-match step
+  setStep(3);                        // rail: now in the AI-match step
   document.getElementById("thinking").classList.add("show");
   document.getElementById("resultsBody").style.display = "none";
 
@@ -1378,7 +1802,9 @@ function renderResults() {
   document.getElementById("resultsHead").innerHTML =
     '<div>'
     + '  <div class="rh-title">' + m.componentLabel + ' \u2014 ' + m.case.modelName + '</div>'
-    + '  <div class="rh-sub">' + m.lines.length + ' part categories \u00b7 Rule: ' + m.ruleNote + '</div>'
+    + '  <div class="rh-sub">' + m.lines.length + ' part categories \u00b7 Rule: ' + m.ruleNote
+    +      (ui.refresh ? ' \u00b7 <span class="verified">Compatibility verified from resolved BOM (core case)</span>' : '')
+    +    '</div>'
     + '</div>'
     + '<div class="donut-wrap">'
     + '  <svg class="donut" viewBox="0 0 76 76">'
@@ -1426,73 +1852,143 @@ function renderResults() {
   }, 60);
 }
 
+// --- onCasePartFor: the exact part on THIS case for a category, from the
+//  resolved BOM (ui.refresh). Returns a partNumber or null. This is PROVENANCE
+//  (what is literally on the case) — a stronger claim than fitment (what merely
+//  fits the model). Categories not present on the resolved case return null,
+//  so those fall back to the original AI-confidence framing untouched.
+function onCasePartFor(category) {
+  if (!ui.refresh) return null;
+  const hit = ui.refresh.refreshParts.find(function (p) { return p.category === category; });
+  return hit ? hit.partNumber : null;
+}
+
 function renderCategorySection(line) {
   const chosen = effectivePrimary(line);
   if (!chosen) return "";
   const color = catColor(line.category);
-  // The full candidate pool, still in AI-ranked order (best first).
-  const pool = [line.primary].concat(line.alternates);
+
+  // PROVENANCE: the part literally on this case for this category (or null).
+  const exactPn = onCasePartFor(line.category);
+
+  // Pool in AI-ranked order, but force the on-case exact match to the FRONT so
+  // the safe 1:1 replacement is always first. (Don't rely on the ranker happening
+  // to rank it first — make it explicit. It does rank #1 here by construction;
+  // warn loudly if that alignment ever breaks.)
+  let pool = [line.primary].concat(line.alternates);
+  if (exactPn) {
+    if (line.primary.partNumber !== exactPn) {
+      console.warn("On-case part " + exactPn + " is not the ranker's top pick for " + line.category);
+    }
+    const exactCard = pool.find(function (p) { return p.partNumber === exactPn; });
+    if (exactCard) {
+      pool = [exactCard].concat(pool.filter(function (p) { return p.partNumber !== exactPn; }));
+    }
+  }
+  const exactPrice = (exactPn && pool[0]) ? pool[0].price : null;
 
   const cards = pool.map(function (p) {
     const isChosen = p.partNumber === chosen.partNumber;
-    const isAiPick = p.partNumber === line.primary.partNumber;
+    const isExactMatch = exactPn && p.partNumber === exactPn;
+    const isUpsell = exactPn && !isExactMatch;         // an alternate to the on-case part
     const confPct = Math.round(p.score * 100);
     const lowClass = p.score < 0.7 ? " low" : "";
 
-    // FITMENT BADGE — the AutoZone "Fits your vehicle" pattern, powered by our
-    // matchType signal. Exact = green check bar; substitution = soft notice.
-    const fit = p.matchType === "exact"
-      ? '<div class="fit exact">\u2713 Exact fit \u00b7 ' + ui.match.case.model + '</div>'
-      : '<div class="fit sub">Compatible substitution \u00b7 related model family</div>';
+    // ---- Ribbon ----
+    let ribbon = "";
+    if (isExactMatch) {
+      ribbon = '<div class="ribbon exact">On this case</div>';
+    } else if (isUpsell) {
+      const up = p.price > exactPrice;
+      ribbon = '<div class="ribbon ' + (up ? 'upgrade' : 'alt') + '">' + (up ? 'Upgrade' : 'Alternate') + '</div>';
+    } else {
+      // No resolved data for this category -> original AI-pick behavior.
+      if (p.partNumber === line.primary.partNumber) ribbon = '<div class="ribbon ai">AI Recommended</div>';
+      if (isChosen && p.partNumber !== line.primary.partNumber) ribbon = '<div class="ribbon quoter">Quoter Selected</div>';
+    }
 
-    // Social proof chip — the ratings analog: prior-quote usage.
+    // ---- Badge: provenance for the on-case part, fitment for everything else --
+    let badge;
+    if (isExactMatch) {
+      badge = '<div class="fit oncase">\u2713 Exact match \u00b7 on this case (resolved BOM)</div>';
+    } else {
+      badge = p.matchType === "exact"
+        ? '<div class="fit exact">\u2713 Exact fit \u00b7 ' + ui.match.case.model + '</div>'
+        : '<div class="fit sub">Compatible substitution \u00b7 related model family</div>';
+    }
+
     const proof = '<span class="chip">Used in ' + p.historicalUses + ' prior quote' + (p.historicalUses === 1 ? '' : 's') + '</span>';
     const stockPill = p.stock !== "Backordered"
       ? '<span class="stock-pill ok">' + p.stock + '</span>'
       : '<span class="stock-pill bad">' + p.stock + '</span>';
 
-    // Ribbon: AI's top pick always shows; quoter's override marked separately.
-    let ribbon = "";
-    if (isAiPick) ribbon = '<div class="ribbon ai">AI Recommended</div>';
-    if (isChosen && !isAiPick) ribbon = '<div class="ribbon quoter">Quoter Selected</div>';
+    // ---- Confidence / provenance area ----
+    // For the EXACT match, a confidence % is the wrong frame — it's not a
+    // prediction, it's read from the BOM. Show provenance instead. Alternates
+    // keep the confidence bar (there, "how good an alternate is this?" is fair)
+    // and gain a price DELTA vs. the on-case part (computed, not hard-coded).
+    let confArea;
+    if (isExactMatch) {
+      confArea = '<div class="verified-strip">\u2713 Verified from resolved BOM \u2014 not a prediction</div>';
+    } else {
+      let deltaHtml = "";
+      if (isUpsell && exactPrice != null) {
+        const d = p.price - exactPrice;
+        if (d > 0)      deltaHtml = '<div class="delta up">+' + money(d) + ' vs. on-case part</div>';
+        else if (d < 0) deltaHtml = '<div class="delta down">\u2212' + money(-d) + ' vs. on-case part</div>';
+        else            deltaHtml = '<div class="delta">Same price \u00b7 alternate finish</div>';
+      }
+      const bd = p.breakdown;
+      const popHtml =
+        '<div class="pop" hidden>'
+        + '<div class="pop-title">How this score was computed</div>'
+        + '<div class="pop-row"><span>Base \u2014 ' + (p.matchType === "exact" ? "exact model match" : "substitution (related model)") + '</span><span>' + pct(bd.base) + '</span></div>'
+        + '<div class="pop-row"><span>History \u2014 ' + p.historicalUses + ' prior quotes</span><span>+' + pct(bd.historyBonus) + '</span></div>'
+        + '<div class="pop-row pop-total"><span>Confidence</span><span>' + confPct + '%</span></div>'
+        + '<div class="pop-caveat">Prior-quote frequency is a soft signal, not proof of fit \u2014 a part quoted often can reflect repeat repairs from the <i>wrong</i> part. Weighted low; it never overrides the BOM.</div>'
+        + '<div class="pop-note">Weights are hand-set today; with structured quote history, a trained model would learn them.</div>'
+        + '</div>';
+      confArea = deltaHtml
+        + '<div class="conf">'
+        + '  <div class="conf-row"><span class="conf-label">' + (isUpsell ? 'Alternate confidence' : 'AI confidence') + '</span>'
+        + '  <button class="conf-num">' + confPct + '% <span class="qmark">?</span></button></div>'
+        + '  <div class="conf-track"><div class="conf-fill' + lowClass + '" data-w="' + confPct + '"></div></div>'
+        +    popHtml
+        + '</div>';
+    }
 
-    const bd = p.breakdown;
-    const popHtml =
-      '<div class="pop" hidden>'
-      + '<div class="pop-title">How this score was computed</div>'
-      + '<div class="pop-row"><span>Base \u2014 ' + (p.matchType === "exact" ? "exact model match" : "substitution (related model)") + '</span><span>' + pct(bd.base) + '</span></div>'
-      + '<div class="pop-row"><span>History \u2014 ' + p.historicalUses + ' prior quotes</span><span>+' + pct(bd.historyBonus) + '</span></div>'
-      + '<div class="pop-row pop-total"><span>Confidence</span><span>' + confPct + '%</span></div>'
-      + '<div class="pop-note">Weights are hand-set today; with structured quote history, a trained model would learn them.</div>'
-      + '</div>';
+    // ---- Select button ----
+    const selectBtn = isChosen
+      ? '<button class="select-btn selected" disabled>\u2713 In quote</button>'
+      : '<button class="select-btn" data-cat="' + line.category + '" data-part="' + p.partNumber + '">'
+        + (isUpsell ? 'Swap in' : 'Select for quote') + '</button>';
 
     return '<div class="pcard' + (isChosen ? " chosen" : "") + '" style="--accent:' + color + '">'
       + ribbon
       + '<div class="pcard-img" style="color:' + color + '">' + catIcon(line.category) + '</div>'
       + '<div class="pcard-part">' + p.partNumber + '</div>'
       + '<div class="pcard-desc">' + p.desc + '</div>'
-      + fit
+      + badge
       + '<div class="pcard-chips">' + proof + stockPill + '</div>'
-      + '<div class="conf">'
-      + '  <div class="conf-row"><span class="conf-label">AI confidence</span>'
-      + '  <button class="conf-num">' + confPct + '% <span class="qmark">?</span></button></div>'
-      + '  <div class="conf-track"><div class="conf-fill' + lowClass + '" data-w="' + confPct + '"></div></div>'
-      +    popHtml
-      + '</div>'
+      + confArea
       + '<div class="pcard-foot">'
       + '  <span class="pcard-price">' + money(p.price) + '</span>'
-      +    (isChosen
-             ? '<button class="select-btn selected" disabled>\u2713 In quote</button>'
-             : '<button class="select-btn" data-cat="' + line.category + '" data-part="' + p.partNumber + '">Select for quote</button>')
+      +    selectBtn
       + '</div>'
       + '</div>';
   }).join("");
+
+  // Category header count: reflect the exact/alternate split when we have provenance.
+  const altCount = pool.length - 1;
+  const countLabel = exactPn
+    ? '1 exact match \u00b7 ' + altCount + ' alternate' + (altCount === 1 ? '' : 's')
+    : pool.length + ' candidate' + (pool.length === 1 ? '' : 's');
 
   return '<div class="cat-section">'
     + '<div class="cat-head" style="color:' + color + '">'
     +   line.category.replace("_", " ")
     +   (line.isPrimaryComponent ? '<span class="primary-tag">requested component</span>' : "")
-    +   '<span class="cat-count">' + pool.length + ' candidate' + (pool.length === 1 ? '' : 's') + '</span>'
+    +   '<span class="cat-count">' + countLabel + '</span>'
     + '</div>'
     + '<div class="pcard-grid">' + cards + '</div>'
     + '</div>';
@@ -1556,7 +2052,7 @@ function generateQuote() {
     + '<div class="quote-actions"><button class="btn primary" id="pushOracleBtn">Approve &amp; Push to Oracle</button></div>';
 
   document.getElementById("quoteCard").classList.add("show");
-  setStep(3);                        // rail: quote & order stage
+  setStep(4);                        // rail: quote & order stage
 
   document.getElementById("pushOracleBtn").addEventListener("click", function () {
     const oid = "ORD-2026-" + String(Math.floor(10000 + Math.random() * 89999));
