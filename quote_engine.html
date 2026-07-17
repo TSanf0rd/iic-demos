@@ -1,0 +1,249 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Quote Engine — Refresh Pipeline (Step 3)</title>
+<style>
+  :root{
+    --navy:#0B2D4D;--navy-2:#143D63;--blue:#1E6BB8;--blue-soft:#E5EFFB;--gold:#C99A2E;
+    --bg:#F5F3EE;--surface:#FFFFFF;--surface-2:#FAF9F6;--border:#E2DFD8;--border-2:#CFCBC1;
+    --ink:#1A1A18;--ink-2:#5A574F;--ink-3:#8A867B;
+    --green:#2E9E4A;--green-bg:#E7F4EA;--green-ink:#1E7A34;
+    --amber:#E08A16;--amber-bg:#FDF0E3;--amber-ink:#B4600A;
+    --radius:10px;--radius-lg:14px;--maxw:820px;
+    --font:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;
+    --mono:"SF Mono",ui-monospace,Menlo,Consolas,monospace;
+  }
+  *{margin:0;padding:0;box-sizing:border-box;}
+  body{font-family:var(--font);background:var(--bg);color:var(--ink);line-height:1.5;-webkit-font-smoothing:antialiased;}
+  .topbar{background:var(--navy);color:#fff;padding:14px 24px;display:flex;align-items:center;justify-content:space-between;border-bottom:3px solid var(--blue);}
+  .brand{display:flex;align-items:center;gap:12px;}
+  .brand-mark{width:34px;height:34px;border-radius:7px;background:linear-gradient(135deg,var(--blue),var(--navy-2));display:flex;align-items:center;justify-content:center;font-weight:700;font-size:17px;}
+  .brand-text{display:flex;flex-direction:column;line-height:1.15;}
+  .brand-text .name{font-weight:600;font-size:15px;}
+  .brand-text .sub{font-size:11.5px;color:#A9C4DE;}
+  .env{font-size:11px;font-weight:500;color:#A9C4DE;border:1px solid #2A4E70;padding:4px 10px;border-radius:999px;}
+  .page{max-width:var(--maxw);margin:0 auto;padding:24px 24px 60px;}
+  .eyebrow{font-size:11.5px;font-weight:600;letter-spacing:1px;text-transform:uppercase;color:var(--blue);margin-bottom:4px;}
+  h1{font-size:23px;font-weight:600;color:var(--navy);letter-spacing:-0.3px;}
+  .lead{color:var(--ink-2);font-size:14px;margin-top:3px;margin-bottom:20px;}
+  .card{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius-lg);padding:20px;margin-bottom:16px;}
+  .card h2{font-size:14px;color:var(--navy);margin-bottom:14px;}
+  .field-label{font-size:11.5px;font-weight:600;letter-spacing:.5px;text-transform:uppercase;color:var(--ink-3);margin-bottom:8px;}
+  .row{display:flex;align-items:center;gap:12px;flex-wrap:wrap;}
+  input[type=range]{flex:1;min-width:160px;}
+  .val{font-family:var(--mono);font-size:14px;color:var(--navy);font-weight:700;min-width:64px;text-align:right;}
+  .opt{font-size:13px;padding:8px 14px;border-radius:999px;background:var(--surface-2);border:1px solid var(--border-2);cursor:pointer;}
+  .opt.on{background:var(--navy);color:#fff;border-color:var(--navy);}
+  .flag{font-size:12px;padding:6px 12px;border-radius:999px;background:var(--amber-bg);color:var(--amber-ink);border:1px solid #F0D2A6;cursor:pointer;user-select:none;}
+  .flag.off{background:var(--surface-2);color:var(--ink-3);border-color:var(--border);text-decoration:line-through;}
+
+  table.q{width:100%;border-collapse:collapse;font-size:13.5px;}
+  table.q th{text-align:left;font-size:11px;text-transform:uppercase;letter-spacing:.5px;color:var(--ink-3);padding:8px 6px;border-bottom:1px solid var(--border);}
+  table.q td{padding:9px 6px;border-bottom:1px solid var(--border);}
+  table.q td.num,table.q th.num{text-align:right;font-variant-numeric:tabular-nums;}
+  .mono{font-family:var(--mono);font-size:12px;}
+  .grp{font-size:11px;text-transform:uppercase;letter-spacing:.5px;color:var(--blue);padding-top:14px !important;font-weight:700;}
+  tr.sub td{color:var(--ink-2);}
+  tr.addon td{background:var(--amber-bg);}
+  tr.total td{font-weight:700;font-size:15px;color:var(--navy);border-top:2px solid var(--border-2);border-bottom:none;padding-top:12px;}
+  tr.discount td{color:var(--green-ink);}
+  .note{font-size:12px;color:var(--ink-3);margin-top:10px;line-height:1.5;}
+</style>
+</head>
+<body>
+  <div class="topbar">
+    <div class="brand"><div class="brand-mark">H</div>
+      <div class="brand-text"><span class="name">Refresh Pipeline</span><span class="sub">Quote Engine · Step 3</span></div>
+    </div><span class="env">Proof of Concept</span>
+  </div>
+
+  <div class="page">
+    <div class="eyebrow">From match to money</div>
+    <h1>Quote Engine</h1>
+    <p class="lead">Takes the matched parts, the case <b>size</b>, and the <b>survey-flagged</b> parts — and prices the job. Change any input; the quote recomputes live.</p>
+
+    <div class="card">
+      <h2>Inputs (normally passed in from earlier steps)</h2>
+
+      <div class="field-label">Case length (drives quantity)</div>
+      <div class="row" style="margin-bottom:16px;">
+        <input type="range" id="lenFt" min="4" max="48" step="4" value="8" />
+        <span class="val" id="lenVal">8 ft</span>
+      </div>
+
+      <div class="field-label">Customer tier (national accounts get contract pricing)</div>
+      <div class="row" id="tierOpts" style="margin-bottom:16px;"></div>
+
+      <div class="field-label">Survey-flagged parts — end-of-life add-ons (tap to include/exclude)</div>
+      <div class="row" id="flagRow"></div>
+      <div class="note">These came from the survey's lifecycle read. Including them here is the honest upsell — you're quoting what's actually worn, not padding the bill.</div>
+    </div>
+
+    <div class="card">
+      <h2>Draft quote</h2>
+      <table class="q"><tbody id="quoteBody"></tbody></table>
+      <div class="note" id="explain"></div>
+    </div>
+  </div>
+
+<!-- ============================================================================
+     THE QUOTE ENGINE — pure domain logic. No UI, no lifecycle math. It only
+     CONSUMES what earlier steps produced. Same inputs -> same output.
+     ========================================================================= -->
+<script>
+// ---- CONSTANTS: the pricing knobs. In production these live in config, not
+//      code, so finance can change them without a redeploy. -------------------
+const RATE_PER_FOOT = 150;     // Ed's ~$150 per linear foot for case/perimeter labor
+const SECTION_FT    = 8;       // parts ship in standard 8-ft sections
+const TIER_FACTOR   = { national: 0.88, standard: 1.00 };  // national accounts: 12% off (PLACEHOLDER)
+
+// ---- The matched parts that arrive from Step 2 (the AI match). Shape mirrors
+//      your BOM_CATALOG entries so this is swap-in compatible with the real demo.
+const MATCHED_PARTS = [
+  { partNumber:"HUS-BMP-D5X-8W", desc:"Bumper, 8 ft, White",   price:189.00, category:"bumper" },
+  { partNumber:"HUS-BRK-D5X-STD",desc:"Mounting bracket, std", price:34.00,  category:"bracket" },
+  { partNumber:"HUS-HNG-D5X-8",  desc:"Bumper hanger, 8 ft",   price:42.00,  category:"hanger" },
+  { partNumber:"HUS-FST-KIT-A",  desc:"Fastener kit A",        price:18.00,  category:"fastener_kit" },
+];
+
+// ---- Catalog lookup so a flagged part name resolves to a real priced part.
+//      In production this is the SAME Oracle-pricing call (see API note below).
+const ADDON_CATALOG = {
+  "Door gaskets":    { partNumber:"HUS-GSK-D5X-30", desc:"Door gasket, 30 in", price:34.00 },
+  "LED lighting kit":{ partNumber:"HUS-LED-D5X-8",  desc:"LED kit, 8 ft",      price:96.00 },
+  "Bumper":          { partNumber:"HUS-BMP-D5X-8W", desc:"Bumper, 8 ft, White",price:189.00 },
+};
+
+// --- STEP 1: size -> quantity. THE bug-fix. An 8-ft case = 1 section;
+//     a 40-ft lineup = ceil(40/8) = 5. Math.ceil rounds UP (Python: math.ceil).
+function sectionsFor(lengthFt) {
+  return Math.ceil(lengthFt / SECTION_FT);
+}
+
+// --- STEP 2: the engine. Returns a structured quote OBJECT (data, not HTML).
+//     Keeping it data means the UI can render it any way, and a test can
+//     assert on numbers without a browser. This is separation of concerns.
+function estimateQuote(caseLengthFt, matchedParts, flaggedNames, tier) {
+  const qty = sectionsFor(caseLengthFt);
+
+  // parts lines: price * quantity. .map = transform each part into a line.
+  // (Python: [ {...} for p in matched_parts ])
+  const partLines = matchedParts.map(function (p) {
+    return { label: p.desc, partNumber: p.partNumber, qty: qty,
+             unit: p.price, ext: round2(p.price * qty), kind: "part" };
+  });
+
+  // labor: one line, length * rate. This is the cost line you were missing.
+  const laborLine = { label: "Case labor (" + caseLengthFt + " ft \u00d7 $" + RATE_PER_FOOT + "/ft)",
+                      partNumber: "\u2014", qty: caseLengthFt, unit: RATE_PER_FOOT,
+                      ext: round2(caseLengthFt * RATE_PER_FOOT), kind: "labor" };
+
+  // add-ons: THIS is where the survey connects. Each flagged part -> a line.
+  // .filter drops flags we have no catalog entry for; .map prices the rest.
+  const addonLines = flaggedNames
+    .filter(function (name) { return ADDON_CATALOG[name]; })   // safe: skip unknowns
+    .map(function (name) {
+      const a = ADDON_CATALOG[name];
+      return { label: a.desc + "  (survey: end-of-life)", partNumber: a.partNumber,
+               qty: qty, unit: a.price, ext: round2(a.price * qty), kind: "addon" };
+    });
+
+  // subtotal: sum every line's extended cost. reduce = fold a list to one value.
+  // (Python: sum(l["ext"] for l in all_lines))
+  const allLines = partLines.concat([laborLine]).concat(addonLines);
+  const subtotal = round2(allLines.reduce(function (s, l) { return s + l.ext; }, 0));
+
+  // tier pricing: national accounts (Walmart/Kroger) get contract discount.
+  const factor = TIER_FACTOR[tier] || 1.0;               // safe lookup w/ default
+  const total  = round2(subtotal * factor);
+  const discount = round2(subtotal - total);
+
+  return { qty: qty, partLines: partLines, laborLine: laborLine, addonLines: addonLines,
+           subtotal: subtotal, discount: discount, tier: tier, total: total };
+}
+
+// helper: round to cents. Float math needs explicit rounding or you get
+// $412.9800000001. (Python: round(x, 2) — but JS round is int-only, so *100/100.)
+function round2(x) { return Math.round(x * 100) / 100; }
+
+// ============================================================================
+//  API NOTE — where the PRICES really come from
+//  ---------------------------------------------------------------------------
+//  Here price is hard-coded. In production each unit price is fetched from
+//  ORACLE, brokered through ADAPTIA (Hussmann's middleware), per Ed. Shape:
+//
+//     POST https://adaptia.hussmann.com/pricing
+//     Authorization: Bearer <token>          // auth at the MIDDLEWARE boundary;
+//     Body: { partNumbers:[...], customerTier:"national" }   // Adaptia holds
+//     -> { "HUS-BMP-D5X-8W": 189.00, ... }                   // the Oracle creds
+//
+//  TYPE: a brokered request/response. You never talk to Oracle directly —
+//  Adaptia is the gateway (think: a customs broker who clears goods for you).
+//  This matters for security: the app never holds Oracle credentials, and the
+//  tier-based pricing is applied server-side, not trusted from the client.
+//  So estimateQuote() would become async and AWAIT that price map first.
+// ============================================================================
+</script>
+
+<script>
+// ---- UI: reads controls, calls estimateQuote(), renders. Never does math. --
+const state = { lengthFt:8, tier:"standard",
+  // flags start as the survey handed them: which are currently included.
+  flags:{ "Door gaskets":true, "LED lighting kit":true, "Bumper":false } };
+
+const $ = function (id){ return document.getElementById(id); };
+const money = function (x){ return "$" + x.toFixed(2); };
+
+function buildTier(){
+  const opts=[["standard","Standard"],["national","National (Walmart/Kroger)"]];
+  $("tierOpts").innerHTML = opts.map(function(o){
+    return '<span class="opt'+(state.tier===o[0]?' on':'')+'" data-t="'+o[0]+'">'+o[1]+'</span>';
+  }).join("");
+  $("tierOpts").querySelectorAll(".opt").forEach(function(el){
+    el.addEventListener("click",function(){ state.tier=el.getAttribute("data-t"); buildTier(); render(); });
+  });
+}
+
+function buildFlags(){
+  // Object.keys(state.flags) = the list of flagged part names (Python: dict.keys())
+  $("flagRow").innerHTML = Object.keys(state.flags).map(function(name){
+    return '<span class="flag'+(state.flags[name]?'':' off')+'" data-n="'+name+'">'+name+'</span>';
+  }).join("");
+  $("flagRow").querySelectorAll(".flag").forEach(function(el){
+    el.addEventListener("click",function(){
+      const n=el.getAttribute("data-n"); state.flags[n]=!state.flags[n]; buildFlags(); render();
+    });
+  });
+}
+
+function render(){
+  // only the flags currently toggled ON get passed to the engine.
+  const activeFlags = Object.keys(state.flags).filter(function(n){ return state.flags[n]; });
+  const q = estimateQuote(state.lengthFt, MATCHED_PARTS, activeFlags, state.tier);
+
+  function line(l){ return '<tr class="'+(l.kind==="addon"?"addon":l.kind==="labor"?"sub":"")+'">'
+    +'<td class="mono">'+l.partNumber+'</td><td>'+l.label+'</td>'
+    +'<td class="num">'+l.qty+'</td><td class="num">'+money(l.unit)+'</td><td class="num">'+money(l.ext)+'</td></tr>'; }
+
+  let html = '<tr><th>Part</th><th>Description</th><th class="num">Qty</th><th class="num">Unit</th><th class="num">Ext</th></tr>';
+  html += '<tr><td colspan="5" class="grp">Matched parts \u00d7 '+q.qty+' section'+(q.qty>1?'s':'')+'</td></tr>';
+  html += q.partLines.map(line).join("");
+  html += '<tr><td colspan="5" class="grp">Case labor</td></tr>' + line(q.laborLine);
+  if(q.addonLines.length){ html += '<tr><td colspan="5" class="grp">Survey add-ons (end-of-life)</td></tr>' + q.addonLines.map(line).join(""); }
+  html += '<tr class="sub"><td colspan="4">Subtotal</td><td class="num">'+money(q.subtotal)+'</td></tr>';
+  if(q.discount>0){ html += '<tr class="discount"><td colspan="4">'+q.tier+' contract discount</td><td class="num">\u2212'+money(q.discount).slice(1)+'</td></tr>'; }
+  html += '<tr class="total"><td colspan="4">Quote total</td><td class="num">'+money(q.total)+'</td></tr>';
+  $("quoteBody").innerHTML = html;
+
+  $("explain").innerHTML = 'Length '+state.lengthFt+' ft \u2192 <b>'+q.qty+' section'+(q.qty>1?'s':'')
+    +'</b> of each part. Labor scales with length. '+q.addonLines.length+' survey add-on'
+    +(q.addonLines.length===1?'':'s')+' included. '+(q.discount>0?'National pricing applied.':'Standard pricing.');
+}
+
+$("lenFt").addEventListener("input",function(){ state.lengthFt=parseInt(this.value,10); $("lenVal").textContent=this.value+" ft"; render(); });
+buildTier(); buildFlags(); render();
+</script>
+</body>
+</html>

@@ -1,0 +1,403 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Hussmann Refresh — Group Parts into Kits</title>
+
+  <!--
+    ==========================================================================
+    GROUP PARTS INTO KITS  (standalone proving artifact for Demo 2)
+    --------------------------------------------------------------------------
+    Companion to bom_resolver.html. Where the resolver netted MANY raw lines
+    DOWN to net parts, this groups those net parts UP into kits — the unit of
+    refresh George described ("think in kits, not parts").
+
+    The pipeline genuinely chains here:
+        resolveBOM(RAW_BOM)  ->  filterRefreshParts(...)  ->  groupIntoKits(...)
+    We reuse the resolver's exact functions so the input to the kit grouper IS
+    the resolver's output, not hand-copied data.
+
+    KEY DISTINCTION taught below: netting was a PARTITION (each line -> exactly
+    one part). Kit grouping is a MEMBERSHIP (one part can be in >1 kit). The
+    fastener kit lives in both the Bumper and Panel kits — and that reconciles
+    exactly with its resolved net qty of 2.
+
+    Same design tokens as the resolver / Demo 2 / Demo 3.
+    ==========================================================================
+  -->
+
+  <style>
+    :root {
+      --navy:#0B2D4D; --navy-2:#143D63; --blue:#1E6BB8; --blue-soft:#E5EFFB; --gold:#C99A2E;
+      --bg:#F5F3EE; --surface:#FFFFFF; --surface-2:#FAF9F6; --border:#E2DFD8; --border-2:#CFCBC1;
+      --ink:#1A1A18; --ink-2:#5A574F; --ink-3:#8A867B;
+      --green:#2E9E4A; --green-bg:#E7F4EA; --green-ink:#1E7A34;
+      --amber:#E08A16; --amber-bg:#FDF0E3; --amber-ink:#B4600A;
+      --red:#C62828; --red-bg:#FBE4E4; --red-ink:#B02020;
+      --radius:10px; --radius-lg:14px; --maxw:980px;
+      --font:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;
+      --mono:"SF Mono",ui-monospace,Menlo,Consolas,monospace;
+    }
+    * { margin:0; padding:0; box-sizing:border-box; }
+    body { font-family:var(--font); background:var(--bg); color:var(--ink); line-height:1.5; -webkit-font-smoothing:antialiased; }
+
+    .topbar { background:var(--navy); color:#fff; padding:14px 24px; display:flex; align-items:center; justify-content:space-between; border-bottom:3px solid var(--blue); }
+    .brand { display:flex; align-items:center; gap:12px; }
+    .brand-mark { width:34px; height:34px; border-radius:7px; background:linear-gradient(135deg,var(--blue),var(--navy-2)); display:flex; align-items:center; justify-content:center; font-weight:700; font-size:17px; }
+    .brand-text { display:flex; flex-direction:column; line-height:1.15; }
+    .brand-text .name { font-weight:600; font-size:15px; }
+    .brand-text .sub { font-size:11.5px; color:#A9C4DE; }
+    .env { font-size:11px; font-weight:500; color:#A9C4DE; border:1px solid #2A4E70; padding:4px 10px; border-radius:999px; }
+
+    .page { max-width:var(--maxw); margin:0 auto; padding:28px 24px 64px; }
+    .eyebrow { font-size:12px; font-weight:700; letter-spacing:.08em; text-transform:uppercase; color:var(--blue); }
+    h1 { font-size:27px; letter-spacing:-.01em; margin:6px 0 8px; }
+    .lede { color:var(--ink-2); font-size:15px; max-width:70ch; }
+    .lede b { color:var(--ink); } .lede i { color:var(--navy-2); }
+
+    /* INPUT STRIP — the resolver's output feeding this stage */
+    .input-card { margin-top:20px; background:var(--surface); border:1px solid var(--border); border-radius:var(--radius-lg); padding:16px 18px; }
+    .input-card .cap { font-size:11px; font-weight:700; letter-spacing:.06em; text-transform:uppercase; color:var(--ink-3); }
+    .chips { margin-top:10px; display:flex; flex-wrap:wrap; gap:8px; }
+    .chip { font-family:var(--mono); font-size:12px; background:var(--surface-2); border:1px solid var(--border); border-radius:999px; padding:4px 11px; color:var(--ink); }
+    .chip b { color:var(--blue); font-family:var(--font); font-weight:700; margin-left:4px; }
+
+    .action-row { margin-top:22px; display:flex; align-items:center; gap:16px; flex-wrap:wrap; }
+    .btn { background:var(--blue); color:#fff; border:none; cursor:pointer; font-family:var(--font); font-size:14.5px; font-weight:600; padding:12px 22px; border-radius:var(--radius); transition:background .15s ease, transform .05s ease; }
+    .btn:hover { background:#1a5ea0; } .btn:active { transform:translateY(1px); }
+    .btn:disabled { background:var(--border-2); cursor:default; }
+    .btn-hint { font-size:13px; color:var(--ink-2); }
+
+    /* KIT CARDS */
+    .kits { margin-top:24px; display:grid; gap:16px; }
+    .kit { background:var(--surface); border:1px solid var(--border); border-radius:var(--radius-lg); overflow:hidden; }
+    .kit-head { padding:15px 18px; display:flex; align-items:center; gap:14px; cursor:pointer; user-select:none; }
+    .kit-head:hover { background:var(--surface-2); }
+    .kit-caret { color:var(--ink-3); font-size:13px; transition:transform .2s ease; width:12px; }
+    .kit.open .kit-caret { transform:rotate(90deg); }
+    .kit-id { width:40px; height:40px; border-radius:9px; background:linear-gradient(135deg,var(--blue),var(--navy-2)); color:#fff; display:flex; align-items:center; justify-content:center; font-weight:800; font-size:15px; flex-shrink:0; }
+    .kit-title { flex:1; }
+    .kit-title .n { font-size:16px; font-weight:700; }
+    .kit-title .note { font-size:12.5px; color:var(--ink-2); margin-top:1px; }
+    .kit-stats { text-align:right; }
+    .kit-stats .count { font-size:12.5px; color:var(--ink-2); }
+    .kit-stats .price { font-size:18px; font-weight:800; letter-spacing:-.01em; }
+    .kit-body { border-top:1px solid var(--border); }
+    .kit.closed .kit-body { display:none; }
+
+    table { width:100%; border-collapse:collapse; }
+    th { text-align:left; font-size:11px; font-weight:700; letter-spacing:.04em; text-transform:uppercase; color:var(--ink-3); padding:10px 18px; border-bottom:1px solid var(--border); }
+    th.num, td.num { text-align:right; }
+    td { padding:9px 18px; font-size:13.5px; border-bottom:1px solid var(--border); }
+    tr:last-child td { border-bottom:none; }
+    .pn { font-family:var(--mono); font-size:12.5px; }
+    .cat-chip { font-size:11px; font-weight:600; color:var(--ink-2); background:var(--surface-2); border:1px solid var(--border); border-radius:999px; padding:2px 9px; }
+    .shared-tag { font-size:10px; font-weight:800; letter-spacing:.04em; text-transform:uppercase; color:var(--amber-ink); background:var(--amber-bg); border-radius:5px; padding:2px 7px; margin-left:8px; }
+    .kit-foot { padding:10px 18px; background:var(--surface-2); font-size:12.5px; color:var(--ink-2); display:flex; justify-content:space-between; }
+    .kit-foot .sub { font-weight:700; color:var(--ink); }
+
+    /* RECONCILIATION */
+    .recon { margin-top:24px; background:var(--green-bg); border:1px solid #BFE3C8; border-radius:var(--radius); padding:16px 18px; font-size:13.5px; color:var(--green-ink); }
+    .recon.fail { background:var(--red-bg); border-color:#EDBCBC; color:var(--red-ink); }
+    .recon b { color:var(--navy); } .recon .k { font-family:var(--mono); font-size:12.5px; }
+    .recon .rows { margin-top:8px; display:grid; gap:4px; }
+    .recon .r { font-family:var(--mono); font-size:12.5px; color:var(--ink-2); }
+    .recon .r .ok { color:var(--green-ink); font-weight:700; }
+
+    .note { margin-top:20px; background:var(--blue-soft); border:1px solid #C9DEF5; border-radius:var(--radius); padding:16px 18px; font-size:13.5px; color:var(--navy-2); }
+    .note b { color:var(--navy); } .note .k { font-family:var(--mono); font-size:12.5px; }
+
+    .hidden { display:none; }
+    .reveal { animation:rise .45s ease both; }
+    @keyframes rise { from { opacity:0; transform:translateY(10px); } to { opacity:1; transform:none; } }
+    @media (prefers-reduced-motion:reduce){ .reveal{ animation:none; } .kit-caret{ transition:none; } }
+  </style>
+</head>
+<body>
+
+  <div class="topbar">
+    <div class="brand">
+      <div class="brand-mark">H</div>
+      <div class="brand-text">
+        <span class="name">Hussmann Refresh</span>
+        <span class="sub">AI Parts Matching · Group into Kits</span>
+      </div>
+    </div>
+    <span class="env">DEMO · SIMULATED DATA</span>
+  </div>
+
+  <div class="page">
+    <div class="eyebrow">Step 3 · AI Parts Matching</div>
+    <h1>Group parts into kits</h1>
+    <p class="lede">
+      The resolved BOM gives us the <b>net parts on the case</b>. But a rep shouldn't quote
+      seven loose SKUs — they should quote <b>kits</b>. A kit is the unit of refresh:
+      a <i>bumper kit</i> bundles the bumper, bracket, hanger, and fasteners. This step is the
+      <b>inverse of netting</b> — it groups parts <i>up</i> into kits. One part can belong to
+      more than one kit, and when it does, the math reconciles with the resolved quantity.
+    </p>
+
+    <!-- INPUT: the resolver's output -->
+    <div class="input-card">
+      <div class="cap">Input · resolved refresh parts (from bom_resolver)</div>
+      <div class="chips" id="inputChips"></div>
+    </div>
+
+    <div class="action-row">
+      <button class="btn" id="groupBtn">Group into kits →</button>
+      <span class="btn-hint" id="groupHint">Assign each resolved part to the kit(s) it belongs to, then roll up per kit.</span>
+    </div>
+
+    <div class="kits hidden" id="kitList"></div>
+
+    <div class="recon hidden" id="recon"></div>
+
+    <div class="note hidden" id="explainer">
+      <b>Why this matters for the pitch.</b> Seven parts became <b id="kitCountInline">2</b> kits —
+      that's the "think in kits, not parts" story, and it's what a customer or rep actually selects.
+      Each kit still <b>explodes to its parts</b> (expand a card to see them), so nothing is hidden —
+      the quoter can verify every SKU. The parts subtotal here is <i>parts only</i>; the full quote
+      (size scaling, case labor ≈ $150/linear ft, national-tier discount) is computed by the quote
+      engine in Step 4 — kept separate on purpose so lifecycle, parts, and pricing never bleed into
+      each other.
+    </div>
+  </div>
+
+<script>
+// ============================================================================
+//  1. RESOLVER STAGE (reused — see bom_resolver.html for the full teaching)
+//  ---------------------------------------------------------------------------
+//  Same RAW_BOM, same resolveBOM(), same filter. Kept compact here because the
+//  focus of THIS file is the kit grouping. The point of reusing it: the input
+//  to the kit grouper is genuinely the resolver's output.
+// ============================================================================
+const RAW_BOM = [
+  { partNumber:"HUS-BMP-D5X-8B",  desc:"Bumper, 8 ft, Black",        category:"bumper",       qty: 1 },
+  { partNumber:"HUS-BRK-D5X-STD", desc:"Mounting bracket, standard", category:"bracket",      qty: 1 },
+  { partNumber:"HUS-HNG-D5X-8",   desc:"Bumper hanger, 8 ft",        category:"hanger",       qty: 1 },
+  { partNumber:"HUS-FST-KIT-A",   desc:"Fastener kit A",             category:"fastener_kit", qty: 1 },
+  { partNumber:"HUS-FST-KIT-A",   desc:"Fastener kit A",             category:"fastener_kit", qty: 1 },
+  { partNumber:"HUS-FPL-D5X-8W",  desc:"Front panel, 8 ft, White",   category:"panel",        qty: 1 },
+  { partNumber:"HUS-FAS-D5X-8W",  desc:"Fascia panel, 8 ft, White",  category:"fascia",       qty: 1 },
+  { partNumber:"HUS-TRL-D5X-8W",  desc:"Top rail, 8 ft, White",      category:"top_rail",     qty: 1 },
+  { partNumber:"HUS-LED-D5X-8",   desc:"LED light strip, 8 ft",      category:"lighting",     qty: 1 },
+  { partNumber:"HUS-GSK-D5X-8",   desc:"Case gasket, 8 ft",          category:"gasket",       qty: 1 },
+  { partNumber:"HUS-BMP-D5X-8B",  desc:"Bumper, 8 ft, Black",        category:"bumper",       qty:-1 },
+  { partNumber:"HUS-BMP-D5X-8SS", desc:"Bumper, 8 ft, Stainless",    category:"bumper",       qty: 1 },
+  { partNumber:"HUS-BRK-D5X-STD", desc:"Mounting bracket, standard", category:"bracket",      qty:-1 },
+  { partNumber:"HUS-BRK-D5X-HD",  desc:"Mounting bracket, heavy-duty",category:"bracket",     qty: 1 },
+  { partNumber:"HUS-LED-D5X-8",   desc:"LED light strip, 8 ft",      category:"lighting",     qty:-1 },
+  { partNumber:"HUS-LED-D5X-8HC", desc:"LED strip, 8 ft, High-CRI",  category:"lighting",     qty: 1 },
+];
+const REFRESH_CATEGORIES = new Set(["bumper","bracket","hanger","fastener_kit","panel","fascia","top_rail"]);
+const CATEGORY_LABEL = { bumper:"Bumper", bracket:"Bracket", hanger:"Hanger", fastener_kit:"Fasteners", panel:"Panel", fascia:"Fascia", top_rail:"Top rail", lighting:"Lighting", gasket:"Gasket" };
+
+// list prices per resolved SKU (in production these come from the pricing service)
+const PRICE = {
+  "HUS-BMP-D5X-8SS":214.00, "HUS-BRK-D5X-HD":46.00, "HUS-HNG-D5X-8":42.00,
+  "HUS-FST-KIT-A":18.00, "HUS-FPL-D5X-8W":156.00, "HUS-FAS-D5X-8W":234.00, "HUS-TRL-D5X-8W":118.00,
+};
+
+function resolveBOM(rawLines){
+  const acc = {};
+  for (const line of rawLines){
+    const k = line.partNumber;
+    if (!acc[k]) acc[k] = { partNumber:k, desc:line.desc, category:line.category, net:0 };
+    acc[k].net += line.qty;           // accumulator: net qty per part
+  }
+  return Object.values(acc).filter(p => p.net !== 0);   // drop cancelled pairs
+}
+function filterRefreshParts(parts){ return parts.filter(p => REFRESH_CATEGORIES.has(p.category)); }
+
+// ============================================================================
+//  2. KIT CATALOG — the definition of each kit as a set of member CATEGORIES
+//  ---------------------------------------------------------------------------
+//  A kit is defined by WHICH CATEGORIES it contains. Notice fastener_kit is a
+//  member of BOTH kits — that's the "membership, not partition" idea in the
+//  data itself. In production this catalog comes from the same case-config /
+//  BOM source as the raw BOM (serial -> configuration -> kits).
+//
+//  API note: this would be a second read from the config service, e.g.
+//    GET https://bom.hussmann.com/api/kits?model=D5X   (Bearer token)
+//  returning the kit definitions. Same REST/JSON/token pattern as the BOM call.
+// ============================================================================
+const KIT_CATALOG = {
+  "KIT-BUMPER-D5X": {
+    code: "BK",
+    name: "Bumper Refresh Kit",
+    note: "Bumper + bracket + hanger + fasteners — everything to remount the bumper.",
+    memberCategories: ["bumper", "bracket", "hanger", "fastener_kit"],
+  },
+  "KIT-PANEL-D5X": {
+    code: "PK",
+    name: "Front Panel Refresh Kit",
+    note: "Front panel + fascia + top rail + fasteners — the visible shell.",
+    memberCategories: ["panel", "fascia", "top_rail", "fastener_kit"],
+  },
+};
+
+// ============================================================================
+//  3. THE CORE ALGORITHM — groupIntoKits()
+//  ---------------------------------------------------------------------------
+//  Netting grouped MANY lines by PART -> one net qty per part (a PARTITION:
+//  each line has exactly one part). Kit grouping groups PARTS by KIT-MEMBERSHIP
+//  -> one bundle per kit. The difference: a part can match MORE THAN ONE kit,
+//  so we don't "remove" a part once it's placed. This is a MEMBERSHIP join.
+//
+//  Python parallel (defaultdict(list) is the natural accumulator for grouping
+//  items INTO lists, vs defaultdict(int) for summing them):
+//    from collections import defaultdict
+//    kits = defaultdict(list)
+//    for kit_id, kit in KIT_CATALOG.items():
+//        for part in refresh_parts:
+//            if part["category"] in kit["memberCategories"]:
+//                kits[kit_id].append(part)
+//
+//  For each kit we also roll up a parts subtotal. IMPORTANT separation of
+//  concerns: this is PARTS ONLY. Labor, size scaling, and discounts belong to
+//  the quote engine (Step 4) — we deliberately don't mix them in here.
+// ============================================================================
+function groupIntoKits(refreshParts, catalog){
+  const kits = [];
+  const placedPartNumbers = new Set();   // track which parts landed in >=1 kit
+
+  for (const [kitId, kit] of Object.entries(catalog)){
+    // membership test: keep the resolved parts whose category this kit contains
+    const memberSet = new Set(kit.memberCategories);
+    const members = refreshParts.filter(p => memberSet.has(p.category));
+
+    members.forEach(p => placedPartNumbers.add(p.partNumber));
+
+    // parts subtotal: each kit consumes ONE of each member category (qty 1),
+    // even if the part's total resolved net qty is higher (because the OTHER
+    // unit is consumed by another kit — that's the reconciliation below).
+    const subtotal = members.reduce((s, p) => s + (PRICE[p.partNumber] || 0), 0);
+
+    kits.push({ kitId, ...kit, members, partCount: members.length, subtotal });
+  }
+
+  // any refresh part that didn't land in a kit is a "loose part" — surfaced so
+  // nothing silently disappears. (None expected here, but never trust that.)
+  const leftover = refreshParts.filter(p => !placedPartNumbers.has(p.partNumber));
+
+  return { kits, leftover };
+}
+
+// ============================================================================
+//  4. RECONCILIATION — the elegant check that ties the two stages together
+//  ---------------------------------------------------------------------------
+//  Claim: a resolved part's net qty should equal the number of kits that
+//  consume its category. The fastener netted to 2 AND belongs to 2 kits -> 2==2.
+//  A single-kit part netted to 1 AND belongs to 1 kit -> 1==1. If any row fails,
+//  the kit definitions and the BOM disagree and the quote would be wrong.
+// ============================================================================
+function reconcile(refreshParts, catalog){
+  const rows = refreshParts.map(p => {
+    const kitsUsing = Object.values(catalog).filter(k => k.memberCategories.includes(p.category)).length;
+    return { part:p.partNumber, netQty:p.net, kitsUsing, ok: kitsUsing === p.net };
+  });
+  return { rows, allOk: rows.every(r => r.ok) };
+}
+
+// ============================================================================
+//  5. RENDERING
+// ============================================================================
+const money = x => "$" + x.toFixed(2);
+
+let RESOLVED_REFRESH = [];   // filled at init so render fns can reach it
+
+function renderInput(){
+  document.getElementById("inputChips").innerHTML = RESOLVED_REFRESH.map(p =>
+    `<span class="chip">${p.partNumber}${p.net > 1 ? `<b>×${p.net}</b>` : ""}</span>`
+  ).join("");
+}
+
+function renderKits(result){
+  document.getElementById("kitList").innerHTML = result.kits.map((kit, i) => `
+    <div class="kit open reveal" style="animation-delay:${i*0.08}s">
+      <div class="kit-head" onclick="this.parentElement.classList.toggle('open'); this.parentElement.classList.toggle('closed');">
+        <span class="kit-caret">▶</span>
+        <div class="kit-id">${kit.code}</div>
+        <div class="kit-title">
+          <div class="n">${kit.name}</div>
+          <div class="note">${kit.note}</div>
+        </div>
+        <div class="kit-stats">
+          <div class="count">${kit.partCount} parts</div>
+          <div class="price">${money(kit.subtotal)}</div>
+        </div>
+      </div>
+      <div class="kit-body">
+        <table>
+          <thead><tr><th>Part number</th><th>Description</th><th>Category</th><th class="num">Price</th></tr></thead>
+          <tbody>
+            ${kit.members.map(p => {
+              const shared = Object.values(KIT_CATALOG).filter(k => k.memberCategories.includes(p.category)).length > 1;
+              return `<tr>
+                <td class="pn">${p.partNumber}</td>
+                <td>${p.desc}${shared ? `<span class="shared-tag">shared</span>` : ""}</td>
+                <td><span class="cat-chip">${CATEGORY_LABEL[p.category] || p.category}</span></td>
+                <td class="num">${money(PRICE[p.partNumber] || 0)}</td>
+              </tr>`;
+            }).join("")}
+          </tbody>
+        </table>
+        <div class="kit-foot"><span>Parts subtotal (excludes labor &amp; discounts)</span><span class="sub">${money(kit.subtotal)}</span></div>
+      </div>
+    </div>
+  `).join("");
+}
+
+function renderRecon(rec){
+  const el = document.getElementById("recon");
+  el.classList.toggle("fail", !rec.allOk);
+  el.innerHTML = `
+    <b>Reconciliation — netting ↔ kits.</b> A resolved part's net qty should equal the number of
+    kits that consume it. ${rec.allOk ? "All rows agree ✓" : "MISMATCH — kit defs disagree with the BOM ✗"}
+    <div class="rows">
+      ${rec.rows.map(r => `<div class="r"><span class="k">${r.part}</span> · net qty ${r.netQty} · in ${r.kitsUsing} kit(s) ${r.ok ? '<span class="ok">✓</span>' : '✗'}</div>`).join("")}
+    </div>`;
+}
+
+// ============================================================================
+//  6. WIRING
+// ============================================================================
+function runGrouping(){
+  const result = groupIntoKits(RESOLVED_REFRESH, KIT_CATALOG);
+  const rec = reconcile(RESOLVED_REFRESH, KIT_CATALOG);
+
+  // integrity: nothing left loose, and the reconciliation holds
+  console.assert(result.leftover.length === 0, "Loose parts not placed in any kit:", result.leftover);
+  console.assert(rec.allOk, "Kit/BOM reconciliation failed:", rec.rows.filter(r => !r.ok));
+  console.log(`[kits] ${RESOLVED_REFRESH.length} parts -> ${result.kits.length} kits · leftover ${result.leftover.length} · reconcile ${rec.allOk ? "OK" : "FAIL"}`);
+
+  document.getElementById("kitList").classList.remove("hidden");
+  renderKits(result);
+  document.getElementById("kitCountInline").textContent = result.kits.length;
+
+  setTimeout(() => {
+    renderRecon(rec);
+    document.getElementById("recon").classList.remove("hidden");
+    document.getElementById("recon").classList.add("reveal");
+    document.getElementById("explainer").classList.remove("hidden");
+    document.getElementById("explainer").classList.add("reveal");
+  }, 350);
+
+  const btn = document.getElementById("groupBtn");
+  btn.disabled = true; btn.textContent = "Grouped ✓";
+  document.getElementById("groupHint").textContent =
+    "Grouped into kits. Fasteners appear in both kits (qty 1 each) and reconcile to the resolved net qty of 2.";
+}
+
+function init(){
+  // COMPOSE THE PIPELINE: resolve -> filter -> (grouping happens on click)
+  const resolved = resolveBOM(RAW_BOM);
+  RESOLVED_REFRESH = filterRefreshParts(resolved);
+  renderInput();
+  document.getElementById("groupBtn").addEventListener("click", runGrouping);
+}
+init();
+</script>
+</body>
+</html>

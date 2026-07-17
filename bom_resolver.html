@@ -1,0 +1,673 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Hussmann Refresh — Resolve the BOM</title>
+
+  <!--
+    ==========================================================================
+    RESOLVE THE BOM  (standalone proving artifact for Demo 2)
+    --------------------------------------------------------------------------
+    Purpose: prove, in isolation, the single most differentiated step George
+    asked for: turning a RAW case-configuration BOM (which contains negative-
+    quantity "delete" lines from kit substitutions) into the TRUE net parts on
+    the case, then filtering that to the parts a refresh actually touches.
+
+    Why isolate it? Because the transformation is the thing that has to be
+    provably correct. Once the funnel is right here, we wire the exact same
+    resolveBOM() function into demo2_parts_matching.html ahead of the matcher.
+
+    Same design tokens as Demo 2 / Demo 3 on purpose — consistency is
+    credibility with a judge.
+    ==========================================================================
+  -->
+
+  <style>
+    /* ===== DESIGN TOKENS — identical palette to Demo 2 / Demo 3 ===== */
+    :root {
+      --navy:      #0B2D4D;
+      --navy-2:    #143D63;
+      --blue:      #1E6BB8;
+      --blue-soft: #E5EFFB;
+      --gold:      #C99A2E;
+
+      --bg:        #F5F3EE;
+      --surface:   #FFFFFF;
+      --surface-2: #FAF9F6;
+      --border:    #E2DFD8;
+      --border-2:  #CFCBC1;
+
+      --ink:       #1A1A18;
+      --ink-2:     #5A574F;
+      --ink-3:     #8A867B;
+
+      --green:     #2E9E4A;  --green-bg: #E7F4EA;  --green-ink: #1E7A34;
+      --amber:     #E08A16;  --amber-bg: #FDF0E3;  --amber-ink: #B4600A;
+      --red:       #C62828;  --red-bg:   #FBE4E4;  --red-ink:   #B02020;
+
+      --radius:    10px;
+      --radius-lg: 14px;
+      --maxw:      980px;
+
+      --font: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+      --mono: "SF Mono", ui-monospace, Menlo, Consolas, monospace;
+    }
+
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body {
+      font-family: var(--font);
+      background: var(--bg);
+      color: var(--ink);
+      line-height: 1.5;
+      -webkit-font-smoothing: antialiased;
+    }
+
+    /* ===== TOP BAR ===== */
+    .topbar {
+      background: var(--navy); color: #fff;
+      padding: 14px 24px;
+      display: flex; align-items: center; justify-content: space-between;
+      border-bottom: 3px solid var(--blue);
+    }
+    .brand { display: flex; align-items: center; gap: 12px; }
+    .brand-mark {
+      width: 34px; height: 34px; border-radius: 7px;
+      background: linear-gradient(135deg, var(--blue) 0%, var(--navy-2) 100%);
+      display: flex; align-items: center; justify-content: center;
+      font-weight: 700; font-size: 17px;
+    }
+    .brand-text { display: flex; flex-direction: column; line-height: 1.15; }
+    .brand-text .name { font-weight: 600; font-size: 15px; }
+    .brand-text .sub  { font-size: 11.5px; color: #A9C4DE; }
+    .env {
+      font-size: 11px; font-weight: 500; color: #A9C4DE;
+      border: 1px solid #2A4E70; padding: 4px 10px; border-radius: 999px;
+    }
+
+    .page { max-width: var(--maxw); margin: 0 auto; padding: 28px 24px 64px; }
+
+    .eyebrow {
+      font-size: 12px; font-weight: 700; letter-spacing: .08em;
+      text-transform: uppercase; color: var(--blue);
+    }
+    h1 { font-size: 27px; letter-spacing: -0.01em; margin: 6px 0 8px; }
+    .lede { color: var(--ink-2); font-size: 15px; max-width: 68ch; }
+    .lede b { color: var(--ink); }
+
+    /* ===== CASE CONTEXT ===== */
+    .case-card {
+      margin-top: 20px;
+      background: var(--surface); border: 1px solid var(--border);
+      border-radius: var(--radius-lg); padding: 16px 18px;
+      display: flex; flex-wrap: wrap; gap: 22px 34px; align-items: center;
+    }
+    .case-field .k {
+      font-size: 11px; font-weight: 700; letter-spacing: .06em;
+      text-transform: uppercase; color: var(--ink-3);
+    }
+    .case-field .v { font-size: 15px; font-weight: 600; margin-top: 2px; }
+    .case-field .v.mono { font-family: var(--mono); font-size: 13.5px; }
+
+    /* ===== FUNNEL COUNTERS ===== */
+    .funnel {
+      margin-top: 20px;
+      display: grid; grid-template-columns: 1fr auto 1fr auto 1fr; gap: 10px;
+      align-items: stretch;
+    }
+    .fstep {
+      background: var(--surface); border: 1px solid var(--border);
+      border-radius: var(--radius); padding: 14px 16px; text-align: center;
+      opacity: .45; transition: opacity .4s ease, border-color .4s ease;
+    }
+    .fstep.on { opacity: 1; border-color: var(--blue); }
+    .fstep .num { font-size: 30px; font-weight: 800; letter-spacing: -.02em; line-height: 1; }
+    .fstep .lbl { font-size: 11.5px; color: var(--ink-2); margin-top: 6px; font-weight: 600; }
+    .fstep .sub { font-size: 11px; color: var(--ink-3); margin-top: 2px; }
+    .farrow { align-self: center; color: var(--border-2); font-size: 20px; font-weight: 700; }
+
+    /* ===== STAGE CARDS ===== */
+    .stage {
+      margin-top: 22px;
+      background: var(--surface); border: 1px solid var(--border);
+      border-radius: var(--radius-lg); overflow: hidden;
+    }
+    .stage-head {
+      padding: 14px 18px; border-bottom: 1px solid var(--border);
+      display: flex; align-items: baseline; justify-content: space-between; gap: 12px;
+      background: var(--surface-2);
+    }
+    .stage-head .t { font-size: 15px; font-weight: 700; }
+    .stage-head .t .badge {
+      display: inline-block; font-size: 10.5px; font-weight: 800; letter-spacing: .05em;
+      color: #fff; background: var(--navy-2); border-radius: 5px;
+      padding: 2px 7px; margin-right: 9px; vertical-align: 1px;
+    }
+    .stage-head .meta { font-size: 12.5px; color: var(--ink-2); }
+    .stage-body { padding: 6px 4px 8px; }
+
+    /* ===== TABLE ===== */
+    table { width: 100%; border-collapse: collapse; }
+    th {
+      text-align: left; font-size: 11px; font-weight: 700; letter-spacing: .04em;
+      text-transform: uppercase; color: var(--ink-3);
+      padding: 10px 14px; border-bottom: 1px solid var(--border);
+    }
+    th.num, td.num { text-align: right; }
+    td {
+      padding: 9px 14px; font-size: 13.5px; border-bottom: 1px solid var(--border);
+      vertical-align: middle;
+    }
+    tr:last-child td { border-bottom: none; }
+    .pn { font-family: var(--mono); font-size: 12.5px; color: var(--ink); }
+    .desc { color: var(--ink); }
+    .src { color: var(--ink-3); font-size: 12px; }
+    .src.kit { color: var(--amber-ink); font-weight: 600; }
+
+    /* quantity pills: +green add, -red delete */
+    .qty {
+      font-family: var(--mono); font-weight: 700; font-size: 12.5px;
+      padding: 2px 9px; border-radius: 999px; display: inline-block; min-width: 34px; text-align: center;
+    }
+    .qty.add { color: var(--green-ink); background: var(--green-bg); }
+    .qty.del { color: var(--red-ink);   background: var(--red-bg); }
+    .qty.net { color: var(--navy);      background: var(--blue-soft); }
+
+    /* a dropped (netted-to-zero) row */
+    tr.dropped td { color: var(--ink-3); }
+    tr.dropped .pn, tr.dropped .desc { text-decoration: line-through; opacity: .7; }
+    .drop-tag {
+      font-size: 10.5px; font-weight: 800; letter-spacing: .04em; text-transform: uppercase;
+      color: var(--red-ink); background: var(--red-bg); border-radius: 5px; padding: 2px 7px;
+    }
+    .keep-tag {
+      font-size: 10.5px; font-weight: 700; letter-spacing: .04em; text-transform: uppercase;
+      color: var(--green-ink); background: var(--green-bg); border-radius: 5px; padding: 2px 7px;
+    }
+    .consolidated {
+      font-size: 11px; color: var(--blue); font-weight: 600; margin-left: 8px;
+    }
+
+    .cat-chip {
+      font-size: 11px; font-weight: 600; color: var(--ink-2);
+      background: var(--surface-2); border: 1px solid var(--border);
+      border-radius: 999px; padding: 2px 9px;
+    }
+
+    /* ===== RESOLVE BUTTON ===== */
+    .action-row { margin-top: 22px; display: flex; align-items: center; gap: 16px; flex-wrap: wrap; }
+    .btn {
+      background: var(--blue); color: #fff; border: none; cursor: pointer;
+      font-family: var(--font); font-size: 14.5px; font-weight: 600;
+      padding: 12px 22px; border-radius: var(--radius);
+      transition: background .15s ease, transform .05s ease;
+    }
+    .btn:hover { background: #1a5ea0; }
+    .btn:active { transform: translateY(1px); }
+    .btn:disabled { background: var(--border-2); cursor: default; }
+    .btn-hint { font-size: 13px; color: var(--ink-2); }
+
+    /* ===== EXPLAINER ===== */
+    .note {
+      margin-top: 24px; background: var(--blue-soft); border: 1px solid #C9DEF5;
+      border-radius: var(--radius); padding: 16px 18px; font-size: 13.5px; color: var(--navy-2);
+    }
+    .note b { color: var(--navy); }
+    .note .k { font-family: var(--mono); font-size: 12.5px; }
+
+    .hidden { display: none; }
+
+    /* staged reveal */
+    .reveal { animation: rise .45s ease both; }
+    @keyframes rise { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: none; } }
+    @media (prefers-reduced-motion: reduce) {
+      .reveal { animation: none; }
+      .fstep { transition: none; }
+    }
+  </style>
+</head>
+<body>
+
+  <div class="topbar">
+    <div class="brand">
+      <div class="brand-mark">H</div>
+      <div class="brand-text">
+        <span class="name">Hussmann Refresh</span>
+        <span class="sub">AI Parts Matching · Resolve the BOM</span>
+      </div>
+    </div>
+    <span class="env">DEMO · SIMULATED DATA</span>
+  </div>
+
+  <div class="page">
+    <div class="eyebrow">Step 3 · AI Parts Matching</div>
+    <h1>Resolve the BOM</h1>
+    <p class="lede">
+      A configured case's raw bill of materials isn't the parts on the case — it's a
+      ledger of <b>additions and deletions</b>. Every kit upgrade leaves the standard part
+      behind as a <b>&minus;1 delete line</b> and adds its replacement as a <b>+1</b>. Resolving
+      the BOM means netting those out to the parts that were <b>actually shipped</b>, then
+      narrowing to the parts a <b>refresh</b> touches. This is the airtight answer to
+      <i>"how do you know these parts fit my case?"</i>
+    </p>
+
+    <!-- CASE CONTEXT -->
+    <div class="case-card">
+      <div class="case-field">
+        <div class="k">Serial</div>
+        <div class="v mono" id="caseSerial">—</div>
+      </div>
+      <div class="case-field">
+        <div class="k">Model</div>
+        <div class="v" id="caseModel">—</div>
+      </div>
+      <div class="case-field">
+        <div class="k">Configuration</div>
+        <div class="v" id="caseConfig">—</div>
+      </div>
+      <div class="case-field">
+        <div class="k">BOM source</div>
+        <div class="v" id="caseSource">—</div>
+      </div>
+    </div>
+
+    <!-- FUNNEL COUNTERS -->
+    <div class="funnel">
+      <div class="fstep on" id="fRaw">
+        <div class="num" id="nRaw">0</div>
+        <div class="lbl">Raw BOM lines</div>
+        <div class="sub">adds + deletes</div>
+      </div>
+      <div class="farrow">→</div>
+      <div class="fstep" id="fResolved">
+        <div class="num" id="nResolved">–</div>
+        <div class="lbl">Resolved parts</div>
+        <div class="sub">net, non-zero</div>
+      </div>
+      <div class="farrow">→</div>
+      <div class="fstep" id="fRefresh">
+        <div class="num" id="nRefresh">–</div>
+        <div class="lbl">Refresh parts</div>
+        <div class="sub">what we match</div>
+      </div>
+    </div>
+
+    <!-- STAGE A: RAW BOM -->
+    <div class="stage" id="stageRaw">
+      <div class="stage-head">
+        <div class="t"><span class="badge">RAW</span>Configuration BOM as returned</div>
+        <div class="meta" id="rawMeta">—</div>
+      </div>
+      <div class="stage-body">
+        <table>
+          <thead>
+            <tr>
+              <th>Part number</th>
+              <th>Description</th>
+              <th>Category</th>
+              <th>Source</th>
+              <th class="num">Qty</th>
+            </tr>
+          </thead>
+          <tbody id="rawBody"></tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- ACTION -->
+    <div class="action-row">
+      <button class="btn" id="resolveBtn">Resolve BOM →</button>
+      <span class="btn-hint" id="resolveHint">Net the add/delete pairs, drop zero-qty lines, then filter to refresh parts.</span>
+    </div>
+
+    <!-- STAGE B: RESOLVED BOM -->
+    <div class="stage hidden" id="stageResolved">
+      <div class="stage-head">
+        <div class="t"><span class="badge">RESOLVED</span>Net parts actually on the case</div>
+        <div class="meta" id="resolvedMeta">—</div>
+      </div>
+      <div class="stage-body">
+        <table>
+          <thead>
+            <tr>
+              <th>Part number</th>
+              <th>Description</th>
+              <th>Netting</th>
+              <th class="num">Net qty</th>
+              <th>Result</th>
+            </tr>
+          </thead>
+          <tbody id="resolvedBody"></tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- STAGE C: REFRESH PARTS -->
+    <div class="stage hidden" id="stageRefresh">
+      <div class="stage-head">
+        <div class="t"><span class="badge">REFRESH</span>Parts a refresh replaces — the matcher's input</div>
+        <div class="meta" id="refreshMeta">—</div>
+      </div>
+      <div class="stage-body">
+        <table>
+          <thead>
+            <tr>
+              <th>Part number</th>
+              <th>Description</th>
+              <th>Category</th>
+              <th class="num">Qty</th>
+            </tr>
+          </thead>
+          <tbody id="refreshBody"></tbody>
+        </table>
+      </div>
+    </div>
+
+    <div class="note hidden" id="explainer">
+      <b>What just happened, at real scale.</b> George's numbers: a real configured case
+      returns roughly <b>1,000 raw BOM lines</b>, nets to about <b>800 shipped parts</b>, and
+      filters to roughly <b>20 refresh-relevant parts</b>. Nobody resolves this today — it's
+      the standout, demonstrable data-engineering step. The whole transformation is one
+      grouped sum (<span class="k">net qty per part</span>) plus two filters
+      (<span class="k">drop qty == 0</span>, then <span class="k">keep refresh categories</span>).
+      Those <span id="refreshCountInline">—</span> refresh parts are exactly what feeds the
+      AI kit-matcher next.
+    </div>
+  </div>
+
+<script>
+// ============================================================================
+//  1. DATA — a SIMULATED raw configuration BOM
+//  ---------------------------------------------------------------------------
+//  This mirrors the REAL shape George described: a flat list of line items,
+//  where a single part number can appear MULTIPLE times — once from the base
+//  configuration, and again as +1/-1 lines whenever a kit substitution was
+//  applied. We deliberately keep it readable (16 lines) but structure it
+//  exactly like the real ~1,000-line response so the resolver logic is identical.
+//
+//  Each line item:
+//    partNumber : the SKU
+//    desc       : human description
+//    category   : which part category (drives the refresh filter later)
+//    source     : where the line came from ("Base configuration" or a kit name).
+//                 This is the storytelling column — it lets the UI show WHY a
+//                 delete line exists.
+//    qty        : +N to add, -N to delete. THIS is the field we net.
+//
+//  Python parallel (a list of dicts is the same idea):
+//    RAW_BOM = [
+//      {"partNumber": "HUS-BMP-D5X-8B", "category": "bumper", "qty": 1, ...},
+//      ...
+//    ]
+// ============================================================================
+const CASE = {
+  serial: "HSM-D5X-081247-2017",
+  model:  "D5X",
+  modelName: "D5X Multi-Deck (Open Front), 8 ft",
+  config: "Stainless bumper + heavy-duty bracket + high-CRI lighting",
+  source: "Case-Config BOM tool (simulated)",
+};
+
+const RAW_BOM = [
+  // ---- Base configuration (everything the standard case ships with) --------
+  { partNumber: "HUS-BMP-D5X-8B",  desc: "Bumper, 8 ft, Black",             category: "bumper",       source: "Base configuration",   qty:  1 },
+  { partNumber: "HUS-BRK-D5X-STD", desc: "Mounting bracket, standard",      category: "bracket",      source: "Base configuration",   qty:  1 },
+  { partNumber: "HUS-HNG-D5X-8",   desc: "Bumper hanger, 8 ft",            category: "hanger",       source: "Base configuration",   qty:  1 },
+  { partNumber: "HUS-FST-KIT-A",   desc: "Fastener kit A",                 category: "fastener_kit", source: "Base — bumper assy",   qty:  1 },
+  { partNumber: "HUS-FST-KIT-A",   desc: "Fastener kit A",                 category: "fastener_kit", source: "Base — panel assy",    qty:  1 }, // SAME part, different sub-assembly -> will CONSOLIDATE
+  { partNumber: "HUS-FPL-D5X-8W",  desc: "Front panel, 8 ft, White",       category: "panel",        source: "Base configuration",   qty:  1 },
+  { partNumber: "HUS-FAS-D5X-8W",  desc: "Fascia panel, 8 ft, White",      category: "fascia",       source: "Base configuration",   qty:  1 },
+  { partNumber: "HUS-TRL-D5X-8W",  desc: "Top rail, 8 ft, White",          category: "top_rail",     source: "Base configuration",   qty:  1 },
+  { partNumber: "HUS-LED-D5X-8",   desc: "LED light strip, 8 ft",          category: "lighting",     source: "Base configuration",   qty:  1 },
+  { partNumber: "HUS-GSK-D5X-8",   desc: "Case gasket, 8 ft",              category: "gasket",       source: "Base configuration",   qty:  1 },
+
+  // ---- Kit: Stainless Bumper Kit (deletes black bumper, adds stainless) ----
+  { partNumber: "HUS-BMP-D5X-8B",  desc: "Bumper, 8 ft, Black",            category: "bumper",       source: "Stainless Bumper Kit", qty: -1 }, // DELETE — cancels the base +1
+  { partNumber: "HUS-BMP-D5X-8SS", desc: "Bumper, 8 ft, Stainless",        category: "bumper",       source: "Stainless Bumper Kit", qty:  1 }, // ADD — the replacement
+
+  // ---- Kit: Heavy-Duty Bracket Kit -----------------------------------------
+  { partNumber: "HUS-BRK-D5X-STD", desc: "Mounting bracket, standard",     category: "bracket",      source: "Heavy-Duty Bracket Kit", qty: -1 },
+  { partNumber: "HUS-BRK-D5X-HD",  desc: "Mounting bracket, heavy-duty",   category: "bracket",      source: "Heavy-Duty Bracket Kit", qty:  1 },
+
+  // ---- Kit: High-CRI Lighting Kit ------------------------------------------
+  { partNumber: "HUS-LED-D5X-8",   desc: "LED light strip, 8 ft",          category: "lighting",     source: "High-CRI Lighting Kit", qty: -1 },
+  { partNumber: "HUS-LED-D5X-8HC", desc: "LED strip, 8 ft, High-CRI",      category: "lighting",     source: "High-CRI Lighting Kit", qty:  1 },
+];
+
+// ----------------------------------------------------------------------------
+//  Which categories a REFRESH actually replaces. This is a BUSINESS RULE
+//  (deterministic, explainable) — not AI. A cosmetic/exterior refresh touches
+//  the visible shell; it does NOT swap internal/functional parts like the
+//  gasket or the light strip. Keeping this as an explicit list is the honest
+//  answer to "why these parts and not those?".
+// ----------------------------------------------------------------------------
+const REFRESH_CATEGORIES = new Set([
+  "bumper", "bracket", "hanger", "fastener_kit", "panel", "fascia", "top_rail"
+]);
+
+const CATEGORY_LABEL = {
+  bumper: "Bumper", bracket: "Bracket", hanger: "Hanger",
+  fastener_kit: "Fasteners", panel: "Panel", fascia: "Fascia",
+  top_rail: "Top rail", lighting: "Lighting", gasket: "Gasket",
+};
+
+// ============================================================================
+//  2. THE CORE ALGORITHM — resolveBOM()
+//  ---------------------------------------------------------------------------
+//  This is the whole differentiator, and it's ~15 lines. It's a classic
+//  "group and sum" done with an ACCUMULATOR, followed by a filter.
+//
+//  TWO-PASS DISCIPLINE (important): we FULLY sum every line before we decide
+//  what to drop. You cannot drop a line the moment you see a -1, because a
+//  later +1 for that same part might bring it back. Aggregate first, filter
+//  second. (Same rule that bit the Slide-pipeline grain work: aggregation and
+//  filtering are separate steps.)
+//
+//  Python parallel:
+//    from collections import defaultdict
+//    netted = defaultdict(int)          # <- the accumulator
+//    for line in raw_bom:
+//        netted[line["partNumber"]] += line["qty"]
+//    resolved = {pn: q for pn, q in netted.items() if q != 0}   # drop zeros
+// ============================================================================
+function resolveBOM(rawLines) {
+  // The accumulator. In JS a plain object works; the key is the part number,
+  // the value is the running net quantity. We ALSO keep a small trace per part
+  // (the contributing lines) so the UI can SHOW the math, not just the result.
+  const acc = {};   // partNumber -> { partNumber, desc, category, net, lines: [] }
+
+  // ---- PASS 1: net the quantities -----------------------------------------
+  for (const line of rawLines) {
+    const key = line.partNumber;
+
+    // First time we see this part? Initialize its accumulator entry.
+    // (This is the JS equivalent of Python's `defaultdict(int)` — "if the key
+    //  isn't here yet, start it at a sensible empty value.")
+    if (!acc[key]) {
+      acc[key] = { partNumber: key, desc: line.desc, category: line.category, net: 0, lines: [] };
+    }
+
+    // The one line that matters: add this line's qty to the running total.
+    acc[key].net += line.qty;
+    acc[key].lines.push(line);   // remember the contribution for the trace
+  }
+
+  // acc now holds EVERY part with its net qty. Some nets are 0 (cancelled
+  // add/delete pairs). Object.values() turns the accumulator back into a list.
+  const allNetted = Object.values(acc);
+
+  // ---- PASS 2: split into kept (net != 0) and dropped (net == 0) -----------
+  // We keep BOTH so the UI can show the dropped rows struck-through — the
+  // visible proof that the resolution happened.
+  const kept    = allNetted.filter(p => p.net !== 0);
+  const dropped = allNetted.filter(p => p.net === 0);
+
+  return { kept, dropped, allNetted };
+}
+
+// ----------------------------------------------------------------------------
+//  3. THE REFRESH FILTER — keep only refresh-relevant categories.
+//  A second, independent filter. Deterministic business rule (see set above).
+// ----------------------------------------------------------------------------
+function filterRefreshParts(resolvedParts) {
+  return resolvedParts.filter(p => REFRESH_CATEGORIES.has(p.category));
+}
+
+// ============================================================================
+//  4. API SEAM (teaching note)
+//  ---------------------------------------------------------------------------
+//  In production, RAW_BOM would NOT be hard-coded — it would be fetched from
+//  the case-configuration BOM tool, keyed by the serial's configuration ID.
+//  That fetch is the ONLY thing that changes between demo and production:
+//
+//    async function fetchRawBOM(serial) {
+//      const res = await fetch(
+//        `https://bom.hussmann.com/api/config-bom?serial=${serial}`,
+//        { headers: { "Authorization": "Bearer " + token } }  // short-lived OAuth token
+//      );
+//      if (!res.ok) throw new Error(`BOM lookup failed: ${res.status}`);
+//      return (await res.json()).lines;   // -> the same array shape as RAW_BOM
+//    }
+//
+//  Type: REST over HTTPS returning JSON. Auth: a scoped, revocable bearer TOKEN
+//  (NOT a static API key) — the same secure pattern the gateway enforces.
+//  Config knob: the `serial` query param filters server-side so you only get
+//  that case's BOM back. Because our simulated RAW_BOM already matches this
+//  response shape, resolveBOM() below never has to change when the real API
+//  lands — swap the data source, nothing downstream moves.
+// ============================================================================
+
+// ============================================================================
+//  5. RENDERING
+// ============================================================================
+function qtyPill(q) {
+  const cls = q > 0 ? "add" : (q < 0 ? "del" : "net");
+  const txt = q > 0 ? "+" + q : String(q);
+  return `<span class="qty ${cls}">${txt}</span>`;
+}
+
+function renderRaw() {
+  document.getElementById("caseSerial").textContent = CASE.serial;
+  document.getElementById("caseModel").textContent  = CASE.modelName;
+  document.getElementById("caseConfig").textContent = CASE.config;
+  document.getElementById("caseSource").textContent = CASE.source;
+
+  const adds = RAW_BOM.filter(l => l.qty > 0).length;
+  const dels = RAW_BOM.filter(l => l.qty < 0).length;
+  document.getElementById("rawMeta").textContent =
+    `${RAW_BOM.length} lines · ${adds} add · ${dels} delete`;
+  document.getElementById("nRaw").textContent = RAW_BOM.length;
+
+  document.getElementById("rawBody").innerHTML = RAW_BOM.map(l => {
+    const isKit = l.qty < 0 || /Kit/.test(l.source);
+    return `<tr>
+      <td class="pn">${l.partNumber}</td>
+      <td class="desc">${l.desc}</td>
+      <td><span class="cat-chip">${CATEGORY_LABEL[l.category] || l.category}</span></td>
+      <td class="src ${isKit ? "kit" : ""}">${l.source}</td>
+      <td class="num">${qtyPill(l.qty)}</td>
+    </tr>`;
+  }).join("");
+}
+
+function renderResolved(result) {
+  // Show kept parts first, then the dropped (cancelled) ones struck-through.
+  const rows = [];
+
+  for (const p of result.kept) {
+    const consolidated = p.lines.length > 1 && p.lines.every(x => x.qty > 0);
+    const nettingStr = p.lines.map(x => (x.qty > 0 ? "+" + x.qty : x.qty)).join("  ");
+    rows.push(`<tr>
+      <td class="pn">${p.partNumber}</td>
+      <td class="desc">${p.desc}${consolidated ? `<span class="consolidated">consolidated ×${p.lines.length}</span>` : ""}</td>
+      <td class="src">${nettingStr}</td>
+      <td class="num">${qtyPill(p.net)}</td>
+      <td><span class="keep-tag">Keep</span></td>
+    </tr>`);
+  }
+
+  for (const p of result.dropped) {
+    const nettingStr = p.lines.map(x => (x.qty > 0 ? "+" + x.qty : x.qty)).join("  ");
+    rows.push(`<tr class="dropped">
+      <td class="pn">${p.partNumber}</td>
+      <td class="desc">${p.desc}</td>
+      <td class="src">${nettingStr} = 0</td>
+      <td class="num">${qtyPill(0)}</td>
+      <td><span class="drop-tag">Cancelled</span></td>
+    </tr>`);
+  }
+
+  document.getElementById("resolvedBody").innerHTML = rows.join("");
+  document.getElementById("resolvedMeta").textContent =
+    `${result.kept.length} kept · ${result.dropped.length} cancelled to zero`;
+  document.getElementById("nResolved").textContent = result.kept.length;
+}
+
+function renderRefresh(refreshParts) {
+  document.getElementById("refreshBody").innerHTML = refreshParts.map(p => `
+    <tr>
+      <td class="pn">${p.partNumber}</td>
+      <td class="desc">${p.desc}</td>
+      <td><span class="cat-chip">${CATEGORY_LABEL[p.category] || p.category}</span></td>
+      <td class="num">${qtyPill(p.net)}</td>
+    </tr>`).join("");
+  document.getElementById("refreshMeta").textContent =
+    `${refreshParts.length} refresh-relevant parts`;
+  document.getElementById("nRefresh").textContent = refreshParts.length;
+  document.getElementById("refreshCountInline").textContent = refreshParts.length;
+}
+
+// ============================================================================
+//  6. WIRING + a small INTEGRITY CHECK (verify-before-trust habit)
+// ============================================================================
+function runResolution() {
+  const result = resolveBOM(RAW_BOM);
+  const refreshParts = filterRefreshParts(result.kept);
+
+  // --- integrity checks: the sums must reconcile. If these ever fire, the
+  //     transformation is wrong and we should NOT trust the funnel. ----------
+  const rawSum = RAW_BOM.reduce((s, l) => s + l.qty, 0);
+  const netSum = result.allNetted.reduce((s, p) => s + p.net, 0);
+  console.assert(rawSum === netSum,
+    `Netting lost quantity: raw Σ=${rawSum} vs net Σ=${netSum}`);
+  console.assert(result.kept.every(p => p.net !== 0),
+    "A kept part has net qty 0 — filter is wrong");
+  console.assert(refreshParts.every(p => REFRESH_CATEGORIES.has(p.category)),
+    "A refresh part is not in a refresh category — filter is wrong");
+  console.log(`[integrity] raw Σqty=${rawSum} == net Σqty=${netSum} ✓  |  ` +
+    `${RAW_BOM.length} raw → ${result.kept.length} resolved → ${refreshParts.length} refresh`);
+
+  // staged reveal: resolved, then refresh
+  const stageResolved = document.getElementById("stageResolved");
+  const stageRefresh  = document.getElementById("stageRefresh");
+  const explainer     = document.getElementById("explainer");
+
+  renderResolved(result);
+  stageResolved.classList.remove("hidden");
+  stageResolved.classList.add("reveal");
+  document.getElementById("fResolved").classList.add("on");
+
+  setTimeout(() => {
+    renderRefresh(refreshParts);
+    stageRefresh.classList.remove("hidden");
+    stageRefresh.classList.add("reveal");
+    document.getElementById("fRefresh").classList.add("on");
+    explainer.classList.remove("hidden");
+    explainer.classList.add("reveal");
+  }, 450);
+
+  const btn = document.getElementById("resolveBtn");
+  btn.disabled = true;
+  btn.textContent = "Resolved ✓";
+  document.getElementById("resolveHint").textContent =
+    "Netted the add/delete pairs, dropped the zero-qty lines, filtered to refresh parts. (Integrity checks in console.)";
+}
+
+function init() {
+  renderRaw();
+  document.getElementById("resolveBtn").addEventListener("click", runResolution);
+}
+init();
+</script>
+</body>
+</html>

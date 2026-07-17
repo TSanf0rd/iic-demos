@@ -1,0 +1,415 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>API Gateway — Refresh Pipeline (Security Layer)</title>
+<style>
+  :root{
+    --navy:#0B2D4D;--navy-2:#143D63;--blue:#1E6BB8;--blue-soft:#E5EFFB;--gold:#C99A2E;
+    --bg:#F5F3EE;--surface:#FFFFFF;--surface-2:#FAF9F6;--border:#E2DFD8;--border-2:#CFCBC1;
+    --ink:#1A1A18;--ink-2:#5A574F;--ink-3:#8A867B;
+    --green:#2E9E4A;--green-bg:#E7F4EA;--green-ink:#1E7A34;
+    --amber:#E08A16;--amber-bg:#FDF0E3;--amber-ink:#B4600A;
+    --red:#C62828;--red-bg:#FBE4E4;--red-ink:#B02020;
+    --radius:10px;--radius-lg:14px;--maxw:940px;
+    --font:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;
+    --mono:"SF Mono",ui-monospace,Menlo,Consolas,monospace;
+  }
+  *{margin:0;padding:0;box-sizing:border-box;}
+  body{font-family:var(--font);background:var(--bg);color:var(--ink);line-height:1.5;-webkit-font-smoothing:antialiased;}
+  .topbar{background:var(--navy);color:#fff;padding:14px 24px;display:flex;align-items:center;justify-content:space-between;border-bottom:3px solid var(--gold);}
+  .brand{display:flex;align-items:center;gap:12px;}
+  .brand-mark{width:34px;height:34px;border-radius:7px;background:linear-gradient(135deg,var(--blue),var(--navy-2));display:flex;align-items:center;justify-content:center;font-weight:700;font-size:17px;}
+  .brand-text .name{font-weight:600;font-size:15px;}
+  .brand-text .sub{font-size:11.5px;color:#A9C4DE;}
+  .page{max-width:var(--maxw);margin:0 auto;padding:24px 24px 60px;}
+  .eyebrow{font-size:11.5px;font-weight:600;letter-spacing:1px;text-transform:uppercase;color:var(--blue);}
+  h1{font-size:24px;font-weight:600;color:var(--navy);letter-spacing:-0.3px;margin-top:2px;}
+  .lead{color:var(--ink-2);font-size:14px;margin:5px 0 20px;max-width:640px;}
+  .layout{display:grid;grid-template-columns:1fr 1fr;gap:18px;align-items:start;}
+  @media(max-width:820px){.layout{grid-template-columns:1fr;}}
+  .card{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius-lg);padding:18px;margin-bottom:16px;}
+  .card h2{font-size:13px;text-transform:uppercase;letter-spacing:.6px;color:var(--ink-3);margin-bottom:12px;}
+  .seg{display:flex;gap:6px;margin-bottom:12px;}
+  .seg button{flex:1;font-size:12.5px;padding:8px;border-radius:8px;border:1px solid var(--border-2);background:var(--surface-2);cursor:pointer;}
+  .seg button.on{background:var(--navy);color:#fff;border-color:var(--navy);}
+  .presets{display:flex;flex-wrap:wrap;gap:6px;margin-bottom:12px;}
+  .presets button{font-size:12px;padding:6px 11px;border-radius:999px;border:1px solid var(--border-2);background:var(--surface-2);cursor:pointer;}
+  .presets button:hover{border-color:var(--blue);color:var(--blue);}
+  .presets button.attack{border-color:#F0C4C4;color:var(--red-ink);background:var(--red-bg);}
+  textarea{width:100%;height:190px;font-family:var(--mono);font-size:11.5px;line-height:1.5;padding:12px;border:1px solid var(--border-2);border-radius:var(--radius);background:#0E1B2A;color:#C7E0F5;resize:vertical;}
+  .run{width:100%;margin-top:12px;font-size:14px;font-weight:600;padding:12px;border-radius:var(--radius);border:none;background:var(--blue);color:#fff;cursor:pointer;}
+  .run:hover{background:#1a5ea3;}
+  .burst{margin-top:8px;display:flex;gap:8px;}
+  .burst button{flex:1;font-size:12px;padding:9px;border-radius:8px;border:1px solid var(--border-2);background:var(--surface-2);cursor:pointer;}
+
+  .stage{display:flex;align-items:center;gap:12px;padding:10px 0;border-bottom:1px solid var(--border);}
+  .stage:last-child{border-bottom:none;}
+  .stage .pill{width:74px;flex-shrink:0;text-align:center;font-size:10.5px;font-weight:700;padding:4px 0;border-radius:999px;text-transform:uppercase;letter-spacing:.4px;}
+  .pill.pass{background:var(--green-bg);color:var(--green-ink);}
+  .pill.strip{background:var(--amber-bg);color:var(--amber-ink);}
+  .pill.block{background:var(--red-bg);color:var(--red-ink);}
+  .pill.idle{background:var(--surface-2);color:var(--ink-3);}
+  .stage .body .n{font-size:13.5px;font-weight:600;color:var(--ink);}
+  .stage .body .d{font-size:12px;color:var(--ink-3);margin-top:1px;}
+
+  .status{font-family:var(--mono);font-size:13px;font-weight:700;padding:10px 14px;border-radius:var(--radius);margin-bottom:14px;}
+  .status.ok{background:var(--green-bg);color:var(--green-ink);}
+  .status.err{background:var(--red-bg);color:var(--red-ink);}
+  .out{font-family:var(--mono);font-size:11.5px;line-height:1.5;padding:12px;border-radius:var(--radius);white-space:pre-wrap;word-break:break-word;}
+  .out.pub{background:#0E1B2A;color:#8Fe0b0;}
+  .drop-title{font-size:11px;text-transform:uppercase;letter-spacing:.5px;color:var(--red-ink);margin:14px 0 6px;}
+  .drop{background:var(--red-bg);border:1px solid #F0C4C4;border-radius:var(--radius);padding:10px 12px;font-family:var(--mono);font-size:11px;color:var(--red-ink);white-space:pre-wrap;}
+  .meter{margin-top:6px;}
+  .meter .row{display:flex;justify-content:space-between;font-size:11.5px;color:var(--ink-2);margin-bottom:4px;}
+  .meter .bar{height:7px;border-radius:999px;background:var(--border);overflow:hidden;}
+  .meter .bar>span{display:block;height:100%;background:var(--green);border-radius:999px;transition:width .3s;}
+  .hint{font-size:11.5px;color:var(--ink-3);margin-top:10px;line-height:1.5;}
+</style>
+</head>
+<body>
+  <div class="topbar">
+    <div class="brand"><div class="brand-mark">H</div>
+      <div class="brand-text"><div class="name">Refresh Pipeline</div><div class="sub">API Gateway · security layer</div></div>
+    </div>
+    <span style="font-size:11px;color:#A9C4DE;border:1px solid #2A4E70;padding:4px 10px;border-radius:999px;">runs server-side in production</span>
+  </div>
+
+  <div class="page">
+    <div class="eyebrow">The wall between public and internal</div>
+    <h1>API Gateway Simulator</h1>
+    <p class="lead">Every request from the public survey passes through four controls before it can reach anything internal — and every response is filtered before it goes back out. Send a request (or an attack) and watch each stage decide.</p>
+
+    <div class="layout">
+      <!-- LEFT: request -->
+      <div>
+        <div class="card">
+          <h2>Incoming request</h2>
+          <div class="seg" id="endpointSeg">
+            <button data-ep="estimate" class="on">POST /api/estimate</button>
+            <button data-ep="serial">POST /api/serial-lookup</button>
+          </div>
+          <div class="presets" id="presets"></div>
+          <textarea id="reqBox" spellcheck="false"></textarea>
+          <button class="run" id="runBtn">Send through gateway &rarr;</button>
+          <div class="burst">
+            <button id="burst5">Fire 5 rapid requests (spam)</button>
+            <button id="reset">Reset limits</button>
+          </div>
+        </div>
+
+        <div class="card">
+          <h2>Rate limit (per client IP)</h2>
+          <div class="meter" id="meter"></div>
+          <div class="hint">Two independent buckets. The serial-lookup bucket is deliberately tight — that's what stops an attacker enumerating serials to scrape the install base.</div>
+        </div>
+      </div>
+
+      <!-- RIGHT: pipeline + output -->
+      <div>
+        <div class="card">
+          <h2>Gateway pipeline</h2>
+          <div id="pipeline"></div>
+        </div>
+        <div class="card">
+          <h2>Result</h2>
+          <div id="statusLine" class="status ok" style="display:none;"></div>
+          <div id="output"></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+<!-- ============================================================================
+     SCRIPT 1 — THE GATEWAY (pure logic). In production this runs on a SERVER
+     the client cannot touch. It treats every request as hostile until proven safe.
+     ========================================================================= -->
+<script>
+// ---- config per endpoint: its schema, its rate bucket, its internal handler.
+const ENUMS = {
+  contents:["frozen","dairy","produce","deli","drinks","fresh_food"],
+  age:["under5","y5_10","y10_15","y15plus","unsure"],
+  symptom:["foggy_glass","worn_trim","dim_lights","bad_seal","loud_warm","frost_ice"],
+  region:["gulf_coast","southeast","midwest","northeast","mountain","west_coast"],
+  remodel:["none","lt12","y1_3","exploring"],
+  yn:["yes","no","unsure"],
+};
+
+// SCHEMA = the ALLOW-LIST. We describe what a VALID request looks like and reject
+// everything else. Whitelisting beats blacklisting: you can't enumerate every bad
+// input, but you CAN enumerate every good one. (Python parallel: a dict of rules.)
+const SCHEMAS = {
+  estimate: {
+    contents:{ type:"enum", values:ENUMS.contents, required:true },
+    age:     { type:"enum", values:ENUMS.age, required:true },
+    symptoms:{ type:"array", of:ENUMS.symptom, required:true, min:1, max:6 },
+    count:   { type:"int", min:1, max:500, required:true },
+    region:  { type:"enum", values:ENUMS.region, required:false },
+    serial:  { type:"str", maxLen:40, pattern:/^[A-Za-z0-9\- ]*$/, required:false },
+    remodel: { type:"enum", values:ENUMS.remodel, required:false },
+    storeCases:{ type:"int", min:0, max:2000, required:false },
+    existingCustomer:{ type:"enum", values:ENUMS.yn, required:false },
+    lead:    { type:"lead", required:true },
+  },
+  serial: {
+    serial:  { type:"str", maxLen:40, pattern:/^[A-Za-z0-9\- ]*$/, required:true },
+  },
+};
+
+const RATE = { estimate:{ limit:8, windowMs:10000 }, serial:{ limit:5, windowMs:10000 } };
+const MAX_BYTES = 4000;   // reject oversized payloads before we even parse deeply
+
+// ---- token buckets, keyed by ip+endpoint. Refill continuously over the window.
+const buckets = {};
+function rateAllow(ip, ep) {
+  const key = ip + ":" + ep, cfg = RATE[ep], now = Date.now();
+  let b = buckets[key];
+  if (!b) { b = buckets[key] = { tokens: cfg.limit, last: now }; }
+  // refill: tokens regenerate at limit/window per ms (leaky/token bucket)
+  const refill = ((now - b.last) / cfg.windowMs) * cfg.limit;
+  b.tokens = Math.min(cfg.limit, b.tokens + refill);
+  b.last = now;
+  if (b.tokens >= 1) { b.tokens -= 1; return { ok:true, remaining: Math.floor(b.tokens) }; }
+  return { ok:false, remaining: 0 };
+}
+function bucketState(ip, ep) {
+  const b = buckets[ip + ":" + ep]; const cfg = RATE[ep];
+  if (!b) return { tokens: cfg.limit, limit: cfg.limit };
+  const now = Date.now();
+  const t = Math.min(cfg.limit, b.tokens + ((now - b.last) / cfg.windowMs) * cfg.limit);
+  return { tokens: Math.floor(t), limit: cfg.limit };
+}
+
+// ---- sanitize: strip characters used in injection. Defense in depth — even
+// though we never execute this, a downstream log/DB/UI might. Never trust input.
+function sanitizeStr(s) {
+  return String(s).replace(/[<>]/g, "").replace(/[\u0000-\u001F]/g, "").trim();
+}
+
+// ---- validate one field against its rule. Returns {ok, value, error}.
+function checkField(name, rule, val) {
+  if (val === undefined || val === null || val === "") {
+    if (rule.required) return { ok:false, error: name + " is required" };
+    return { ok:true, value: undefined };
+  }
+  if (rule.type === "enum") {
+    if (rule.values.indexOf(val) === -1) return { ok:false, error: name + " not an allowed value" };
+    return { ok:true, value: val };
+  }
+  if (rule.type === "int") {
+    const n = Number(val);
+    if (!Number.isInteger(n)) return { ok:false, error: name + " must be a whole number" };
+    if (n < rule.min || n > rule.max) return { ok:false, error: name + " out of range" };
+    return { ok:true, value: n };
+  }
+  if (rule.type === "str") {
+    let v = sanitizeStr(val);
+    if (v.length > rule.maxLen) return { ok:false, error: name + " too long" };
+    if (rule.pattern && !rule.pattern.test(v)) return { ok:false, error: name + " has invalid characters" };
+    return { ok:true, value: v };
+  }
+  if (rule.type === "array") {
+    if (!Array.isArray(val)) return { ok:false, error: name + " must be a list" };
+    if (val.length < rule.min || val.length > rule.max) return { ok:false, error: name + " wrong size" };
+    for (const item of val) if (rule.of.indexOf(item) === -1) return { ok:false, error: name + " has an unknown item" };
+    return { ok:true, value: val };
+  }
+  if (rule.type === "lead") {
+    if (typeof val !== "object") return { ok:false, error: "lead must be an object" };
+    const name2 = sanitizeStr(val.name || ""), email = sanitizeStr(val.email || "");
+    if (name2.length > 80 || email.length > 120) return { ok:false, error: "lead field too long" };
+    if (email && !/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(email)) return { ok:false, error: "email looks invalid" };
+    return { ok:true, value: { name: name2, email: email, company: sanitizeStr(val.company || "") } };
+  }
+  return { ok:true, value: val };
+}
+
+// ---- validate the whole request against the schema. Also rejects UNKNOWN
+// fields (a request with 'admin:true' should never sail through untouched).
+function validate(ep, obj) {
+  const schema = SCHEMAS[ep], cleaned = {}, errors = [], stripped = [];
+  for (const key in obj) if (!schema[key]) stripped.push(key);   // unknown -> dropped
+  for (const name in schema) {
+    const r = checkField(name, schema[name], obj[name]);
+    if (!r.ok) errors.push(r.error);
+    else if (r.value !== undefined) cleaned[name] = r.value;
+  }
+  return { ok: errors.length === 0, cleaned, errors, stripped };
+}
+
+// ---- the INTERNAL service (trusted zone). Returns a RICH object with both
+// public-safe fields AND internal secrets. The gateway must strip the secrets.
+function internalEstimate(c) {
+  const n = (c.symptoms || []).length;
+  const low = 1200 + n * 900, high = low + 1400 + n * 700;
+  return {
+    estimate_low: low * (c.count || 1), estimate_high: high * (c.count || 1),   // PUBLIC
+    recommendation: n >= 3 ? "Refresh recommended" : "Refresh advisable",       // PUBLIC
+    confidence: c.serial ? 0.9 : 0.6,                                           // PUBLIC
+    // ---- INTERNAL ONLY — must never reach the customer ----
+    internal_part_cost: Math.round(low * 0.55), margin_pct: 0.42,
+    full_bom: ["HUS-BMP-D5X-8W","HUS-GSK-D5X-30","HUS-LED-D5X-8"],
+    crm_lead_id: "LEAD-" + Math.floor(10000 + Math.random()*89999),
+    ageSource: c.serial ? "verified_serial" : "customer_stated",   // provenance for the models
+  };
+}
+function internalSerial(c) {
+  const known = { "HSM-D5X-081247-2017": { model_name:"D5X Multi-Deck", rough_age:9 } };
+  const hit = known[(c.serial || "").toUpperCase()];
+  return hit
+    ? Object.assign({}, hit, { full_bom:["HUS-BMP-D5X-8W","HUS-GSK-D5X-30"], internal_cost: 4200 })  // BOM/cost are INTERNAL
+    : { model_name: null, rough_age: null, note: "not a known Hussmann serial" };
+}
+
+// ---- RESPONSE FILTER: the outbound allow-list. The single most important
+// control for not leaking. Only these fields may go back to the public.
+const PUBLIC_FIELDS = ["estimate_low","estimate_high","recommendation","confidence","model_name","rough_age","note"];
+function filterResponse(internalResult) {
+  const out = {}, dropped = {};
+  for (const k in internalResult) {
+    if (PUBLIC_FIELDS.indexOf(k) > -1) out[k] = internalResult[k];
+    else dropped[k] = internalResult[k];         // kept internal, never returned
+  }
+  return { publicBody: out, dropped: dropped };
+}
+
+// ---- the pipeline: run every control in order, short-circuiting on the first block.
+function runGateway(ep, ip, rawText) {
+  const stages = [];
+  const S = (n,status,d)=>stages.push({ n, status, d });
+
+  // 1) payload size — cheap rejection before deep parsing (HTTP 413)
+  if (rawText.length > MAX_BYTES) { S("Payload size","block","Over "+MAX_BYTES+" bytes"); return done(413,"Payload too large"); }
+  S("Payload size","pass", rawText.length + " bytes");
+
+  // 2) parse — malformed JSON is a 400
+  let obj; try { obj = JSON.parse(rawText); } catch (e) { S("Parse JSON","block","Malformed JSON"); return done(400,"Bad JSON"); }
+  S("Parse JSON","pass","Valid JSON");
+
+  // 3) schema validation + unknown-field stripping (HTTP 400 on error)
+  const v = validate(ep, obj);
+  if (v.stripped.length) S("Schema validate", v.ok ? "strip" : "block", "Dropped unknown: " + v.stripped.join(", "));
+  else S("Schema validate", v.ok ? "pass" : "block", v.ok ? "All fields valid" : v.errors[0]);
+  if (!v.ok) return done(400, v.errors.join(" · "));
+
+  // 4) rate limit (HTTP 429) — AFTER cheap checks so we don't do work for spam
+  const rl = rateAllow(ip, ep);
+  if (!rl.ok) { S("Rate limit","block","Bucket empty — 429"); return done(429,"Too many requests"); }
+  S("Rate limit","pass", rl.remaining + " tokens left");
+
+  // 5) route to the INTERNAL service (trusted zone; gateway holds the creds)
+  const internal = ep === "serial" ? internalSerial(v.cleaned) : internalEstimate(v.cleaned);
+  S("Route to internal","pass","Called internal service");
+
+  // 6) response filter (outbound allow-list) — strip secrets before returning
+  const f = filterResponse(internal);
+  const dropCount = Object.keys(f.dropped).length;
+  S("Response filter", dropCount ? "strip" : "pass", dropCount ? "Withheld " + dropCount + " internal field(s)" : "Nothing to strip");
+
+  return done(200, "OK", f.publicBody, f.dropped);
+
+  function done(code, msg, publicBody, dropped) { return { stages, code, msg, publicBody: publicBody||null, dropped: dropped||null }; }
+}
+</script>
+
+<!-- ============================================================================
+     SCRIPT 2 — UI. Renders the pipeline; NONE of the security decisions live here.
+     ========================================================================= -->
+<script>
+const $ = (id)=>document.getElementById(id);
+let endpoint = "estimate";
+const IP = "203.0.113.24";   // one simulated client
+
+const PRESETS = {
+  estimate: {
+    "Valid submission": { contents:"dairy", age:"y10_15", symptoms:["dim_lights","bad_seal","worn_trim"], count:6, region:"gulf_coast", serial:"HSM-D5X-081247-2017", remodel:"lt12", storeCases:40, existingCustomer:"yes", lead:{ name:"Dana Ruiz", email:"dana@grocerco.com", company:"GrocerCo" } },
+    "Missing required": { count:3, lead:{ name:"Sam", email:"sam@x.com" } },
+    "Unknown field (admin:true)": { contents:"frozen", age:"y5_10", symptoms:["dim_lights"], count:2, admin:true, role:"superuser", lead:{ name:"X", email:"x@x.com" } },
+    "Injection in name": { contents:"produce", age:"y15plus", symptoms:["loud_warm"], count:1, lead:{ name:"Rob'); DROP TABLE leads;--", email:"<script>alert(1)<\/script>@x.com" } },
+    "Oversized payload": { contents:"dairy", age:"unsure", symptoms:["frost_ice"], count:1, lead:{ name:"A".repeat(5000), email:"a@a.com" } },
+  },
+  serial: {
+    "Known serial": { serial:"HSM-D5X-081247-2017" },
+    "Unknown serial": { serial:"COMP-XR5-2015" },
+    "Bad characters": { serial:"'; SELECT * FROM cases--" },
+  },
+};
+
+function renderPresets() {
+  $("presets").innerHTML = Object.keys(PRESETS[endpoint]).map(function (name) {
+    const attack = /inject|oversized|unknown|bad/i.test(name) ? " attack" : "";
+    return '<button class="' + attack.trim() + '" data-p="' + name + '">' + name + '</button>';
+  }).join("");
+  $("presets").querySelectorAll("button").forEach(function (b) {
+    b.addEventListener("click", function () { loadPreset(b.getAttribute("data-p")); });
+  });
+}
+function loadPreset(name) { $("reqBox").value = JSON.stringify(PRESETS[endpoint][name], null, 2); clearOutput(); }
+
+function renderMeter() {
+  const e = bucketState(IP, "estimate"), s = bucketState(IP, "serial");
+  function row(label, st) {
+    const pct = (st.tokens / st.limit) * 100;
+    const col = pct > 40 ? "var(--green)" : pct > 0 ? "var(--amber)" : "var(--red)";
+    return '<div class="row"><span>' + label + '</span><span>' + st.tokens + " / " + st.limit + '</span></div>'
+      + '<div class="bar"><span style="width:' + pct + '%;background:' + col + '"></span></div>';
+  }
+  $("meter").innerHTML = row("/api/estimate", e) + '<div style="height:8px"></div>' + row("/api/serial-lookup", s);
+}
+setInterval(renderMeter, 500);
+
+const PILL = { pass:"pass", strip:"strip", block:"block" };
+function renderPipeline(stages) {
+  const all = ["Payload size","Parse JSON","Schema validate","Rate limit","Route to internal","Response filter"];
+  const byName = {}; (stages||[]).forEach(function (s){ byName[s.n] = s; });
+  $("pipeline").innerHTML = all.map(function (n) {
+    const s = byName[n];
+    const cls = s ? PILL[s.status] : "idle";
+    const label = s ? s.status : "—";
+    return '<div class="stage"><div class="pill ' + cls + '">' + label + '</div>'
+      + '<div class="body"><div class="n">' + n + '</div><div class="d">' + (s ? s.d : "waiting") + '</div></div></div>';
+  }).join("");
+}
+
+function clearOutput() { $("statusLine").style.display = "none"; $("output").innerHTML = ""; renderPipeline([]); }
+
+function send() {
+  const res = runGateway(endpoint, IP, $("reqBox").value);
+  renderPipeline(res.stages);
+  renderMeter();
+  const sl = $("statusLine");
+  sl.style.display = "block";
+  sl.className = "status " + (res.code === 200 ? "ok" : "err");
+  sl.textContent = "HTTP " + res.code + " · " + res.msg;
+
+  let html = "";
+  if (res.publicBody) html += '<div class="out pub">' + JSON.stringify(res.publicBody, null, 2) + '</div>';
+  if (res.dropped && Object.keys(res.dropped).length) {
+    html += '<div class="drop-title">&#128274; withheld at the boundary (never sent to the customer)</div>';
+    html += '<div class="drop">' + JSON.stringify(res.dropped, null, 2) + '</div>';
+  }
+  if (res.code !== 200 && !res.publicBody) html += '<div class="hint">Request rejected — nothing reached the internal services.</div>';
+  $("output").innerHTML = html;
+}
+
+$("endpointSeg").querySelectorAll("button").forEach(function (b) {
+  b.addEventListener("click", function () {
+    endpoint = b.getAttribute("data-ep");
+    $("endpointSeg").querySelectorAll("button").forEach(function (x){ x.classList.remove("on"); });
+    b.classList.add("on");
+    renderPresets();
+    loadPreset(Object.keys(PRESETS[endpoint])[0]);
+  });
+});
+$("runBtn").addEventListener("click", send);
+$("burst5").addEventListener("click", function () { for (let i=0;i<5;i++) send(); });
+$("reset").addEventListener("click", function () { for (const k in buckets) delete buckets[k]; renderMeter(); clearOutput(); loadPreset(Object.keys(PRESETS[endpoint])[0]); });
+
+renderPresets();
+loadPreset("Valid submission");
+renderPipeline([]);
+renderMeter();
+</script>
+</body>
+</html>

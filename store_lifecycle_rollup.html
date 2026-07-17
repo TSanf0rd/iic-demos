@@ -1,0 +1,264 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Store Lifecycle Rollup — Refresh Pipeline (Step 1)</title>
+<style>
+  :root{
+    --navy:#0B2D4D;--navy-2:#143D63;--blue:#1E6BB8;--blue-soft:#E5EFFB;--gold:#C99A2E;
+    --bg:#F5F3EE;--surface:#FFFFFF;--surface-2:#FAF9F6;--border:#E2DFD8;--border-2:#CFCBC1;
+    --ink:#1A1A18;--ink-2:#5A574F;--ink-3:#8A867B;
+    --green:#2E9E4A;--green-bg:#E7F4EA;--green-ink:#1E7A34;
+    --amber:#E08A16;--amber-bg:#FDF0E3;--amber-ink:#B4600A;
+    --red:#C62828;--red-bg:#FBE4E4;--red-ink:#B02020;
+    --radius:10px;--radius-lg:14px;--maxw:900px;
+    --font:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;
+    --mono:"SF Mono",ui-monospace,Menlo,Consolas,monospace;
+  }
+  *{margin:0;padding:0;box-sizing:border-box;}
+  body{font-family:var(--font);background:var(--bg);color:var(--ink);line-height:1.5;-webkit-font-smoothing:antialiased;}
+  .topbar{background:var(--navy);color:#fff;padding:14px 24px;display:flex;align-items:center;justify-content:space-between;border-bottom:3px solid var(--blue);}
+  .brand{display:flex;align-items:center;gap:12px;}
+  .brand-mark{width:34px;height:34px;border-radius:7px;background:linear-gradient(135deg,var(--blue),var(--navy-2));display:flex;align-items:center;justify-content:center;font-weight:700;font-size:17px;}
+  .brand-text .name{font-weight:600;font-size:15px;}
+  .brand-text .sub{font-size:11.5px;color:#A9C4DE;}
+  .page{max-width:var(--maxw);margin:0 auto;padding:24px 24px 60px;}
+  .eyebrow{font-size:11.5px;font-weight:600;letter-spacing:1px;text-transform:uppercase;color:var(--blue);}
+  h1{font-size:23px;font-weight:600;color:var(--navy);letter-spacing:-0.3px;margin-top:2px;}
+  .lead{color:var(--ink-2);font-size:14px;margin:5px 0 20px;max-width:640px;}
+
+  /* summary hero */
+  .summary{background:var(--navy);color:#fff;border-radius:var(--radius-lg);padding:22px;margin-bottom:16px;}
+  .summary .store{font-size:13px;color:#A9C4DE;}
+  .summary .big{font-size:30px;font-weight:700;letter-spacing:-0.5px;margin:4px 0 2px;}
+  .summary .est{font-size:14px;color:#C7DBEF;}
+  .dist{display:flex;gap:8px;margin-top:16px;flex-wrap:wrap;}
+  .dist .d{font-size:12px;font-weight:600;padding:6px 12px;border-radius:999px;}
+  .dist .eol{background:var(--red-bg);color:var(--red-ink);}
+  .dist .soon{background:var(--amber-bg);color:var(--amber-ink);}
+  .dist .ok{background:var(--green-bg);color:var(--green-ink);}
+
+  .controls{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius-lg);padding:16px 18px;margin-bottom:16px;display:flex;gap:22px;flex-wrap:wrap;align-items:center;}
+  .ctrl{display:flex;flex-direction:column;gap:6px;}
+  .ctrl .cl{font-size:11px;text-transform:uppercase;letter-spacing:.5px;color:var(--ink-3);}
+  .opts{display:flex;gap:6px;}
+  .opt{font-size:12.5px;padding:7px 12px;border-radius:999px;background:var(--surface-2);border:1px solid var(--border-2);cursor:pointer;}
+  .opt.on{background:var(--navy);color:#fff;border-color:var(--navy);}
+
+  .list{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius-lg);padding:8px 18px;}
+  .list h2{font-size:13px;text-transform:uppercase;letter-spacing:.6px;color:var(--ink-3);padding:12px 0 4px;}
+  .row{display:flex;align-items:center;gap:14px;padding:12px 0;border-bottom:1px solid var(--border);}
+  .row:last-child{border-bottom:none;}
+  .rank{width:26px;height:26px;flex-shrink:0;border-radius:50%;background:var(--surface-2);border:1px solid var(--border-2);display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:700;color:var(--ink-2);}
+  .row.eol .rank{background:var(--red-bg);border-color:#F0C4C4;color:var(--red-ink);}
+  .who{flex:1;min-width:0;}
+  .who .nm{font-size:14px;font-weight:600;color:var(--ink);}
+  .who .meta{font-size:12px;color:var(--ink-3);margin-top:1px;}
+  .life{width:110px;flex-shrink:0;}
+  .life .bar{height:7px;border-radius:999px;background:var(--border);overflow:hidden;}
+  .life .bar>span{display:block;height:100%;border-radius:999px;transition:width .4s;}
+  .badge{font-size:10.5px;font-weight:700;padding:4px 9px;border-radius:999px;white-space:nowrap;min-width:88px;text-align:center;flex-shrink:0;}
+  .badge.eol{background:var(--red-bg);color:var(--red-ink);}
+  .badge.soon{background:var(--amber-bg);color:var(--amber-ink);}
+  .badge.ok{background:var(--green-bg);color:var(--green-ink);}
+  .est2{font-size:12.5px;color:var(--ink-2);width:110px;text-align:right;flex-shrink:0;font-variant-numeric:tabular-nums;}
+  @media(max-width:640px){.life,.est2{display:none;}}
+  .note{font-size:12px;color:var(--ink-3);margin-top:14px;line-height:1.55;}
+</style>
+</head>
+<body>
+  <div class="topbar">
+    <div class="brand"><div class="brand-mark">H</div>
+      <div class="brand-text"><div class="name">Refresh Pipeline</div><div class="sub">Store lifecycle rollup · Step 1</div></div>
+    </div>
+    <span style="font-size:11px;color:#A9C4DE;border:1px solid #2A4E70;padding:4px 10px;border-radius:999px;">internal / trusted zone</span>
+  </div>
+
+  <div class="page">
+    <div class="eyebrow">Part → case → store</div>
+    <h1>Store lifecycle rollup</h1>
+    <p class="lead">Every case's health folds up from its weakest part; every store's picture folds up from its cases. The result is a ranked, worst-first target list — the Step 1 view a sales rep acts on.</p>
+
+    <div class="summary" id="summary"></div>
+    <div class="controls" id="controls"></div>
+    <div class="list">
+      <h2>Cases, worst-first</h2>
+      <div id="rows"></div>
+      <div class="note">This is one store. The identical rollup runs across every store, then ranks the stores themselves — that's how "which stores should we call?" gets answered. Case list would come from Oracle factory orders + StoreConnect; this computation stays in the internal zone.</div>
+    </div>
+  </div>
+
+<!-- ============================================================================
+     SCRIPT 1 — DATA + the LIFECYCLE ROLLUP (pure logic, three folds deep).
+     ========================================================================= -->
+<script>
+const NOW = new Date().getFullYear();
+
+// design life per part in ideal conditions (from reliability data in production)
+const BASE_LIFE = { compressor:16, coil:14, gasket:8, led_kit:12, bumper:10 };
+// STRUCTURAL parts drive end-of-life; cosmetic/consumable parts don't. A dead
+// compressor kills the case; a worn bumper is just a cosmetic refresh. This is
+// why "weakest part" alone is too blunt — the weakest link has to be a load-bearing one.
+const CRITICAL = { compressor:true, coil:true };
+// how a case's contents stress the refrigeration (<=1.0 shortens life). Placeholders.
+const CASE_TYPE_FACTOR = { frozen:0.90, dairy:0.92, produce:0.95, deli:0.93, meat:0.92, drinks:1.00, bakery:0.96, floral:0.98, sushi:0.94, fresh_food:0.97 };
+// rough installed cost range per part, used for the store estimate
+const PART_COST = { compressor:[1500,3200], coil:[700,1600], gasket:[200,500], led_kit:[350,700], bumper:[150,400] };
+const LABOR = [600, 1200];
+
+// build a case from a seed: all core parts share the base year unless refreshed later
+const CORE = ["compressor","coil","gasket","led_kit","bumper"];
+function mkCase(id, name, type, baseYear, refreshed) {
+  refreshed = refreshed || {};
+  return { id:id, name:name, type:type, parts: CORE.map(function (p) {
+    return { part:p, installYear: refreshed[p] || baseYear };
+  }) };
+}
+const STORE = { name:"Kroger #418 — Dublin, OH", region:"midwest", cases:[
+  mkCase(1, "Meat service case",       "meat",   2008),
+  mkCase(2, "Frozen aisle 3 — doors",  "frozen", 2010),
+  mkCase(3, "Deli service case",       "deli",   2011),
+  mkCase(4, "Frozen novelties",        "frozen", 2012, { compressor:2020 }),
+  mkCase(5, "Dairy wall — north",      "dairy",  2014, { gasket:2022 }),
+  mkCase(6, "Produce open case",       "produce",2015),
+  mkCase(7, "Bakery reach-in",         "bakery", 2016),
+  mkCase(8, "Produce misting case",    "produce",2017),
+  mkCase(9, "Frozen aisle 4",          "frozen", 2018),
+  mkCase(10,"Drinks reach-in",         "drinks", 2019),
+  mkCase(11,"Grab-and-go",             "fresh_food",2020),
+  mkCase(12,"Dairy wall — south",      "dairy",  2021),
+  mkCase(13,"Beverage wall",           "drinks", 2022),
+  mkCase(14,"Floral case",             "floral", 2023),
+  mkCase(15,"Sushi case",              "sushi",  2024),
+]};
+
+// ---- LEVEL 1: remaining useful life for ONE part (years; negative = past due)
+function deratingFactor(ctx) {
+  let f = 1.0;
+  if (ctx.refrigerant === "CO2") f *= 0.85;
+  if (ctx.climate === "coastal" || ctx.climate === "humid") f *= 0.80;
+  f *= (CASE_TYPE_FACTOR[ctx.caseType] || 1.0);   // safe lookup w/ default
+  if (!ctx.maintained) f *= 0.75;
+  return f;
+}
+function remainingLife(part, installYear, ctx) {
+  const base = BASE_LIFE[part];
+  if (base === undefined) return null;            // guard, don't crash
+  return Math.round((base * deratingFactor(ctx) - (NOW - installYear)) * 10) / 10;
+}
+
+// ---- LEVEL 2: a case is only as healthy as its weakest STRUCTURAL part.
+// Cosmetic parts (bumper, gasket, LED) drive a "refresh soon" opportunity, but
+// only a failing structural part (compressor, coil) means "end of life."
+function caseSummary(c, storeCtx) {
+  const ctx = Object.assign({}, storeCtx, { caseType: c.type });
+  let worst = Infinity, worstPart = null, worstCritical = Infinity, worstCosmetic = Infinity;
+  const failing = [];
+  c.parts.forEach(function (p) {
+    const r = remainingLife(p.part, p.installYear, ctx);
+    if (r === null) return;
+    if (r < worst) { worst = r; worstPart = p.part; }
+    if (CRITICAL[p.part]) { if (r < worstCritical) worstCritical = r; }
+    else { if (r < worstCosmetic) worstCosmetic = r; }
+    if (r < 2) failing.push(p.part);              // parts to replace now
+  });
+  // dead structural part -> end of life; aging structure OR past-due cosmetic
+  // -> refresh soon; otherwise healthy.
+  const status = worstCritical < 0 ? "eol"
+               : (worstCritical < 3 || worstCosmetic < 0.5) ? "soon" : "ok";
+  // rough per-case estimate = failing parts + labor (only if it needs work)
+  let low = 0, high = 0;
+  if (failing.length) {
+    failing.forEach(function (p) { low += PART_COST[p][0]; high += PART_COST[p][1]; });
+    low += LABOR[0]; high += LABOR[1];
+  }
+  return { id:c.id, name:c.name, type:c.type, worst:worst, worstPart:worstPart,
+           status:status, needs: status !== "ok", low:low, high:high };
+}
+
+// ---- LEVEL 3: fold every case into the store view + PRIORITY ORDER
+function storeSummary(store, storeCtx) {
+  // map each case to its summary  (Python: [case_summary(c) for c in cases])
+  const reads = store.cases.map(function (c) { return caseSummary(c, storeCtx); });
+
+  // filter to the ones needing work  (Python: [r for r in reads if r["needs"]])
+  const needing = reads.filter(function (r) { return r.needs; });
+
+  // priority: sort worst-first. THIS is what makes the output ACTIONABLE.
+  // (Python: reads.sort(key=lambda r: r["worst"]))
+  reads.sort(function (a, b) { return a.worst - b.worst; });
+
+  // reduce the needing cases into one estimate range
+  const low  = needing.reduce(function (s, r) { return s + r.low;  }, 0);
+  const high = needing.reduce(function (s, r) { return s + r.high; }, 0);
+
+  const dist = { eol:0, soon:0, ok:0 };
+  reads.forEach(function (r) { dist[r.status]++; });
+
+  return { total: reads.length, needing: needing.length, low:low, high:high, dist:dist, ranked:reads };
+}
+</script>
+
+<!-- ============================================================================
+     SCRIPT 2 — UI. Store-wide controls recompute the whole rollup live.
+     ========================================================================= -->
+<script>
+const $ = (id)=>document.getElementById(id);
+const money = (x)=>"$"+x.toLocaleString("en-US");
+const ctx = { refrigerant:"HFC", climate:"temperate", maintained:true };
+
+function optGroup(label, options, key) {
+  return '<div class="ctrl"><div class="cl">'+label+'</div><div class="opts">' +
+    options.map(function (o) { return '<div class="opt'+(ctx[key]===o[0]?' on':'')+'" data-k="'+key+'" data-v="'+o[0]+'">'+o[1]+'</div>'; }).join("") +
+    '</div></div>';
+}
+function renderControls() {
+  $("controls").innerHTML =
+    optGroup("Climate", [["temperate","Temperate"],["humid","Humid"],["coastal","Coastal"]], "climate") +
+    optGroup("Maintenance", [[true,"Kept up"],[false,"Behind"]], "maintained") +
+    optGroup("Refrigerant", [["HFC","HFC"],["CO2","CO\u2082"]], "refrigerant");
+  $("controls").querySelectorAll(".opt").forEach(function (el) {
+    el.addEventListener("click", function () {
+      const k = el.getAttribute("data-k"); let v = el.getAttribute("data-v");
+      if (v === "true") v = true; else if (v === "false") v = false;   // restore boolean
+      ctx[k] = v; render();
+    });
+  });
+}
+
+function lifeText(w) { return w < 0 ? Math.abs(w)+" yrs past" : w+" yrs left"; }
+function barPct(w) { return Math.max(0, Math.min(100, (w / 15) * 100)); }
+function barColor(s) { return s==="eol" ? "var(--red)" : s==="soon" ? "var(--amber)" : "var(--green)"; }
+function badgeText(s) { return s==="eol" ? "End of life" : s==="soon" ? "Replace soon" : "Healthy"; }
+
+function render() {
+  const sum = storeSummary(STORE, ctx);
+
+  $("summary").innerHTML =
+    '<div class="store">'+STORE.name+'  ·  '+STORE.region+'</div>' +
+    '<div class="big">'+sum.needing+' of '+sum.total+' cases need refreshing</div>' +
+    '<div class="est">Estimated store scope: '+money(sum.low)+' – '+money(sum.high)+'</div>' +
+    '<div class="dist">' +
+      '<div class="d eol">'+sum.dist.eol+' end of life</div>' +
+      '<div class="d soon">'+sum.dist.soon+' replace soon</div>' +
+      '<div class="d ok">'+sum.dist.ok+' healthy</div>' +
+    '</div>';
+
+  $("rows").innerHTML = sum.ranked.map(function (r, i) {
+    return '<div class="row '+(r.status==="eol"?"eol":"")+'">' +
+      '<div class="rank">'+(i+1)+'</div>' +
+      '<div class="who"><div class="nm">'+r.name+'</div>' +
+        '<div class="meta">'+r.type.replace("_"," ")+' · weakest: '+r.worstPart+' · '+lifeText(r.worst)+'</div></div>' +
+      '<div class="life"><div class="bar"><span style="width:'+barPct(r.worst)+'%;background:'+barColor(r.status)+'"></span></div></div>' +
+      '<div class="badge '+r.status+'">'+badgeText(r.status)+'</div>' +
+      '<div class="est2">'+(r.needs ? money(r.low)+"–"+money(r.high) : "—")+'</div>' +
+    '</div>';
+  }).join("");
+}
+
+renderControls();
+render();
+</script>
+</body>
+</html>
