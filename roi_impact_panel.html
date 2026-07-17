@@ -40,7 +40,7 @@
       --red:#C62828; --red-bg:#FBE4E4; --red-ink:#B02020;
       --radius:10px; --radius-lg:14px; --maxw:1080px;
       --font:"Inter",-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif;
-      --mono:"SF Mono","Roboto Mono",ui-monospace,monospace;
+      --font-mono:"SF Mono","Roboto Mono",ui-monospace,monospace;
     }
     * { margin:0; padding:0; box-sizing:border-box; }
     body { font-family:var(--font); background:var(--bg); color:var(--ink); line-height:1.5; -webkit-font-smoothing:antialiased; }
@@ -63,7 +63,7 @@
     .callout { margin-top:20px; background:var(--surface); border:1px solid var(--border); border-left:4px solid var(--amber); border-radius:var(--radius); padding:15px 18px; }
     .callout .t { font-weight:700; font-size:14px; color:var(--navy); margin-bottom:4px; }
     .callout p { font-size:13.5px; color:var(--ink-2); }
-    .callout .mono { font-family:var(--mono); font-size:12.5px; color:var(--ink); }
+    .callout .mono { font-family:var(--font-mono); font-size:12.5px; color:var(--ink); }
 
     /* headline metrics */
     .headline { margin-top:22px; display:grid; grid-template-columns:repeat(3,1fr); gap:14px; }
@@ -88,11 +88,11 @@
     .field label { display:block; font-size:12.5px; font-weight:600; color:var(--ink-2); margin-bottom:6px; }
     .field .row { display:flex; align-items:center; gap:10px; }
     .field input[type=range] { flex:1; accent-color:var(--blue); }
-    .field .val { font-family:var(--mono); font-size:13px; font-weight:700; color:var(--navy); min-width:64px; text-align:right; }
+    .field .val { font-family:var(--font-mono); font-size:13px; font-weight:700; color:var(--navy); min-width:64px; text-align:right; }
     .field.pending { border:1.5px dashed var(--amber); border-radius:var(--radius); padding:12px; background:var(--amber-bg); }
     .field.pending label { color:var(--amber-ink); }
     .field.pending .pill { font-size:10px; font-weight:800; text-transform:uppercase; letter-spacing:.04em; color:#fff; background:var(--amber); border-radius:5px; padding:2px 6px; margin-left:6px; }
-    .field.pending input[type=number] { width:100%; margin-top:8px; font-family:var(--mono); font-size:14px; padding:8px 10px; border:1px solid var(--border-2); border-radius:8px; }
+    .field.pending input[type=number] { width:100%; margin-top:8px; font-family:var(--font-mono); font-size:14px; padding:8px 10px; border:1px solid var(--border-2); border-radius:8px; }
     .field .hint { font-size:11px; color:var(--ink-3); margin-top:5px; }
 
     .outputs { display:grid; gap:14px; }
@@ -100,7 +100,7 @@
     .ocard .top { display:flex; justify-content:space-between; align-items:baseline; gap:12px; }
     .ocard .name { font-size:14px; font-weight:700; }
     .ocard .amount { font-size:22px; font-weight:800; letter-spacing:-.01em; color:var(--navy); }
-    .ocard .formula { font-family:var(--mono); font-size:12px; color:var(--ink-3); margin-top:6px; }
+    .ocard .formula { font-family:var(--font-mono); font-size:12px; color:var(--ink-3); margin-top:6px; }
     .ocard .itemize { margin-top:10px; font-size:12.5px; color:var(--ink-2); }
     .ocard .itemize .li { display:flex; justify-content:space-between; padding:3px 0; border-bottom:1px dashed var(--border); }
     .ocard .itemize .li:last-child { border-bottom:none; font-weight:700; color:var(--ink); }

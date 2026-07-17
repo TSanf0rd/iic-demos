@@ -13,7 +13,7 @@
     --amber:#E08A16;--amber-bg:#FDF0E3;--amber-ink:#B4600A;
     --radius:10px;--radius-lg:14px;--maxw:900px;
     --font:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;
-    --mono:"SF Mono",ui-monospace,Menlo,Consolas,monospace;
+    --font-mono:"SF Mono",ui-monospace,Menlo,Consolas,monospace;
   }
   *{margin:0;padding:0;box-sizing:border-box;}
   body{font-family:var(--font);background:var(--bg);color:var(--ink);line-height:1.5;-webkit-font-smoothing:antialiased;}
@@ -42,7 +42,7 @@
 
   .count-row{display:flex;align-items:center;gap:14px;}
   .count-row input[type=range]{flex:1;}
-  .count-val{font-family:var(--mono);font-size:15px;font-weight:700;color:var(--navy);min-width:70px;text-align:right;}
+  .count-val{font-family:var(--font-mono);font-size:15px;font-weight:700;color:var(--navy);min-width:70px;text-align:right;}
   select,input[type=text],input[type=email]{width:100%;font-family:var(--font);font-size:14px;padding:11px 13px;border:1px solid var(--border-2);border-radius:var(--radius);background:var(--surface-2);}
   select:focus,input:focus{outline:none;border-color:var(--blue);background:#fff;}
   .lead-grid{display:grid;grid-template-columns:1fr 1fr;gap:12px;}
@@ -113,7 +113,7 @@
         <div class="q" style="background:var(--blue-soft);border:1px solid #BCD6F2;border-radius:10px;padding:15px;">
           <div class="label">Have the case&rsquo;s serial or model number? <span style="font-weight:400;color:var(--ink-3);">(optional)</span></div>
           <div class="sub">It&rsquo;s on a metal plate inside or behind the case. One number makes your estimate far more precise.</div>
-          <input type="text" id="serialInput" placeholder="e.g. HSM-D5X-081247-2017  or  D5X" style="font-family:var(--mono);" autocomplete="off" />
+          <input type="text" id="serialInput" placeholder="e.g. HSM-D5X-081247-2017  or  D5X" style="font-family:var(--font-mono);" autocomplete="off" />
           <div style="margin-top:9px;">
             <button type="button" id="scanBtn" style="font-family:var(--font);font-size:12.5px;font-weight:600;color:var(--navy);background:var(--surface);border:1px solid var(--border-2);border-radius:999px;padding:8px 14px;cursor:pointer;">&#128247; Scan the plate</button>
             <span style="font-size:11.5px;color:var(--ink-3);margin-left:8px;">Point-and-scan (demo) &mdash; reads the serial for you.</span>

@@ -50,9 +50,19 @@
       --radius-lg: 14px;
       --maxw:      980px;
 
-      --font: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
-      --mono: "SF Mono", ui-monospace, Menlo, Consolas, monospace;
+      /* Type: serif for language, sans for data. No web fonts — must render offline. */
+      --font-display: Georgia, "Times New Roman", serif;
+      --font: "Segoe UI", -apple-system, BlinkMacSystemFont, Roboto, Helvetica, Arial, sans-serif;
+      --font-mono: Consolas, "SF Mono", Menlo, monospace;
     }
+
+     /* Serif opts in by name only — numbers and UI stay in the sans. */
+    h1, h2, h3, .brand-name {
+      font-family: var(--font-display);
+      font-weight: 400;
+      letter-spacing: -0.01em;
+    }
+
 
     * { margin: 0; padding: 0; box-sizing: border-box; }
     body {
@@ -108,7 +118,7 @@
     }
     .serial-row { display: flex; gap: 10px; }
     .serial-input {
-      flex: 1; font-family: var(--mono); font-size: 15px;
+      flex: 1; font-family: var(--font-mono); font-size: 15px;
       padding: 12px 14px; border: 1.5px solid var(--border-2);
       border-radius: var(--radius); color: var(--navy);
       outline: none; transition: border-color 0.15s;
@@ -128,7 +138,7 @@
     /* quick-pick sample serials (so the live demo never depends on typing) */
     .samples { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 12px; }
     .sample-chip {
-      font-family: var(--mono); font-size: 11.5px; color: var(--ink-2);
+      font-family: var(--font-mono); font-size: 11.5px; color: var(--ink-2);
       background: var(--surface-2); border: 1px solid var(--border);
       border-radius: 999px; padding: 5px 12px; cursor: pointer;
     }
@@ -229,7 +239,7 @@
     }
     .ml-main { display: flex; align-items: center; gap: 16px; }
     .ml-info { flex: 1; min-width: 0; }
-    .ml-part { font-family: var(--mono); font-size: 13.5px; font-weight: 600; color: var(--navy); }
+    .ml-part { font-family: var(--font-mono); font-size: 13.5px; font-weight: 600; color: var(--navy); }
     .ml-desc { font-size: 13px; color: var(--ink-2); margin-top: 1px; }
     .ml-price { font-size: 14.5px; font-weight: 600; color: var(--ink); white-space: nowrap; }
 
@@ -271,7 +281,7 @@
       display: flex; align-items: center; gap: 14px;
       font-size: 12.5px; color: var(--ink-2); padding: 5px 0;
     }
-    .alt-part { font-family: var(--mono); font-size: 12px; color: var(--ink-2); width: 170px; }
+    .alt-part { font-family: var(--font-mono); font-size: 12px; color: var(--ink-2); width: 170px; }
     .alt-conf { font-weight: 600; color: var(--ink-3); width: 44px; text-align: right; }
 
     /* weakest-link advisory */
@@ -298,10 +308,10 @@
       padding: 0 10px 8px; border-bottom: 2px solid var(--border);
     }
     .q-table td { padding: 9px 10px; border-bottom: 1px solid var(--border); }
-    .q-table .mono { font-family: var(--mono); font-size: 12px; color: var(--navy); }
+    .q-table .mono { font-family: var(--font-mono); font-size: 12px; color: var(--navy); }
     .q-table .num { text-align: right; }
     .q-total td { font-weight: 700; color: var(--navy); border-bottom: none; padding-top: 12px; }
-    .q-id { font-family: var(--mono); font-size: 12px; color: var(--ink-3); margin-top: 12px; }
+    .q-id { font-family: var(--font-mono); font-size: 12px; color: var(--ink-3); margin-top: 12px; }
 
     .oracle-confirm {
       display: none;
@@ -310,7 +320,7 @@
       border-radius: var(--radius); font-size: 13.5px; color: var(--green-ink);
     }
     .oracle-confirm.show { display: block; }
-    .oracle-confirm .mono { font-family: var(--mono); font-weight: 600; }
+    .oracle-confirm .mono { font-family: var(--font-mono); font-weight: 600; }
 
     /* ====== HERO BAND (screen 1) ====== */
     .hero {
@@ -340,7 +350,8 @@
     .hero-art { width: 210px; flex-shrink: 0; }
     .hero-art svg { width: 100%; height: auto; display: block; }
 
-    /* ====== STEP RAIL ====== */
+    /*
+ ====== STEP RAIL ====== */
     .steps {
       display: flex; align-items: center; gap: 10px;
       margin-bottom: 18px; padding: 0 4px;
@@ -470,7 +481,7 @@
       text-transform: uppercase; color: var(--ink-3);
     }
     .ctx-model { font-size: 14px; font-weight: 650; color: var(--navy); }
-    .ctx-meta { font-size: 12px; color: var(--ink-2); font-family: var(--mono); }
+    .ctx-meta { font-size: 12px; color: var(--ink-2); font-family: var(--font-mono); }
     .ctx-change {
       margin-left: auto;
       font-family: var(--font); font-size: 12px; font-weight: 600;
@@ -534,7 +545,7 @@
       border-radius: 12px; padding: 11px;
     }
     .pcard-img svg { width: 100%; height: 100%; }
-    .pcard-part { font-family: var(--mono); font-size: 13px; font-weight: 700; color: var(--navy); }
+    .pcard-part { font-family: var(--font-mono); font-size: 13px; font-weight: 700; color: var(--navy); }
     .pcard-desc { font-size: 12.5px; color: var(--ink-2); min-height: 34px; }
 
     /* Fitment badge — green "exact fit" bar / soft substitution notice */
@@ -623,7 +634,7 @@
     .resolve-detail summary { cursor: pointer; color: var(--blue); font-weight: 600; padding: 4px 0; }
     .rd-table { width: 100%; border-collapse: collapse; margin-top: 8px; }
     .rd-table td { padding: 6px 10px; border-bottom: 1px solid var(--border); font-size: 12.5px; }
-    .rd-table .mono { font-family: var(--mono); font-size: 12px; }
+    .rd-table .mono { font-family: var(--font-mono); font-size: 12px; }
     .rd-table td.num { text-align: right; color: var(--ink-3); }
     .rd-drop td { color: var(--ink-3); text-decoration: line-through; }
     /* kit cards reuse .comp-card; add a verified badge + parts subtotal line */
@@ -673,8 +684,8 @@
           <h1 class="hero-title">Identify the case</h1>
           <p class="hero-sub">Enter or scan a serial number. The system resolves the case, then you choose which component to refresh.</p>
           <div class="hero-stats">
-            <div class="stat"><span class="stat-big">7\u201310 days \u2192 minutes</span><span class="stat-small">quote turnaround</span></div>
-            <div class="stat"><span class="stat-big">5 tools \u2192 1 lookup</span><span class="stat-small">systems consolidated</span></div>
+            <div class="stat"><span class="stat-big">7–10 days → minutes</span><span class="stat-small">quote turnaround</span></div>
+            <div class="stat"><span class="stat-big">5 tools → 1 lookup</span><span class="stat-small">systems consolidated</span></div>
             <div class="stat"><span class="stat-big">Quoter approves</span><span class="stat-small">every AI match</span></div>
           </div>
         </div>
