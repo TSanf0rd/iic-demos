@@ -236,7 +236,7 @@
       text-align: left; font-family: var(--font);
       transition: all 0.14s;
     }
-    .comp-card:hover { border-color: var(--blue); transform: translateY(-2px); }
+    .comp-card:hover { border-color: var(--blue); }
     .comp-name { font-size: 15px; font-weight: 600; color: var(--navy); }
     .comp-desc { font-size: 12px; color: var(--ink-2); margin-top: 4px; line-height: 1.45; }
 
@@ -653,6 +653,14 @@
     /* ===== Resolve-the-BOM stage (added: the AI-match differentiator) ===== */
     .resolve-section { display: none; margin-top: 22px; }
     .resolve-section.show { display: block; }
+    .resolve-head { display: flex; align-items: baseline; justify-content: space-between; gap: 12px; }
+    .replay-btn {
+      font-family: var(--font-display); font-size: 10.5px; font-weight: 400;
+      letter-spacing: 0.1em; text-transform: uppercase; color: var(--blue);
+      background: none; border: 1px solid var(--rule); border-radius: 999px;
+      padding: 4px 12px; cursor: pointer; transition: border-color .12s;
+    }
+    .replay-btn:hover { border-color: var(--blue); }
     .resolve-panel { margin-top: 8px; }
     .funnel { display: grid; grid-template-columns: 1fr auto 1fr auto 1fr; gap: 8px; align-items: stretch; }
     .fstep { background: var(--paper); border: 1px solid var(--rule-2); border-radius: var(--radius); padding: 12px 10px; text-align: center; }
@@ -701,9 +709,7 @@
     }
     /* The strike: a positioned pseudo-element with a transform, not
        text-decoration — text-decoration has no interpolatable geometry, so
-       it can only snap on/off, never draw. This CAN be animated left-to-right
-       by a future reveal sequence (toggle .drawn with a stagger); for now
-       .cut rows render with .drawn already applied — the settled state. */
+       it can only snap on/off, never draw. */
     .verdict-row.cut .verdict-line::after {
       content: ""; position: absolute; left: 0; top: 50%;
       height: 1.5px; width: 100%; background: var(--pencil);
@@ -711,6 +717,25 @@
       transition: transform .32s cubic-bezier(.4,0,.2,1);
     }
     .verdict-row.cut.drawn .verdict-line::after { transform: scaleX(1); }
+
+    /* THE reveal sequence — the one animation this file has. Default state is
+       fully visible (fail-open: if playRevealSequence() below never runs,
+       every row, badge, and kit card still renders correct and complete).
+       staggerReveal() adds .pre for an instant synchronous beat, then removes
+       it one element at a time — that's the only thing that moves. */
+    .verdict-row { opacity: 1; transform: none; transition: opacity .22s ease, transform .22s ease; }
+    .verdict-row.pre { opacity: 0; transform: translateY(4px); }
+    .comp-card { opacity: 1; transform: none; transition: opacity .22s ease, transform .22s ease, border-color .14s; }
+    .comp-card.pre { opacity: 0; transform: translateY(4px); pointer-events: none; }
+    /* the tally (funnel counts + reconciliation badge) updates after the
+       last strike lands, not alongside the individual verdict lines */
+    .funnel, .recon-badge { opacity: 1; transition: opacity .3s ease; }
+    .funnel.pre, .recon-badge.pre { opacity: 0; }
+    @media (prefers-reduced-motion: reduce) {
+      .verdict-row, .comp-card, .funnel, .recon-badge, .verdict-row.cut .verdict-line::after {
+        transition: none !important;
+      }
+    }
     /* kit cards reuse .comp-card; add a verified badge + parts subtotal line */
     .kit-badge { position: absolute; top: 10px; right: 10px; font-size: 9.5px; font-weight: 800; letter-spacing: .04em; text-transform: uppercase; color: var(--green); background: var(--green-tint); border: 1px solid var(--green-tint-border); border-radius: 5px; padding: 2px 6px; }
     .kit-sub { margin-top: 8px; font-size: 12px; font-weight: 600; color: var(--navy-2); }
@@ -788,7 +813,10 @@
 
         <!-- NEW: resolved-BOM provenance (shown for cases with a raw config BOM) -->
         <div class="resolve-section" id="resolveSection">
-          <div class="field-label" style="margin-top:4px">Resolved bill of materials</div>
+          <div class="resolve-head">
+            <div class="field-label" style="margin-top:4px">Resolved bill of materials</div>
+            <button class="replay-btn" id="replayBtn" type="button">Replay</button>
+          </div>
           <div class="resolve-panel" id="resolvePanel"></div>
         </div>
 
@@ -1530,7 +1558,7 @@ function matchParts(serialNumber, component) {
 //       information (consistent hue per category), drawings-as-code thumbnails.
 // ============================================================================
 
-let ui = { caseInfo: null, component: null, match: null, overrides: {}, refresh: null, survey: null, quoteId: null, orderId: null };
+let ui = { caseInfo: null, component: null, match: null, overrides: {}, refresh: null, survey: null, quoteId: null, orderId: null, autoAdvance: false };
 
 function money(x) { return "$" + x.toFixed(2); }
 function pct(x)   { return Math.round(x * 100) + "%"; }
@@ -1584,6 +1612,88 @@ const COMPONENT_ICON = { bumper: "bumper", door: "door", panel: "panel" };
 
 
 // ----------------------------------------------------------------------------
+//  REVEAL SEQUENCE — the one animation in this file. Once a case with a
+//  resolved BOM comes up, resolve -> kits -> match -> quote -> order plays as
+//  ONE orchestrated sequence while the presenter talks over it: no
+//  step-by-step clicking. Every stage still works by hand (nothing here
+//  disables a manual click), so a timing hiccup degrades to "click it
+//  yourself," never to broken. "Replay" re-runs it on demand.
+// ----------------------------------------------------------------------------
+function prefersReducedMotion() {
+  return !!(window.matchMedia && window.matchMedia("(prefers-reduced-motion: reduce)").matches);
+}
+
+// Hides every element in `els` for one beat, then reveals them one at a time
+// `stagger` ms apart; `onReveal(el)` fires as each becomes visible (used to
+// start a struck row's strike in the same frame it appears). `done()` fires
+// `settleMs` after the last one starts, i.e. once its own transition
+// (fade-in or strike-draw) has actually finished.
+function staggerReveal(els, stagger, settleMs, onReveal, done) {
+  const list = Array.prototype.slice.call(els);
+  if (!list.length) { if (done) done(); return; }
+  const reduced = prefersReducedMotion();
+  list.forEach(function (el) { el.classList.add("pre"); });
+  if (reduced) {
+    list.forEach(function (el) { el.classList.remove("pre"); if (onReveal) onReveal(el); });
+    if (done) done();
+    return;
+  }
+  list.forEach(function (el, i) {
+    setTimeout(function () {
+      el.classList.remove("pre");
+      if (onReveal) onReveal(el);
+      if (i === list.length - 1 && done) setTimeout(done, settleMs);
+    }, i * stagger);
+  });
+}
+
+function playRevealSequence() {
+  if (!ui.refresh) return;               // nothing to animate for non-BOM cases
+  const reduced = prefersReducedMotion();
+  const rowStagger = reduced ? 0 : 170;  // spec: pencil annotations draw in, line by line
+  const kitStagger = reduced ? 0 : 90;
+  const beat = reduced ? 0 : 700;        // pause between phases — room for the presenter to talk
+
+  const rows = document.querySelectorAll("#resolvePanel .verdict-row");
+  staggerReveal(rows, rowStagger, 320, function (row) {
+    if (row.classList.contains("cut")) row.classList.add("drawn");
+  }, function () {
+    // Tally updates after the last strike lands, not alongside it.
+    document.querySelectorAll("#resolvePanel .funnel, #resolvePanel .recon-badge")
+      .forEach(function (t) { t.classList.remove("pre"); });
+
+    setTimeout(function () {
+      const cards = document.querySelectorAll("#componentGrid .comp-card");
+      staggerReveal(cards, kitStagger, 220, null, function () {
+        setTimeout(function () {
+          // Guard against a manual click already in flight: ui.component is
+          // set synchronously at the top of runMatch(), before its own delay.
+          if (!ui.component && cards.length) {
+            ui.autoAdvance = true;
+            cards[0].click();          // survey-reported kit sorts first — the recommended one
+          }
+        }, beat);
+      });
+    }, beat);
+  });
+}
+
+function replaySequence() {
+  if (!ui.caseInfo || !ui.refresh) return;
+  ui.overrides = {}; ui.quoteId = null; ui.orderId = null;
+  ui.component = null; ui.match = null; ui.autoAdvance = false;
+  showScreen("screen-input");
+  document.getElementById("resultsBody").style.display = "none";
+  document.getElementById("quoteCard").classList.remove("show");
+  document.getElementById("oracleConfirm").classList.remove("show");
+  renderResolvePanel(ui.refresh);
+  if (ui.survey) renderSurveyPanel(ui.survey, ui.refresh);
+  renderKitGrid(ui.refresh);
+  setStep(2);
+  playRevealSequence();
+}
+
+// ----------------------------------------------------------------------------
 //  SCREEN 1 — case lookup + component selection
 // ----------------------------------------------------------------------------
 function doLookup() {
@@ -1601,6 +1711,9 @@ function doLookup() {
   ui.caseInfo = null;
   ui.refresh = null;
   ui.survey = null;
+  ui.component = null;
+  ui.match = null;
+  ui.autoAdvance = false;
   document.getElementById("surveySection").classList.remove("show");
   clearCaseStrip();
 
@@ -1656,6 +1769,7 @@ function doLookup() {
 
     renderKitGrid(refresh);
     setStep(2);                        // rail: Resolve BOM
+    playRevealSequence();
   } else {
     resolveSection.classList.remove("show");
     surveySection.classList.remove("show");
@@ -2220,6 +2334,19 @@ function renderQuote() {
       + 'Parts demand generated \u00b7 Estimated ship in 5 weeks \u00b7 Now trackable in Live Order Tracking (Demo 3).';
     document.getElementById("oracleConfirm").classList.add("show");
   });
+
+  // Reveal-sequence handoff: the auto-play flow set this flag right before
+  // triggering the kit click that led here. Consume it immediately so a
+  // later MANUAL pick edit (which also calls renderQuote) never re-fires it.
+  if (ui.autoAdvance) {
+    ui.autoAdvance = false;
+    setTimeout(function () {
+      if (!ui.orderId) {
+        const btn = document.getElementById("approveQuoteBtn");
+        if (btn) btn.click();
+      }
+    }, prefersReducedMotion() ? 0 : 1100);
+  }
 }
 
 
@@ -2260,6 +2387,7 @@ function init() {
     showScreen("screen-input");
     setStep(1);                      // rail: back to the identify step
   });
+  document.getElementById("replayBtn").addEventListener("click", replaySequence);
 }
 
 if (document.readyState === "loading") {
