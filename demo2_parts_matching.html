@@ -349,18 +349,26 @@
     }
     .advisory strong { font-weight: 600; }
 
-    /* quote section */
-    .quote-actions { margin-top: 20px; }
+    /* ====== QUOTE → ORDER — continuous sections on the same document.
+       renderQuote() populates .quote-card automatically once results exist;
+       "Approve quote" appends .oracle-confirm right below it — a state
+       change on this document, not a navigation to another screen. ====== */
+    .quote-actions { margin-top: 16px; }
     .quote-card {
       display: none;
       background: var(--surface); border: 1px solid var(--rule-2);
       border-radius: var(--radius-lg); padding: 22px 24px; margin-top: 16px;
     }
     .quote-card.show { display: block; }
-    .q-title { font-size: 15px; font-weight: 600; color: var(--navy); margin-bottom: 14px; }
+    .q-title {
+      font-family: var(--font-display); font-size: 13px; font-weight: 400;
+      text-transform: uppercase; letter-spacing: 0.12em; color: var(--navy);
+      margin-bottom: 14px;
+    }
     .q-table { width: 100%; border-collapse: collapse; font-size: 13px; }
     .q-table th {
-      text-align: left; font-size: 10.5px; font-weight: 600; letter-spacing: 0.5px;
+      text-align: left; font-family: var(--font-display); font-size: 10.5px;
+      font-weight: 400; letter-spacing: 0.12em;
       text-transform: uppercase; color: var(--ink-3);
       padding: 0 10px 8px; border-bottom: 2px solid var(--rule-2);
     }
@@ -377,6 +385,11 @@
       border-radius: var(--radius); font-size: 13.5px; color: var(--green);
     }
     .oracle-confirm.show { display: block; }
+    .oracle-title {
+      font-family: var(--font-display); font-size: 11px; font-weight: 400;
+      text-transform: uppercase; letter-spacing: 0.12em;
+      margin-bottom: 5px;
+    }
     .oracle-confirm .mono { font-family: var(--font-mono); font-weight: 600; }
 
     /* ====== FITMENT GATE (screen 1 intro) ======
@@ -667,6 +680,10 @@
       padding: 8px 2px; border-bottom: 1px solid var(--rule-2);
       flex-wrap: wrap;
     }
+    /* Wraps part+desc+qty only — the strike spans this, not the note. A
+       percentage width on the ::after resolves against this element, so the
+       strike always matches the real rendered extent — no magic numbers. */
+    .verdict-line { position: relative; display: flex; align-items: baseline; gap: 12px; flex: 1; min-width: 0; }
     .verdict-part { font-family: var(--font-mono); font-size: 12.5px; font-weight: 600; color: var(--navy); width: 150px; flex-shrink: 0; }
     .verdict-desc { font-size: 12.5px; color: var(--ink-2); flex: 1; min-width: 140px; }
     .verdict-qty { font-family: var(--font-mono); font-size: 12px; color: var(--ink-3); width: 60px; text-align: right; flex-shrink: 0; }
@@ -677,14 +694,23 @@
       letter-spacing: 0.08em; text-transform: uppercase; color: var(--pencil);
       white-space: nowrap;
     }
-    .verdict-row.struck .verdict-part,
-    .verdict-row.struck .verdict-desc,
-    .verdict-row.struck .verdict-qty {
+    .verdict-row.cut .verdict-part,
+    .verdict-row.cut .verdict-desc,
+    .verdict-row.cut .verdict-qty {
       color: var(--ink-3);
-      text-decoration: line-through;
-      text-decoration-color: var(--pencil);
-      text-decoration-thickness: 1.5px;
     }
+    /* The strike: a positioned pseudo-element with a transform, not
+       text-decoration — text-decoration has no interpolatable geometry, so
+       it can only snap on/off, never draw. This CAN be animated left-to-right
+       by a future reveal sequence (toggle .drawn with a stagger); for now
+       .cut rows render with .drawn already applied — the settled state. */
+    .verdict-row.cut .verdict-line::after {
+      content: ""; position: absolute; left: 0; top: 50%;
+      height: 1.5px; width: 100%; background: var(--pencil);
+      transform: scaleX(0); transform-origin: left;
+      transition: transform .32s cubic-bezier(.4,0,.2,1);
+    }
+    .verdict-row.cut.drawn .verdict-line::after { transform: scaleX(1); }
     /* kit cards reuse .comp-card; add a verified badge + parts subtotal line */
     .kit-badge { position: absolute; top: 10px; right: 10px; font-size: 9.5px; font-weight: 800; letter-spacing: .04em; text-transform: uppercase; color: var(--green); background: var(--green-tint); border: 1px solid var(--green-tint-border); border-radius: 5px; padding: 2px 6px; }
     .kit-sub { margin-top: 8px; font-size: 12px; font-weight: 600; color: var(--navy-2); }
@@ -788,9 +814,9 @@
         <div id="advisory"></div>
         <div id="matchLines"></div>
 
-        <div class="quote-actions">
-          <button class="btn primary" id="genQuoteBtn">Generate Quote</button>
-        </div>
+        <!-- Quote and order are state changes on this same document, not
+             navigations: renderQuote() populates this automatically once
+             results exist, no "Generate Quote" click required. -->
         <div class="quote-card" id="quoteCard"></div>
         <div class="oracle-confirm" id="oracleConfirm"></div>
       </div>
@@ -1504,7 +1530,7 @@ function matchParts(serialNumber, component) {
 //       information (consistent hue per category), drawings-as-code thumbnails.
 // ============================================================================
 
-let ui = { caseInfo: null, component: null, match: null, overrides: {}, refresh: null, survey: null };
+let ui = { caseInfo: null, component: null, match: null, overrides: {}, refresh: null, survey: null, quoteId: null, orderId: null };
 
 function money(x) { return "$" + x.toFixed(2); }
 function pct(x)   { return Math.round(x * 100) + "%"; }
@@ -1733,13 +1759,15 @@ function renderResolvePanel(r) {
 
   function verdictRow(p, opts) {
     opts = opts || {};
-    const struck = opts.struck ? ' struck' : '';
+    const cut = opts.struck ? ' cut drawn' : '';   // drawn = settled state; a future reveal sequence would withhold it and add it with a stagger
     const qty = opts.qtyLabel || ('\u00d7' + p.net);
     const note = opts.note ? '<span class="verdict-note">' + opts.note + '</span>' : '';
-    return '<div class="verdict-row' + struck + '">'
+    return '<div class="verdict-row' + cut + '">'
+      + '<div class="verdict-line">'
       + '<span class="verdict-part">' + p.partNumber + '</span>'
       + '<span class="verdict-desc">' + p.desc + '</span>'
       + '<span class="verdict-qty">' + qty + '</span>'
+      + '</div>'
       + note
       + '</div>';
   }
@@ -1870,6 +1898,8 @@ function renderSurveyPanel(survey, refresh) {
 function runMatch(component) {
   ui.component = component;
   ui.overrides = {};                 // fresh match -> no quoter overrides yet
+  ui.quoteId = null;                 // fresh match -> a new quote/order session
+  ui.orderId = null;
 
   showScreen("screen-results");
   setStep(3);                        // rail: now in the AI-match step
@@ -1955,8 +1985,9 @@ function renderResults() {
   document.getElementById("matchLines").innerHTML = m.lines.map(renderCategorySection).join("");
   wireLineEvents();
 
-  document.getElementById("quoteCard").classList.remove("show");
-  document.getElementById("oracleConfirm").classList.remove("show");
+  // Quote lines are a continuous section, not a "Generate Quote" click —
+  // they render as soon as results do, and re-render live as picks change.
+  renderQuote();
   document.getElementById("resultsBody").style.display = "block";
 
   // Animate bars and the donut in after layout.
@@ -2140,12 +2171,22 @@ function wireLineEvents() {
 }
 
 // ----------------------------------------------------------------------------
-function generateQuote() {
+function renderQuote() {
   const m = ui.match;
   const picks = m.lines.map(effectivePrimary).filter(Boolean);
   const total = picks.reduce(function (s, p) { return s + p.price; }, 0);
-  const qid = "QT-2026-" + String(Math.floor(1000 + Math.random() * 9000));
   const overrideCount = Object.keys(ui.overrides).length;
+
+  // Quote ID is stable for this match session (assigned once, reused across
+  // pick edits) — not regenerated on every render. Editing picks after
+  // approval un-approves: the order confirmation is cleared below and only
+  // reappears on a fresh "Approve quote" click, so it can never sit next to
+  // a quote it no longer describes.
+  if (!ui.quoteId) ui.quoteId = "QT-2026-" + String(Math.floor(1000 + Math.random() * 9000));
+  ui.orderId = null;
+  const oracleConfirm = document.getElementById("oracleConfirm");
+  oracleConfirm.classList.remove("show");
+  oracleConfirm.innerHTML = "";
 
   const rows = picks.map(function (p) {
     return '<tr>'
@@ -2157,24 +2198,25 @@ function generateQuote() {
   }).join("");
 
   document.getElementById("quoteCard").innerHTML =
-    '<div class="q-title">Draft Quote \u2014 ' + m.componentLabel + ', ' + m.case.modelName + '</div>'
+    '<div class="q-title">Quote \u2014 ' + m.componentLabel + ', ' + m.case.modelName + '</div>'
     + '<table class="q-table">'
     + '<thead><tr><th>Part</th><th>Description</th><th class="num">Qty</th><th class="num">Price</th></tr></thead>'
     + '<tbody>' + rows
     + '<tr class="q-total"><td colspan="3">Quote total</td><td class="num">' + money(total) + '</td></tr>'
     + '</tbody></table>'
-    + '<div class="q-id">Quote ID ' + qid + ' \u00b7 ' + picks.length + ' AI-matched parts'
+    + '<div class="q-id">Quote ' + ui.quoteId + ' \u00b7 ' + picks.length + ' AI-matched parts'
     +   (overrideCount ? ' \u00b7 ' + overrideCount + ' quoter override' + (overrideCount > 1 ? 's' : '') : '')
     +   ' \u00b7 Pending quoter review</div>'
-    + '<div class="quote-actions"><button class="btn primary" id="pushOracleBtn">Approve &amp; Push to Oracle</button></div>';
+    + '<div class="quote-actions"><button class="btn primary" id="approveQuoteBtn">Approve quote</button></div>';
 
   document.getElementById("quoteCard").classList.add("show");
   setStep(4);                        // rail: quote & order stage
 
-  document.getElementById("pushOracleBtn").addEventListener("click", function () {
-    const oid = "ORD-2026-" + String(Math.floor(10000 + Math.random() * 89999));
+  document.getElementById("approveQuoteBtn").addEventListener("click", function () {
+    ui.orderId = "ORD-2026-" + String(Math.floor(10000 + Math.random() * 89999));
     document.getElementById("oracleConfirm").innerHTML =
-      'Order <span class="mono">' + oid + '</span> created in Oracle via Adaptia. '
+      '<div class="oracle-title">Quote approved</div>'
+      + 'Order <span class="mono">' + ui.orderId + '</span> created in Oracle via Adaptia. '
       + 'Parts demand generated \u00b7 Estimated ship in 5 weeks \u00b7 Now trackable in Live Order Tracking (Demo 3).';
     document.getElementById("oracleConfirm").classList.add("show");
   });
@@ -2218,7 +2260,6 @@ function init() {
     showScreen("screen-input");
     setStep(1);                      // rail: back to the identify step
   });
-  document.getElementById("genQuoteBtn").addEventListener("click", generateQuote);
 }
 
 if (document.readyState === "loading") {
