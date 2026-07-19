@@ -826,6 +826,14 @@
     }
     .pp-baseline-sub { font-size: 12.5px; color: var(--ink-3); margin-top: 4px; }
     .pp-source { margin-top: 14px; font-size: 11.5px; color: var(--ink-3); font-style: italic; }
+    /* Resolved-case photo (presentation pass, pre-Phase-5) — modest size next
+       to the baseline label so it reads as identity context, not hero art. */
+    .pp-case-photo-row { display: flex; align-items: center; gap: 12px; margin-top: 14px; }
+    .pp-case-photo-row .pp-source { margin-top: 0; }
+    .pp-case-photo {
+      width: 64px; height: 64px; object-fit: cover; flex-shrink: 0;
+      border: 1px solid var(--rule-2); border-radius: var(--radius);
+    }
 
     /* Phase 2 — 2 active scopes (real parts) + 4 coming-soon ghost scopes. */
     .pp-scope { margin-top: 24px; }
@@ -852,6 +860,13 @@
     .pp-card-price { font-size: 15px; font-weight: 700; color: var(--ink); margin-top: 2px; }
     .pp-card-replaces { font-size: 11px; color: var(--ink-3); }
     .pp-card-replaces .mono { font-family: var(--font-mono); }
+    /* Grid-card thumbnail (presentation pass, pre-Phase-5) — same
+       partImageSrc() helper the Phase 4 drawer uses, so card and drawer
+       can't diverge on which asset a part number resolves to. */
+    .pp-card-img {
+      width: 100%; height: 88px; object-fit: contain;
+      background: var(--paper); border: 1px solid var(--rule-2); border-radius: var(--radius);
+    }
     .pp-card-stub {
       display: none; margin-top: 6px; padding-top: 8px; border-top: 1px dashed var(--rule-2);
       font-family: var(--font-display); font-size: 10px; font-weight: 400;
@@ -866,6 +881,76 @@
     .pp-ghost .pp-card-stub { color: var(--ink-3); }
     @media (prefers-reduced-motion: reduce) {
       .pp-card { transition: none !important; }
+    }
+
+    /* ====== PART-DETAIL DRAWER (Phase 4) — clicking a real card opens this.
+       Ghost cards are unaffected (still "Coming soon"). Mirrors what the real
+       store shows (part #, description, image, price) and adds the three
+       sections the store structurally cannot — styled with the same
+       pencil/annotation language used everywhere else in this file for
+       pipeline-added content. Radius budget: var(--radius), 999px, 50% only —
+       same canonical set as the rest of the page. ====== */
+    .drawer-overlay {
+      display: none; position: fixed; inset: 0; background: rgba(11,45,77,.35); z-index: 40;
+    }
+    .drawer-overlay.show { display: block; }
+    .drawer {
+      position: fixed; top: 0; right: 0; bottom: 0; width: 420px; max-width: 92vw;
+      background: var(--surface); border-left: 1px solid var(--rule-2);
+      box-shadow: -10px 0 28px rgba(11,45,77,.18);
+      transform: translateX(100%); transition: transform .25s cubic-bezier(.2,.8,.3,1);
+      z-index: 41; overflow-y: auto; padding: 26px 24px 32px;
+    }
+    .drawer.show { transform: translateX(0); }
+    @media (prefers-reduced-motion: reduce) {
+      .drawer, .drawer-overlay { transition: none !important; }
+    }
+    .drawer-close {
+      position: absolute; top: 18px; right: 20px;
+      width: 30px; height: 30px; border-radius: 50%;
+      border: 1px solid var(--rule); background: var(--surface); color: var(--ink-2);
+      font-size: 16px; line-height: 1; cursor: pointer;
+    }
+    .drawer-close:hover { border-color: var(--blue); color: var(--navy); }
+    .drawer-eyebrow {
+      font-family: var(--font-display); font-size: 11px; font-weight: 400;
+      letter-spacing: 0.12em; text-transform: uppercase; color: var(--ink-3);
+      margin: 4px 40px 2px 0;
+    }
+    .drawer-part { font-family: var(--font-mono); font-size: 16px; font-weight: 700; color: var(--navy); }
+    .drawer-desc { font-size: 13.5px; color: var(--ink-2); margin-top: 4px; line-height: 1.45; }
+    .drawer-img {
+      display: block; width: 100%; max-height: 180px; object-fit: contain;
+      background: var(--paper); border: 1px solid var(--rule-2); border-radius: var(--radius);
+      margin: 16px 0;
+    }
+    .drawer-price-block {
+      border: 1px solid var(--rule-2); border-radius: var(--radius); padding: 14px 16px; margin: 16px 0;
+    }
+    .drawer-illustrative-tag {
+      display: block; font-size: 11px; font-style: italic; color: var(--ink-3); margin-bottom: 9px;
+    }
+    .drawer-price-row { display: flex; justify-content: space-between; font-size: 13px; color: var(--ink-2); padding: 3px 0; }
+    .drawer-price-val.strong { font-weight: 700; color: var(--navy); }
+    .drawer-savings { margin-top: 8px; padding-top: 8px; border-top: 1px dashed var(--rule-2); font-size: 12.5px; font-weight: 600; color: var(--green); }
+    .drawer-tabs { margin-top: 4px; }
+    .drawer-tab-head {
+      font-family: var(--font-display); font-size: 10.5px; font-weight: 400;
+      letter-spacing: 0.1em; text-transform: uppercase; color: var(--ink-3);
+      margin-top: 14px; margin-bottom: 4px;
+    }
+    .drawer-tab-row { display: flex; justify-content: space-between; font-size: 12.5px; color: var(--ink-2); padding: 4px 0; border-bottom: 1px solid var(--rule-2); }
+    .drawer-tab-val { color: var(--navy); font-weight: 600; }
+    .drawer-section { margin-top: 18px; }
+    .drawer-section-lbl {
+      font-family: var(--font-display); font-size: 10.5px; font-weight: 400;
+      letter-spacing: 0.1em; text-transform: uppercase; color: var(--pencil); margin-bottom: 5px;
+    }
+    .drawer-section-body { font-size: 12.5px; color: var(--ink-2); line-height: 1.5; }
+    .drawer-kit-pill {
+      display: inline-block; font-size: 11.5px; font-weight: 600; color: var(--navy-2);
+      background: var(--blue-tint); border: 1px solid var(--blue-tint-border);
+      border-radius: 999px; padding: 3px 10px;
     }
 
   </style>
@@ -985,6 +1070,17 @@
     </section>
 
   </main>
+
+  <!-- ============ PART-DETAIL DRAWER (Phase 4) ============
+       Sibling of <main>, same pattern as the case-strip and footer — overlays
+       whichever screen is active. openDrawer()/closeDrawer() toggle .show;
+       content is injected into #drawerBody per part. Ghost cards never open
+       this — they keep the Phase 1-3 "Coming soon" stub-toggle unchanged. === -->
+  <div class="drawer-overlay" id="drawerOverlay"></div>
+  <aside class="drawer" id="partDrawer" aria-hidden="true">
+    <button class="drawer-close" id="drawerClose" type="button" aria-label="Close part detail">&times;</button>
+    <div id="drawerBody"></div>
+  </aside>
 
   <!-- Visible on both screens (sibling of <main>, outside either .screen) —
        not a comment, an on-screen disclosure. -->
@@ -1228,6 +1324,76 @@ function getActiveRefreshSurvey() {
   return { serial: RESOLVED_CASE.serial, activeParts: activeParts, activeKits: activeKits, facets: RL3_WIRED_FACETS };
 }
 
+// ----------------------------------------------------------------------------
+//  Phase 4 — the part-detail drawer's data layer. Everything here reads
+//  directly off RL3_PARTS/RL3_KITS (real fields) or is explicitly labeled
+//  illustrative — no invented spec values, no adapter, no groupIntoKits call
+//  (that wiring is Phase 5's, per the master build prompt).
+// ----------------------------------------------------------------------------
+
+// Real product photography for 4 of the 8 parts; the other 4 use the shared
+// placeholder asset rather than a fabricated photo.
+const REAL_IMAGE_BY_PART = {
+  "0522314": "0522314.png",
+  "0428562": "0428562.jpg",
+  "0428627": "0428627.jpg",
+  "0560316": "0560316.jpg",
+};
+function partImageSrc(partNumber) {
+  return "assets/" + (REAL_IMAGE_BY_PART[partNumber] || "no_image_placeholder.png");
+}
+
+// Resolved-case photo — the one real case this demo covers (serial
+// MY25H067107). Confirmed present at assets/case_MY25H067107.jpg.
+const CASE_PHOTO_SRC = "assets/case_MY25H067107.jpg";
+
+// WHY FLAGGED — general, kit-level wear reasoning, not a specific per-part
+// failure claim (the master prompt is explicit: illustrative and honest,
+// no claiming a specific failure mode).
+const WHY_FLAGGED_BY_KIT = {
+  door_rebuild: "Door hardware wear — a high-frequency refresh item on reach-in door assemblies.",
+  case_seal:    "Seal and bumper wear — a high-frequency refresh item on this case family.",
+};
+
+// SUPERSESSION RESOLVED — reads the real replaces[] chain; a part with no
+// legacy number (0560316's raw BOM line has none) gets an honest "nothing to
+// net" line rather than an invented supersession.
+function supersessionText(p) {
+  return p.replaces.length
+    ? "Legacy " + p.replaces.join(", ") + " on the prior BOM — superseded, netted automatically."
+    : "No legacy number on the prior BOM for this part — nothing to net.";
+}
+
+// PRICE — contract price is p.price, real and unaltered. List price is a
+// synthesized, clearly-labeled illustrative multiplier (Hussmann's real
+// list/contract ratio is not in rl3_real_parts.js). Savings are computed live
+// from the two displayed numbers every time the drawer renders, never
+// hardcoded as a string.
+const ILLUSTRATIVE_LIST_MARKUP = 1.45;
+function drawerPriceModel(p) {
+  const contract = p.price;
+  const list = Math.round(contract * ILLUSTRATIVE_LIST_MARKUP * 100) / 100;
+  const savingsAbs = list - contract;
+  const savingsPct = (savingsAbs / list) * 100;
+  return { contract: contract, list: list, savingsAbs: savingsAbs, savingsPct: savingsPct };
+}
+
+// SPECS / DIMENSIONS — data-driven: rl3_real_parts.js carries no
+// OEM-compatibility/mounting/type/application/color/UOM or L/W/H/weight
+// fields for any part, so both currently resolve to zero present rows and
+// the drawer omits both tabs entirely (never rendered empty, never
+// invented). If a later phase adds real fields to RL3_PARTS, the matching
+// tab appears automatically — nothing here needs to change.
+const DRAWER_SPEC_FIELDS = [
+  ["oemCompatibility", "OEM Compatibility"], ["mounting", "Mounting"], ["type", "Type"],
+  ["application", "Application"], ["enrichedColor", "Enriched Color"], ["uom", "UOM"],
+];
+const DRAWER_DIMENSION_FIELDS = [
+  ["lengthIn", "L"], ["widthIn", "W"], ["heightIn", "H"], ["weightLb", "Weight"],
+];
+function presentFields(p, fields) {
+  return fields.filter(function (f) { return p[f[0]] !== undefined && p[f[0]] !== null && p[f[0]] !== ""; });
+}
 
 // ----------------------------------------------------------------------------
 //  1. CASES  —  serial number  ->  the case it identifies
@@ -2249,11 +2415,13 @@ function renderRealShell(info) {
       ? '<div class="pp-card-replaces">Replaces <span class="mono">' + p.replaces.join(", ") + '</span></div>'
       : "";
     return '<div class="pp-card" data-part="' + p.partNumber + '">'
+      // same partImageSrc() the Phase 4 drawer calls — one resolver, card and
+      // drawer can't disagree on which asset a part number maps to.
+      + '<img class="pp-card-img" src="' + partImageSrc(p.partNumber) + '" alt="' + p.description + '">'
       + '<div class="pp-card-part">' + p.partNumber + '</div>'
       + '<div class="pp-card-desc">' + p.description + '</div>'
       + '<div class="pp-card-price">' + money(p.price) + '</div>'
       + replaces
-      + '<div class="pp-card-stub">Full detail — Phase 4</div>'
       + '</div>';
   }
   const activeScopes = RL3_ACTIVE_SCOPES.map(function (scope) {
@@ -2277,9 +2445,15 @@ function renderRealShell(info) {
     + '<div class="pp-card-grid">' + RL3_COMING_SOON_SCOPES.map(ghostCard).join("") + '</div>'
     + '</div>';
 
+  // Resolved-case photo (presentation pass, pre-Phase-5) — the one real case
+  // this demo covers. Not part of the protected RESOLVED_CASE mirror (that
+  // stays byte-identical to rl3_real_parts.js), so it's its own constant.
   const main = '<div class="pp-main">'
     + funnel
-    + '<div class="pp-source">Baseline data from Hussmann Performance Parts (serial ' + info.serial + ').</div>'
+    + '<div class="pp-case-photo-row">'
+    +   '<img class="pp-case-photo" src="' + CASE_PHOTO_SRC + '" alt="Case ' + info.serial + '">'
+    +   '<div class="pp-source">Baseline data from Hussmann Performance Parts (serial ' + info.serial + ').</div>'
+    + '</div>'
     + activeScopes
     + comingSoon
     + '</div>';
@@ -2290,14 +2464,20 @@ function renderRealShell(info) {
   playRealRevealSequence();
 }
 
-// Cards are not clickable-to-drawer yet (Phase 4). Clicking toggles a small
-// inline stub note in place — "Full detail — Phase 4" for real parts,
-// "Coming soon" for the greyed scopes. No drawer, no navigation. The unwired
-// rail rows get the same treatment: click reveals "Managed by the pipeline,"
-// never a silent no-op. The 3 wired facets are display-only — not clickable —
-// their state is set by playRealRevealSequence(), not by user interaction.
+// Real cards open the part-detail drawer (Phase 4). Ghost cards keep the
+// Phase 1-3 behavior unchanged — click toggles the inline "Coming soon" stub
+// in place, no drawer, no navigation. The unwired rail rows get the same
+// treatment they always did: click reveals "Managed by the pipeline," never
+// a silent no-op. The 3 wired facets are display-only — not clickable — their
+// state is set by playRealRevealSequence(), not by user interaction.
 function wireRealShellEvents() {
-  document.querySelectorAll("#ppShell .pp-card").forEach(function (card) {
+  document.querySelectorAll("#ppShell .pp-card:not(.pp-ghost)").forEach(function (card) {
+    card.addEventListener("click", function () {
+      const part = RL3_PARTS.find(function (p) { return p.partNumber === card.getAttribute("data-part"); });
+      if (part) openDrawer(part);
+    });
+  });
+  document.querySelectorAll("#ppShell .pp-card.pp-ghost").forEach(function (card) {
     card.addEventListener("click", function () {
       const stub = card.querySelector(".pp-card-stub");
       if (stub) stub.classList.toggle("show");
@@ -2309,6 +2489,72 @@ function wireRealShellEvents() {
       if (note) note.classList.toggle("show");
     });
   });
+}
+
+// Opens the part-detail drawer for a real part. Mirrors the real store
+// (part #, description, image, price) and adds the 3 sections the store
+// structurally cannot: why flagged, kit membership, supersession resolved —
+// the pipeline's contribution, styled with the pencil/annotation language
+// used everywhere else in this file for AI/pipeline-added content.
+function openDrawer(p) {
+  const price = drawerPriceModel(p);
+  const specs = presentFields(p, DRAWER_SPEC_FIELDS);
+  const dims = presentFields(p, DRAWER_DIMENSION_FIELDS);
+
+  function tabRows(fields, present) {
+    return present.map(function (f) {
+      return '<div class="drawer-tab-row"><span>' + f[1] + '</span><span class="drawer-tab-val">' + p[f[0]] + '</span></div>';
+    }).join("");
+  }
+  // Omit the tab entirely when there's nothing real to show (no invented rows).
+  const tabsHtml = (specs.length || dims.length)
+    ? '<div class="drawer-tabs">'
+      + (specs.length ? '<div class="drawer-tab-head">Specifications</div>' + tabRows(DRAWER_SPEC_FIELDS, specs) : '')
+      + (dims.length ? '<div class="drawer-tab-head">Dimensions</div>' + tabRows(DRAWER_DIMENSION_FIELDS, dims) : '')
+      + '</div>'
+    : '';
+
+  const kitLabel = RL3_KITS[p.kit] ? RL3_KITS[p.kit].label : p.kit;
+  const whyFlagged = WHY_FLAGGED_BY_KIT[p.kit] || "Flagged by the refresh survey for this case.";
+
+  const body =
+      '<div class="drawer-eyebrow">Part detail</div>'
+    + '<div class="drawer-part">' + p.partNumber + '</div>'
+    + '<div class="drawer-desc">' + p.description + '</div>'
+    // static part image (Phase 4) — placeholder seam: real store photography
+    // would replace no_image_placeholder.png 1:1 in this same asset slot.
+    // Not a spinner — that's the explicitly optional Phase 6 stretch.
+    + '<img class="drawer-img" src="' + partImageSrc(p.partNumber) + '" alt="' + p.description + '">'
+    + '<div class="drawer-price-block">'
+    +   '<div class="drawer-illustrative-tag">Illustrative — sample pricing, not a live quote</div>'
+    +   '<div class="drawer-price-row"><span>List price</span><span class="drawer-price-val">' + money(price.list) + '</span></div>'
+    +   '<div class="drawer-price-row"><span>Contract price</span><span class="drawer-price-val strong">' + money(price.contract) + '</span></div>'
+    +   '<div class="drawer-savings">Save ' + money(price.savingsAbs) + ' (' + price.savingsPct.toFixed(0) + '%) vs. list</div>'
+    + '</div>'
+    + tabsHtml
+    + '<div class="drawer-section">'
+    +   '<div class="drawer-section-lbl">Why flagged</div>'
+    +   '<div class="drawer-section-body">' + whyFlagged + ' <em>(Survey output.)</em></div>'
+    + '</div>'
+    + '<div class="drawer-section">'
+    +   '<div class="drawer-section-lbl">Kit membership</div>'
+    +   '<div class="drawer-section-body"><span class="drawer-kit-pill">' + kitLabel + '</span></div>'
+    + '</div>'
+    + '<div class="drawer-section">'
+    +   '<div class="drawer-section-lbl">Supersession resolved</div>'
+    +   '<div class="drawer-section-body">' + supersessionText(p) + '</div>'
+    + '</div>';
+
+  document.getElementById("drawerBody").innerHTML = body;
+  document.getElementById("drawerOverlay").classList.add("show");
+  document.getElementById("partDrawer").classList.add("show");
+  document.getElementById("partDrawer").setAttribute("aria-hidden", "false");
+}
+
+function closeDrawer() {
+  document.getElementById("drawerOverlay").classList.remove("show");
+  document.getElementById("partDrawer").classList.remove("show");
+  document.getElementById("partDrawer").setAttribute("aria-hidden", "true");
 }
 
 // Reveal sequence for the real-case shell (#ppShell). Separate from
@@ -2907,6 +3153,11 @@ function init() {
     setStep(1);                      // rail: back to the identify step
   });
   document.getElementById("replayBtn").addEventListener("click", replaySequence);
+  document.getElementById("drawerClose").addEventListener("click", closeDrawer);
+  document.getElementById("drawerOverlay").addEventListener("click", closeDrawer);
+  document.addEventListener("keydown", function (e) {
+    if (e.key === "Escape") closeDrawer();
+  });
 }
 
 if (document.readyState === "loading") {
