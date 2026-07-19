@@ -741,6 +741,133 @@
     .kit-sub { margin-top: 8px; font-size: 12px; font-weight: 600; color: var(--navy-2); }
     .verified { color: var(--green); font-weight: 600; }
 
+    /* ====== REAL-CASE SHELL — Performance Parts layout (master-prompt
+       build, Phase 1+). Familiar tool, AI features added: this echoes
+       Performance Parts' own layout and vocabulary (rail, card list,
+       breadcrumb, search bar) rather than presenting a new system. ====== */
+    .pp-shell { display: none; }
+    .pp-shell.show { display: block; }
+    .pp-crumb { font-size: 12.5px; color: var(--ink-3); margin-bottom: 14px; }
+    .pp-crumb .sep { margin: 0 6px; color: var(--rule); }
+    .pp-crumb .current { color: var(--navy); font-weight: 600; }
+    .pp-search {
+      display: flex; align-items: center; gap: 10px;
+      background: var(--surface); border: 1px solid var(--rule-2);
+      border-radius: var(--radius); padding: 10px 14px; margin-bottom: 18px;
+    }
+    .pp-search svg { width: 16px; height: 16px; color: var(--ink-3); flex-shrink: 0; }
+    .pp-search input {
+      border: none; outline: none; background: none; width: 100%;
+      font-family: var(--font-mono); font-size: 13.5px; color: var(--navy);
+    }
+    .pp-body { display: flex; gap: 20px; align-items: flex-start; }
+    .pp-rail {
+      width: 210px; flex-shrink: 0;
+      background: var(--surface); border: 1px solid var(--rule-2);
+      border-radius: var(--radius-lg); padding: 18px;
+    }
+    .pp-rail-head {
+      font-family: var(--font-display); font-size: 11px; font-weight: 400;
+      letter-spacing: 0.12em; text-transform: uppercase; color: var(--ink-3);
+      margin-bottom: 10px;
+    }
+    .pp-rail-note { font-size: 11.5px; color: var(--ink-3); line-height: 1.5; margin-bottom: 12px; }
+
+    /* 3 AI-driven facets — highlight when the survey runs (playRealRevealSequence). */
+    .pp-rail-facet {
+      padding: 8px 9px; border-radius: var(--radius);
+      border: 1px solid transparent; margin-bottom: 4px;
+      transition: background .18s ease, border-color .18s ease;
+    }
+    .pp-rail-facet-name {
+      font-family: var(--font-display); font-size: 10.5px; font-weight: 400;
+      letter-spacing: 0.1em; text-transform: uppercase; color: var(--ink-3);
+    }
+    .pp-rail-facet-values { font-size: 12px; color: var(--ink-2); margin-top: 2px; }
+    .pp-rail-facet-ai-tag {
+      display: none; margin-top: 4px;
+      font-family: var(--font-display); font-size: 9px; font-weight: 400;
+      letter-spacing: 0.08em; text-transform: uppercase; color: var(--blue);
+    }
+    .pp-rail-facet.lit { background: var(--blue-tint); border-color: var(--blue-tint-border); }
+    .pp-rail-facet.lit .pp-rail-facet-name { color: var(--blue); }
+    .pp-rail-facet.lit .pp-rail-facet-values { color: var(--navy); font-weight: 600; }
+    .pp-rail-facet.lit .pp-rail-facet-ai-tag { display: block; }
+
+    .pp-rail-sep { height: 1px; background: var(--rule-2); margin: 12px 0; }
+
+    /* Unwired rows: real facet names aren't in the source data, so these are
+       genuinely unlabeled — a blank bar, not a made-up category name. Still
+       clickable; clicking shows the honest reason nothing happens. */
+    .pp-rail-blank-row {
+      padding: 8px 9px; border-radius: var(--radius); cursor: pointer;
+      transition: background .14s ease;
+    }
+    .pp-rail-blank-row:hover { background: var(--paper); }
+    .pp-rail-blank { height: 12px; width: 68%; border-radius: 999px; background: var(--rule-2); }
+    .pp-rail-managed-note {
+      display: none; margin-top: 5px; font-size: 10.5px; color: var(--ink-3); font-style: italic;
+    }
+    .pp-rail-managed-note.show { display: block; }
+    @media (prefers-reduced-motion: reduce) {
+      .pp-rail-facet { transition: none !important; }
+    }
+
+    .pp-main { flex: 1; min-width: 0; }
+    .pp-baseline {
+      background: var(--surface); border: 1px solid var(--rule-2);
+      border-radius: var(--radius-lg); padding: 26px 28px;
+    }
+    .pp-baseline-num { font-size: 40px; font-weight: 800; letter-spacing: -.02em; line-height: 1; color: var(--navy); }
+    .pp-baseline-lbl {
+      font-family: var(--font-display); font-size: 12px; font-weight: 400;
+      letter-spacing: 0.12em; text-transform: uppercase; color: var(--ink-2);
+      margin-top: 8px;
+    }
+    .pp-baseline-sub { font-size: 12.5px; color: var(--ink-3); margin-top: 4px; }
+    .pp-source { margin-top: 14px; font-size: 11.5px; color: var(--ink-3); font-style: italic; }
+
+    /* Phase 2 — 2 active scopes (real parts) + 4 coming-soon ghost scopes. */
+    .pp-scope { margin-top: 24px; }
+    .pp-scope-head {
+      display: flex; align-items: baseline; gap: 10px; margin-bottom: 12px;
+      font-family: var(--font-display); font-size: 13px; font-weight: 400;
+      letter-spacing: 0.12em; text-transform: uppercase; color: var(--navy);
+    }
+    .pp-scope-count {
+      font-family: var(--font); font-size: 11.5px; font-weight: 500;
+      letter-spacing: 0; text-transform: none; color: var(--ink-3);
+    }
+    .pp-card-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); gap: 14px; }
+    .pp-card {
+      background: var(--surface); border: 1.5px solid var(--rule-2);
+      border-radius: var(--radius-lg); padding: 16px; cursor: pointer;
+      display: flex; flex-direction: column; gap: 6px;
+      opacity: 1; transform: none; transition: opacity .22s ease, transform .22s ease, border-color .14s;
+    }
+    .pp-card:hover { border-color: var(--blue); }
+    .pp-card.pre { opacity: 0; transform: translateY(4px); pointer-events: none; }
+    .pp-card-part { font-family: var(--font-mono); font-size: 13px; font-weight: 700; color: var(--navy); }
+    .pp-card-desc { font-size: 12.5px; color: var(--ink-2); line-height: 1.4; }
+    .pp-card-price { font-size: 15px; font-weight: 700; color: var(--ink); margin-top: 2px; }
+    .pp-card-replaces { font-size: 11px; color: var(--ink-3); }
+    .pp-card-replaces .mono { font-family: var(--font-mono); }
+    .pp-card-stub {
+      display: none; margin-top: 6px; padding-top: 8px; border-top: 1px dashed var(--rule-2);
+      font-family: var(--font-display); font-size: 10px; font-weight: 400;
+      letter-spacing: 0.1em; text-transform: uppercase; color: var(--blue);
+    }
+    .pp-card-stub.show { display: block; }
+    /* Coming-soon ghost cards — visibly present, dimmed, no real content. */
+    .pp-card.pp-ghost { opacity: .55; border-style: dashed; }
+    .pp-card.pp-ghost.pre { opacity: 0; }
+    .pp-card.pp-ghost:hover { opacity: .8; border-color: var(--rule); }
+    .pp-ghost .pp-card-desc { font-style: italic; }
+    .pp-ghost .pp-card-stub { color: var(--ink-3); }
+    @media (prefers-reduced-motion: reduce) {
+      .pp-card { transition: none !important; }
+    }
+
   </style>
 </head>
 
@@ -791,14 +918,13 @@
         <div class="field-label">Case serial number</div>
         <div class="serial-row">
           <input class="serial-input" id="serialInput"
-                 placeholder="e.g. HSM-D5X-081247-2017" autocomplete="off">
+                 placeholder="e.g. MY25H067107" autocomplete="off">
           <button class="btn primary" id="lookupBtn">Look up case</button>
         </div>
         <div class="samples" id="samples">
-          <!-- quick-pick chips: one click fills the input (no typing live) -->
-          <button class="sample-chip" data-serial="HSM-D5X-081247-2017">HSM-D5X-081247-2017</button>
-          <button class="sample-chip" data-serial="HSM-D5LE-121892-2019">HSM-D5LE-121892-2019</button>
-          <button class="sample-chip" data-serial="HP-OSIA8-2015-AZ417">HP-OSIA8-2015-AZ417 (competitor)</button>
+          <!-- One real case for the flagship demo. The one-click path a
+               presenter uses on stage. -->
+          <button class="sample-chip" data-serial="MY25H067107">MY25H067107</button>
         </div>
 
         <!-- filled by JS when a case resolves -->
@@ -848,6 +974,14 @@
         <div class="quote-card" id="quoteCard"></div>
         <div class="oracle-confirm" id="oracleConfirm"></div>
       </div>
+
+      <!-- ============ REAL-CASE SHELL (master-prompt build, Phase 1+) ====
+           Performance Parts layout for the one real case (rl3_real_parts.js,
+           serial MY25H067107). Separate from #resultsBody above (the
+           placeholder-data screen) so the two never mix on screen — this
+           container is what renderRealShell() populates, and it's the only
+           thing Phase 2 onward extends. ==================================== -->
+      <div class="pp-shell" id="ppShell"></div>
     </section>
 
   </main>
@@ -891,6 +1025,208 @@
 //  all lives in these tables, correcting them later is a data edit, not a code
 //  change. (Same "policy in data, mechanism in code" principle as Demo 3.)
 // ============================================================================
+
+
+// ============================================================================
+//  REAL RL-3 DATA — SOURCE OF TRUTH (master-prompt build, from rl3_real_parts.js)
+//  ---------------------------------------------------------------------------
+//  Inlined verbatim (byte-for-byte, via script — not retyped) so this file stays
+//  a single portable HTML document. Everything below to the closing marker is
+//  copied unmodified from rl3_real_parts.js at the repo root; treat that file as
+//  the actual source of truth and this block as its mirror. Do not hand-edit one
+//  without the other going stale.
+// ============================================================================
+
+/* ---------------------------------------------------------------------------
+ * rl3_real_parts.js
+ *
+ * Real RL-3 refresh parts, read directly from Hussmann's live Performance Parts
+ * store (serial MY25H067107, Model # RL-3*M000000652-2025-08-28, FO# 882867).
+ *
+ * WHY THIS EXISTS
+ * demo2 currently runs on placeholder parts (HUS-FST-KIT-A etc.). Those are
+ * fine as logic, but a judge who cross-checks a part number against the real
+ * store finds nothing. These are real: real part numbers, real descriptions,
+ * real prices, real "Replaces Part(s)" chains. Every number on screen now
+ * survives "where did that come from?"
+ *
+ * WHAT IS REAL vs ILLUSTRATIVE
+ *   REAL (from the screenshots):
+ *     - partNumber, description, price
+ *     - replaces[]  (the "Replaces Part(s)" supersession chains)
+ *     - the resolved-case identity fields (serial, model, factoryOrder)
+ *   ILLUSTRATIVE (assigned for the demo, must be labeled as such):
+ *     - kit assignment + kit names  -- real Hussmann kit SKUs come from George;
+ *       these are descriptive placeholders, NOT invented part numbers.
+ *     - refreshScope flag           -- which parts a refresh targets. Reasonable
+ *       per Vivek's 80/20 exterior-wear profile, but confirm with George.
+ *
+ * The Python parallel for how this is shaped: a list of dicts. Each object is
+ * one record; the keys are the fields. resolveBOM() reads `replaces` the way a
+ * dict lookup would -- "does any raw line match a number this part replaces?"
+ * ------------------------------------------------------------------------- */
+
+// Resolved-case identity -- the header the fitment gate should show after lookup.
+// NOTE: the real store's Ship Date field read "2025-00-28" (month 00 -- a data
+// bug in their system). Don't render a broken date; use Model # + FO# as identity.
+const RESOLVED_CASE = {
+  serial:       "MY25H067107",
+  model:        "RL-3",
+  modelFull:    "RL-3*M000000652-2025-08-28",  // real build identifier
+  factoryOrder: "882867",
+  description:  "Reach-In Merchandiser",
+};
+
+// The real refresh parts. `replaces` is the supersession chain resolveBOM nets out.
+const RL3_PARTS = [
+  {
+    partNumber: "0428562",
+    description: "Door Gasket, Reach-In Case, Black, Fits 30 in x 67 in",
+    price: 58.00,
+    replaces: ["1003357"],
+    refreshScope: true,
+    kit: "door_rebuild",
+  },
+  {
+    partNumber: "0428627",
+    description: "Closer, Left Hand Innovator Door, 67 in Height",
+    price: 119.00,
+    replaces: ["0428627001", "0441148", "0441148000", "100531779"],
+    refreshScope: true,
+    kit: "door_rebuild",
+  },
+  {
+    partNumber: "0522314",
+    description: "Innovator Door, Reach-In Case, Black, Left Hand, 30 in",
+    price: 1465.00,
+    replaces: ["0415937", "0415937-P", "0415937000", "0415937P", "100531648", "29S8491BL"],
+    refreshScope: true,
+    kit: "door_rebuild",
+  },
+  {
+    partNumber: "0428585",
+    description: "Socket, Top Hinge Pin, Black, Innovator Door",
+    price: 53.00,
+    replaces: ["0206221"],
+    refreshScope: true,
+    kit: "door_rebuild",
+  },
+  {
+    partNumber: "0428586",
+    description: "Socket, Bottom Hinge Pin, Black, Innovator Door",
+    price: 56.00,
+    replaces: ["0207616", "0428586000", "0428586001"],
+    refreshScope: true,
+    kit: "door_rebuild",
+  },
+  {
+    partNumber: "0560316",
+    description: "Gasket, .906 in x 1/2 in x 200 in, with Adhesive Tape",
+    price: 24.00,
+    replaces: [],
+    refreshScope: true,
+    kit: "case_seal",
+  },
+  {
+    partNumber: "0331774",
+    description: "Gasket Donut, RL End, 146 in Length",
+    price: 64.00,
+    replaces: ["0331774001", "0386877", "0511231", "0511303"],
+    refreshScope: true,
+    kit: "case_seal",
+  },
+  {
+    partNumber: "0394752",
+    description: "Bumper Joint, Lower, 701 Black",
+    price: 28.00,
+    replaces: ["0394752-F", "0394752000", "0394752F", "0394752PLM", "100030423", "100502618"],
+    refreshScope: true,
+    kit: "case_seal",
+  },
+];
+
+// Illustrative kit definitions. Descriptive names, NOT invented SKUs.
+// Replace with George's real kit part numbers before any external use.
+const RL3_KITS = {
+  door_rebuild: { label: "Door Rebuild Kit (illustrative)" },
+  case_seal:    { label: "Case Seal Kit (illustrative)" },
+};
+
+/* The raw BOM the resolver starts from: current parts PLUS the legacy numbers
+ * they supersede, so resolveBOM has real supersessions to net out. This is the
+ * honest version of the demo -- the strikes cancel REAL replaced part numbers,
+ * not invented ones. */
+const RL3_RAW_BOM = [
+  // current part          // legacy line the store says it replaces
+  { line: "0428562", qty: 4 },   { line: "1003357",  qty: 4 },   // → nets to 0428562
+  { line: "0522314", qty: 2 },   { line: "0415937",  qty: 2 },   // → nets to 0522314
+  { line: "0428585", qty: 2 },   { line: "0206221",  qty: 2 },   // → nets to 0428585
+  { line: "0428586", qty: 2 },   { line: "0207616",  qty: 2 },   // → nets to 0428586
+  { line: "0428627", qty: 2 },
+  { line: "0560316", qty: 1 },
+  { line: "0331774", qty: 2 },
+  { line: "0394752", qty: 6 },
+];
+
+// ============================================================================
+//  END REAL RL-3 DATA
+// ============================================================================
+
+// The Performance Parts baseline for this serial — a stated fact from the
+// master build prompt, not derived from RL3_PARTS.length (which is 8, the
+// refresh scope, not the store's full orderable-parts count). Displayed as
+// the "before" number the pipeline reduces from; not 208 built rows.
+const PP_BASELINE_COUNT = 208;
+
+// ----------------------------------------------------------------------------
+//  Phase 2 — DISPLAY-ONLY scope grouping. Reads RL3_PARTS.kit directly.
+//  This is NOT groupIntoKits (protected, untouched this phase) and NOT the
+//  category-adapter proposed for Phase 5 (groupIntoKits wiring lands there).
+//  Just an array grouping for rendering the 2 known active scopes.
+// ----------------------------------------------------------------------------
+const RL3_ACTIVE_SCOPES = [
+  { key: "door_rebuild", label: "Doors" },
+  { key: "case_seal",    label: "Bumpers/Seals" },
+];
+// The 4 systems this refresh doesn't touch. Labels only — no real content
+// behind these; RL3_PARTS has no data for any of them, so there is nothing
+// to fabricate. Production roadmap made visible, not simulated.
+const RL3_COMING_SOON_SCOPES = [
+  "Lighting",
+  "Controls & Electrical",
+  "Refrigeration & Air Handling",
+  "Shelves & Merchandising",
+];
+function partsForKit(kitKey) {
+  return RL3_PARTS.filter(function (p) { return p.kit === kitKey; });
+}
+
+// ----------------------------------------------------------------------------
+//  Phase 3 — the 3 AI-driven filter facets. Values are authorized directly
+//  from the master build prompt (not derived from RL3_PARTS, since no part
+//  record carries a category/application/OEM-usage attribute to read from —
+//  these are given facts about how the real store classifies this serial,
+//  not invented ones). Display-driven: this narrows along ONE known AI path,
+//  it does not evaluate a 208-row dataset that doesn't exist in this file.
+// ----------------------------------------------------------------------------
+const RL3_WIRED_FACETS = [
+  { key: "category",    label: "Category",    values: ["Doors, Glass & Components", "Hardware & Fittings"] },
+  { key: "application", label: "Application", values: ["Door", "Low Temp"] },
+  { key: "oemUsage",     label: "OEM Usage",   values: ["Hussmann"] },
+];
+
+// The active refresh set, read from RL3_PARTS' own refreshScope/kit fields —
+// not a separately hand-typed list that could drift out of sync with them.
+// This IS "a survey object for serial MY25H067107 that declares the active
+// refresh set," computed rather than duplicated so it can't go stale. Phase 3
+// extends it to also carry the 3 facet selections the rail highlights.
+function getActiveRefreshSurvey() {
+  const activeParts = RL3_PARTS.filter(function (p) { return p.refreshScope; });
+  const activeKits = RL3_ACTIVE_SCOPES.filter(function (scope) {
+    return activeParts.some(function (p) { return p.kit === scope.key; });
+  });
+  return { serial: RESOLVED_CASE.serial, activeParts: activeParts, activeKits: activeKits, facets: RL3_WIRED_FACETS };
+}
 
 
 // ----------------------------------------------------------------------------
@@ -1267,6 +1603,23 @@ function kitIsReported(kit, flaggedCats) {
 //        ...
 function resolveCase(serialNumber) {
   const serial = (serialNumber || "").trim().toUpperCase();
+
+  // The one real case (master-prompt build) — checked first since it's the
+  // actual flagship-demo path. `real: true` routes doLookup() to the
+  // Performance Parts shell instead of the placeholder-data flow below.
+  if (serial === RESOLVED_CASE.serial) {
+    return {
+      serial: RESOLVED_CASE.serial,
+      model: RESOLVED_CASE.model,
+      modelFull: RESOLVED_CASE.modelFull,
+      factoryOrder: RESOLVED_CASE.factoryOrder,
+      modelName: RESOLVED_CASE.description,
+      owner: "Hussmann",
+      bomAvailable: true,
+      resolved: true,
+      real: true,
+    };
+  }
 
   // Direct hit — the common case.
   if (CASES[serial]) return { serial: serial, ...CASES[serial], resolved: true };
@@ -1716,6 +2069,8 @@ function doLookup() {
   ui.autoAdvance = false;
   document.getElementById("surveySection").classList.remove("show");
   clearCaseStrip();
+  document.getElementById("ppShell").classList.remove("show");
+  document.getElementById("resultsBody").style.display = "none";
 
   if (!info.resolved) {
     err.textContent = "No case found for \u201C" + serial + "\u201D. Check the serial number and try again.";
@@ -1727,6 +2082,17 @@ function doLookup() {
       + "Competitor cases route to the all-makes workflow (engineering-validated part equivalents). "
       + "For this demo, choose a Hussmann case.";
     err.classList.add("show");
+    return;
+  }
+
+  // The one real case (master-prompt build): separate path entirely, never
+  // touches the placeholder-data screens below. Phase 1 only builds the
+  // shell + identity + baseline count \u2014 no parts yet ("before any parts are
+  // built" per the Phase-1 stop condition).
+  if (info.real) {
+    ui.caseInfo = info;
+    renderCaseStrip(info);
+    renderRealShell(info);
     return;
   }
 
@@ -1789,12 +2155,16 @@ function renderCaseStrip(info) {
       + '<span class="cs-value">' + value + '</span></div>';
   }
   const strip = document.getElementById("caseStrip");
-  strip.innerHTML =
-      seg("Store", info.store || "—")
-    + '<span class="cs-arrow">→</span>' + seg("Case line", info.model)
-    + '<span class="cs-arrow">→</span>' + seg("Model", info.modelName)
-    + '<span class="cs-arrow">→</span>' + seg("Rev", info.rev || "—")
-    + '<button class="cs-change" id="csChange">Change case</button>';
+  // The real case: Model # + Factory Order # + serial. No Rev (the real
+  // system has none), no Ship Date (the real field is malformed).
+  const body = info.real
+    ? seg("Model #", info.modelFull)
+      + '<span class="cs-arrow">→</span>' + seg("Factory Order #", info.factoryOrder)
+      + '<span class="cs-arrow">→</span>' + seg("Serial", info.serial)
+    : seg("Store", info.store || "—")
+      + '<span class="cs-arrow">→</span>' + seg("Case line", info.model)
+      + '<span class="cs-arrow">→</span>' + seg("Model", info.modelName);
+  strip.innerHTML = body + '<button class="cs-change" id="csChange">Change case</button>';
   strip.classList.add("show");
   document.getElementById("csChange").addEventListener("click", function () {
     showScreen("screen-input");
@@ -1807,6 +2177,155 @@ function clearCaseStrip() {
   const strip = document.getElementById("caseStrip");
   strip.classList.remove("show");
   strip.innerHTML = "";
+}
+
+// --- renderRealShell: Performance Parts layout for the one real case -------
+//  Phase 1 (master-prompt build): shell + identity + the 208 baseline count.
+//  No parts render here yet — "before any parts are built" is the explicit
+//  Phase-1 stop condition; Phase 2 fills #pp-main with the active/coming-soon
+//  scopes. The filter rail is structural only: Phase 3 owns the real ~20
+//  category list (not present in rl3_real_parts.js) and the 3 wired filters.
+function renderRealShell(info) {
+  showScreen("screen-results");
+  setStep(1);   // only identification has run for this case — no BOM/match/quote pipeline exists yet
+  document.getElementById("thinking").classList.remove("show");
+
+  const search = '<div class="pp-search">'
+    + '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="11" cy="11" r="7"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>'
+    + '<input type="text" value="' + info.serial + '" readonly aria-label="Serial number">'
+    + '</div>';
+
+  const crumb = '<div class="pp-crumb">'
+    + '<span>Performance Parts</span><span class="sep">/</span>'
+    + '<span>' + info.model + '</span><span class="sep">/</span>'
+    + '<span class="current">' + info.serial + '</span>'
+    + '</div>';
+
+  const survey = getActiveRefreshSurvey();
+
+  // ---- Filter rail: 3 AI-driven facets (from survey.facets) + N unwired
+  // placeholder rows. The real Performance Parts facet list (~20 categories)
+  // isn't in rl3_real_parts.js, so the unwired rows render unlabeled rather
+  // than guessing real-sounding category names. ----
+  const wiredFacets = survey.facets.map(function (f) {
+    return '<div class="pp-rail-facet" data-facet="' + f.key + '">'
+      + '<div class="pp-rail-facet-name">' + f.label + '</div>'
+      + '<div class="pp-rail-facet-values">' + f.values.join(" / ") + '</div>'
+      + '<div class="pp-rail-facet-ai-tag">AI-selected from survey</div>'
+      + '</div>';
+  }).join("");
+  const UNLABELED_ROW_COUNT = 6;   // judgment call — suggests "more filters exist," asserts no specific real count
+  let blankRows = "";
+  for (let i = 0; i < UNLABELED_ROW_COUNT; i++) {
+    blankRows += '<div class="pp-rail-blank-row" data-blank="' + i + '">'
+      + '<div class="pp-rail-blank"></div>'
+      + '<div class="pp-rail-managed-note">Managed by the pipeline.</div>'
+      + '</div>';
+  }
+  const rail = '<div class="pp-rail">'
+    + '<div class="pp-rail-head">Filters</div>'
+    + '<div class="pp-rail-note">Category, application, and OEM-usage — AI-driven, applied automatically from the customer’s smart survey.</div>'
+    + wiredFacets
+    + '<div class="pp-rail-sep"></div>'
+    + blankRows
+    + '</div>';
+
+  // ---- 208 -> refresh-scope funnel (reuses the same .funnel/.fstep
+  // language as the old resolve panel's tally, and the same .pre reveal CSS). ----
+  function fstep(n, label, sub) {
+    return '<div class="fstep"><div class="fnum">' + n + '</div>'
+      + '<div class="flbl">' + label + '</div><div class="fsub">' + sub + '</div></div>';
+  }
+  const funnel = '<div class="funnel">'
+    + fstep(PP_BASELINE_COUNT, "Orderable parts", "Performance Parts baseline")
+    + '<div class="farrow">→</div>'
+    + fstep(survey.activeParts.length, "Refresh scope", survey.activeKits.length + " active scopes")
+    + '</div>';
+
+  // ---- 2 active scopes: real parts, grouped by reading kit directly.
+  // Display-only — not groupIntoKits, not touched or wired this phase. ----
+  function realCard(p) {
+    const replaces = p.replaces.length
+      ? '<div class="pp-card-replaces">Replaces <span class="mono">' + p.replaces.join(", ") + '</span></div>'
+      : "";
+    return '<div class="pp-card" data-part="' + p.partNumber + '">'
+      + '<div class="pp-card-part">' + p.partNumber + '</div>'
+      + '<div class="pp-card-desc">' + p.description + '</div>'
+      + '<div class="pp-card-price">' + money(p.price) + '</div>'
+      + replaces
+      + '<div class="pp-card-stub">Full detail — Phase 4</div>'
+      + '</div>';
+  }
+  const activeScopes = RL3_ACTIVE_SCOPES.map(function (scope) {
+    const parts = partsForKit(scope.key);
+    return '<div class="pp-scope">'
+      + '<div class="pp-scope-head">' + scope.label + '<span class="pp-scope-count">' + parts.length + ' parts</span></div>'
+      + '<div class="pp-card-grid">' + parts.map(realCard).join("") + '</div>'
+      + '</div>';
+  }).join("");
+
+  // ---- 4 coming-soon scopes: labels only, no real content behind them. ----
+  function ghostCard(label) {
+    return '<div class="pp-card pp-ghost" data-ghost="' + label + '">'
+      + '<div class="pp-card-part">' + label + '</div>'
+      + '<div class="pp-card-desc">Not part of this refresh</div>'
+      + '<div class="pp-card-stub">Coming soon</div>'
+      + '</div>';
+  }
+  const comingSoon = '<div class="pp-scope">'
+    + '<div class="pp-scope-head">Other systems<span class="pp-scope-count">not in this refresh</span></div>'
+    + '<div class="pp-card-grid">' + RL3_COMING_SOON_SCOPES.map(ghostCard).join("") + '</div>'
+    + '</div>';
+
+  const main = '<div class="pp-main">'
+    + funnel
+    + '<div class="pp-source">Baseline data from Hussmann Performance Parts (serial ' + info.serial + ').</div>'
+    + activeScopes
+    + comingSoon
+    + '</div>';
+
+  document.getElementById("ppShell").innerHTML = crumb + search + '<div class="pp-body">' + rail + main + '</div>';
+  document.getElementById("ppShell").classList.add("show");
+  wireRealShellEvents();
+  playRealRevealSequence();
+}
+
+// Cards are not clickable-to-drawer yet (Phase 4). Clicking toggles a small
+// inline stub note in place — "Full detail — Phase 4" for real parts,
+// "Coming soon" for the greyed scopes. No drawer, no navigation. The unwired
+// rail rows get the same treatment: click reveals "Managed by the pipeline,"
+// never a silent no-op. The 3 wired facets are display-only — not clickable —
+// their state is set by playRealRevealSequence(), not by user interaction.
+function wireRealShellEvents() {
+  document.querySelectorAll("#ppShell .pp-card").forEach(function (card) {
+    card.addEventListener("click", function () {
+      const stub = card.querySelector(".pp-card-stub");
+      if (stub) stub.classList.toggle("show");
+    });
+  });
+  document.querySelectorAll("#ppShell .pp-rail-blank-row").forEach(function (row) {
+    row.addEventListener("click", function () {
+      const note = row.querySelector(".pp-rail-managed-note");
+      if (note) note.classList.toggle("show");
+    });
+  });
+}
+
+// Reveal sequence for the real-case shell (#ppShell). Separate from
+// playRevealSequence() above, which continues to serve the retired
+// placeholder pipeline unchanged — from here forward, pipeline reveal beats
+// play on #ppShell. The 3 rail facets light up right as the funnel settles —
+// "the survey runs" — just before the resulting cards stagger in.
+function playRealRevealSequence() {
+  const cardStagger = prefersReducedMotion() ? 0 : 90;
+  const funnelEls = document.querySelectorAll("#ppShell .funnel");
+  staggerReveal(funnelEls, 0, 300, null, function () {
+    document.querySelectorAll("#ppShell .pp-rail-facet").forEach(function (el) {
+      el.classList.add("lit");
+    });
+    const cards = document.querySelectorAll("#ppShell .pp-card");
+    staggerReveal(cards, cardStagger, 220, null, null);
+  });
 }
 
 function renderComponentGrid() {
