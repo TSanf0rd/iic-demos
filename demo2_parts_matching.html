@@ -883,6 +883,28 @@
       .pp-card { transition: none !important; }
     }
 
+    /* ====== BOM NETTING -> KIT GROUPING (Phase 5) — reuses the existing
+       .funnel/.verdict-row/.recon-badge language already defined above (same
+       visual grammar the retired resolve panel uses), now driven by the real
+       RL3 adapters. Additive section inside #ppShell. ====== */
+    .pp-netting { margin-top: 24px; }
+    .pp-section-head {
+      font-family: var(--font-display); font-size: 13px; font-weight: 400;
+      letter-spacing: 0.12em; text-transform: uppercase; color: var(--navy);
+      margin-bottom: 12px;
+    }
+    .pp-kit-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); gap: 14px; }
+    .pp-kit-card {
+      background: var(--surface); border: 1.5px solid var(--rule-2); border-radius: var(--radius-lg);
+      padding: 16px; opacity: 1; transform: none; transition: opacity .22s ease, transform .22s ease;
+    }
+    .pp-kit-card.pre { opacity: 0; transform: translateY(4px); }
+    .pp-kit-name { font-size: 14.5px; font-weight: 700; color: var(--navy); }
+    .pp-kit-sub { font-size: 12.5px; color: var(--ink-2); margin-top: 6px; }
+    @media (prefers-reduced-motion: reduce) {
+      .pp-kit-card { transition: none !important; }
+    }
+
     /* ====== PART-DETAIL DRAWER (Phase 4) — clicking a real card opens this.
        Ghost cards are unaffected (still "Coming soon"). Mirrors what the real
        store shows (part #, description, image, price) and adds the three
@@ -1703,6 +1725,102 @@ function getCaseRefresh(serial) {
   };
 }
 
+// ----------------------------------------------------------------------------
+//  Phase 5 — BOM netting -> kit grouping, real RL-3 data through the ACTUAL
+//  protected pipeline (resolveBOM, groupIntoKits, reconcileKits). Two
+//  adapters reshape RL3's real fields into what those functions expect; the
+//  functions themselves are never edited. getCaseRefresh can't be reused
+//  here — it hardcodes KIT_CATALOG (the placeholder catalog), so this
+//  composes the same three protected calls directly against the RL3 catalog.
+// ----------------------------------------------------------------------------
+
+// ADAPTER #1 (unprotected) — resolveBOM expects flat {partNumber, qty, desc,
+// category} lines and nets by summing qty per partNumber. RL3_RAW_BOM already
+// carries the raw lines (current part + the legacy number it replaces, both
+// at the same qty) — this adapter passes those through, then ADDS the
+// synthesized negative that zeroes each legacy number out, read from the
+// real replaces[] chains (never a hand-typed legacy list). It never rewrites
+// a current part's own line, so a current part can never absorb the legacy
+// qty (0428562 stays +4, never becomes +8) — the negative always targets the
+// legacy partNumber's own accumulator key, not the current part's.
+function buildBomNettingLines() {
+  const lines = [];
+  RL3_RAW_BOM.forEach(function (raw) {
+    const part = RL3_PARTS.find(function (p) { return p.partNumber === raw.line; });
+    lines.push(part
+      ? { partNumber: part.partNumber, qty: raw.qty, desc: part.description, category: part.kit }
+      : { partNumber: raw.line, qty: raw.qty, desc: "Legacy part", category: "legacy" });
+  });
+  RL3_PARTS.forEach(function (p) {
+    p.replaces.forEach(function (legacyNumber) {
+      const legacyRaw = RL3_RAW_BOM.find(function (r) { return r.line === legacyNumber; });
+      if (!legacyRaw) return;  // not on this raw BOM — nothing to net, nothing invented
+      lines.push({ partNumber: legacyNumber, qty: -legacyRaw.qty, desc: "Legacy part", category: "legacy" });
+    });
+  });
+  return lines;
+}
+
+// ADAPTER #2 (unprotected) — groupIntoKits expects refreshParts.category to
+// match a catalog entry's memberCategories. Adapter #1 already aliased
+// category := kit on the way in, so this only builds the matching 1-category-
+// per-kit catalog; RL3_PARTS itself is never mutated.
+const RL3_KIT_CATALOG = {
+  door_rebuild: { memberCategories: ["door_rebuild"], name: RL3_KITS.door_rebuild.label },
+  case_seal:    { memberCategories: ["case_seal"],    name: RL3_KITS.case_seal.label },
+};
+
+// groupIntoKits (protected) prices kit subtotals off the module-level
+// PRICE_INDEX built from BOM_CATALOG. Extending that shared lookup with RL3's
+// real prices — not touching groupIntoKits itself — is what makes its
+// subtotal math correct for real parts instead of silently reading 0.
+RL3_PARTS.forEach(function (p) { PRICE_INDEX[p.partNumber] = p.price; });
+
+// Composes the real pipeline: resolveBOM -> groupIntoKits -> reconcileKits,
+// all three protected and byte-identical, fed through the two adapters above.
+function getRL3Refresh() {
+  const resolved = resolveBOM(buildBomNettingLines());          // PROTECTED
+  const refreshParts = resolved.kept;                            // every survivor here is refresh-relevant for this case
+  const grouped = groupIntoKits(refreshParts, RL3_KIT_CATALOG);  // PROTECTED
+  const recon = reconcileKits(refreshParts, RL3_KIT_CATALOG);    // PROTECTED
+  return {
+    rawCount: RL3_RAW_BOM.length,
+    resolvedParts: resolved.kept,
+    droppedParts: resolved.dropped,
+    kits: grouped.kits,
+    leftover: grouped.leftover,
+    reconcile: recon,
+  };
+}
+
+// Presentation-layer reconciliation (unprotected, adapter-side). reconcileKits
+// above keeps running unmodified — its net-qty-vs-kit-count invariant is
+// real and still computed into refresh.reconcile — but that invariant is a
+// placeholder-era assumption ("1 unit consumed per kit membership") that
+// doesn't fit real multi-unit BOMs: under 1-category-per-kit aliasing every
+// RL3 part's kitsUsing is 1, so reconcileKits only reconciles true for the
+// one part whose real qty happens to be 1. Forcing quantities to 1 to make
+// it pass would be wrong — the quantities are correct. This is the
+// invariant that actually describes kit grouping: every refresh part maps to
+// EXACTLY ONE kit — none orphaned (in zero kits), none double-assigned (in
+// more than one). refresh.reconcile is intentionally never rendered; this is
+// the only reconciliation state that reaches the DOM.
+function checkKitCoverage(refresh) {
+  const counts = {};
+  refresh.kits.forEach(function (kit) {
+    kit.members.forEach(function (p) {
+      counts[p.partNumber] = (counts[p.partNumber] || 0) + 1;
+    });
+  });
+  const total = refresh.resolvedParts.length;
+  const covered = Object.keys(counts).filter(function (pn) { return counts[pn] === 1; }).length;
+  const doubleAssigned = Object.keys(counts).filter(function (pn) { return counts[pn] > 1; }).length;
+  const orphaned = refresh.leftover.length;
+  return {
+    total: total, covered: covered, orphaned: orphaned, doubleAssigned: doubleAssigned,
+    allOk: orphaned === 0 && doubleAssigned === 0 && covered === total,
+  };
+}
 
 // ============================================================================
 //  INCOMING SURVEY  —  the hand-off from Step 2 (public_smart_survey_v2)
@@ -2448,6 +2566,10 @@ function renderRealShell(info) {
   // Resolved-case photo (presentation pass, pre-Phase-5) — the one real case
   // this demo covers. Not part of the protected RESOLVED_CASE mirror (that
   // stays byte-identical to rl3_real_parts.js), so it's its own constant.
+  // Phase 5 — BOM netting -> kit grouping, through the real protected pipeline.
+  const refresh = getRL3Refresh();
+  const netting = buildNettingHtml(refresh);
+
   const main = '<div class="pp-main">'
     + funnel
     + '<div class="pp-case-photo-row">'
@@ -2456,12 +2578,151 @@ function renderRealShell(info) {
     + '</div>'
     + activeScopes
     + comingSoon
+    + netting
+    + '<div class="quote-card" id="ppQuote"></div>'
+    + '<div class="oracle-confirm" id="ppOracleConfirm"></div>'
     + '</div>';
 
   document.getElementById("ppShell").innerHTML = crumb + search + '<div class="pp-body">' + rail + main + '</div>';
   document.getElementById("ppShell").classList.add("show");
   wireRealShellEvents();
-  playRealRevealSequence();
+  playRealRevealSequence(refresh);
+}
+
+// Builds the Phase 5 netting + kit-grouping markup: reuses the existing
+// .funnel/.verdict-row/.recon-badge language (same visual grammar as the
+// retired resolve panel), now driven by getRL3Refresh()'s real data. Pure
+// string builder — no DOM access — so it can be unit-inspected independent
+// of rendering/timing.
+function buildNettingHtml(refresh) {
+  function fstep(n, label, sub) {
+    return '<div class="fstep"><div class="fnum">' + n + '</div>'
+      + '<div class="flbl">' + label + '</div><div class="fsub">' + sub + '</div></div>';
+  }
+  const nettingFunnel = '<div class="funnel">'
+    + fstep(refresh.rawCount, "Raw BOM lines", "current + legacy")
+    + '<div class="farrow">→</div>'
+    + fstep(refresh.resolvedParts.length, "Netted parts", "supersessions resolved")
+    + '</div>';
+
+  function verdictRow(p, opts) {
+    opts = opts || {};
+    const cut = opts.struck ? ' cut drawn' : '';
+    const qty = opts.qtyLabel || ('×' + p.net);
+    const note = opts.note ? '<span class="verdict-note">' + opts.note + '</span>' : '';
+    return '<div class="verdict-row' + cut + '">'
+      + '<div class="verdict-line">'
+      + '<span class="verdict-part">' + p.partNumber + '</span>'
+      + '<span class="verdict-desc">' + p.desc + '</span>'
+      + '<span class="verdict-qty">' + qty + '</span>'
+      + '</div>'
+      + note
+      + '</div>';
+  }
+  // Which current part's replaces[] names this legacy number — read from the
+  // real chains, never a hand-typed "X supersedes Y" list.
+  function supersededBy(legacyPartNumber) {
+    const owner = RL3_PARTS.find(function (p) { return p.replaces.indexOf(legacyPartNumber) !== -1; });
+    return owner ? owner.partNumber : null;
+  }
+  const dropRows = refresh.droppedParts.map(function (p) {
+    const owner = supersededBy(p.partNumber);
+    return verdictRow(p, { struck: true, qtyLabel: "cancelled", note: (owner ? "Superseded by " + owner : "Superseded") + " — line removed" });
+  }).join("");
+  const verdictSummary = '<div class="verdict-summary">' + refresh.resolvedParts.length + ' netted · ' + refresh.droppedParts.length + ' cancelled to zero</div>';
+
+  // Reconciliation shown on screen: kit-coverage (checkKitCoverage), NOT
+  // reconcileKits's net-qty-vs-kit-count result. reconcileKits still runs
+  // (inside getRL3Refresh, untouched) but its result is intentionally never
+  // rendered — see checkKitCoverage's comment for why that invariant doesn't
+  // fit real multi-unit BOMs. This badge is the only reconciliation state
+  // that reaches the DOM, and its caption names the actual check performed.
+  const coverage = checkKitCoverage(refresh);
+  const reconBadge = '<div class="recon-badge ' + (coverage.allOk ? 'ok' : 'fail') + '">'
+    + (coverage.allOk ? '✓ ' : '✗ ')
+    + coverage.covered + ' of ' + coverage.total + ' parts assigned to a kit, ' + coverage.orphaned + ' orphaned'
+    + (coverage.doubleAssigned ? ', ' + coverage.doubleAssigned + ' double-assigned' : '')
+    + '</div>';
+
+  const kitCards = refresh.kits.map(function (kit) {
+    return '<div class="pp-kit-card">'
+      + '<div class="pp-kit-name">' + kit.name + '</div>'
+      + '<div class="pp-kit-sub">' + kit.partCount + ' parts · ' + money(kit.subtotal) + ' parts subtotal</div>'
+      + '</div>';
+  }).join("");
+
+  return '<div class="pp-netting" id="ppNetting">'
+    + '<div class="pp-section-head">BOM netting</div>'
+    + nettingFunnel
+    + verdictSummary
+    + '<div class="verdict-list">' + dropRows + '</div>'
+    + reconBadge
+    + '<div class="pp-section-head" style="margin-top:20px">Kit grouping</div>'
+    + '<div class="pp-kit-grid">' + kitCards + '</div>'
+    + '</div>';
+}
+
+// Real quote totals — qty-weighted (real per-part BOM quantities, not a flat
+// 1-per-line count), so the total reflects what this refresh actually costs.
+// List price reuses Phase 4's exact drawerPriceModel() so it can never
+// diverge from the drawer's own numbers.
+function realQuoteTotals(refresh) {
+  let listTotal = 0, contractTotal = 0;
+  RL3_PARTS.forEach(function (part) {
+    const resolvedEntry = refresh.resolvedParts.find(function (rp) { return rp.partNumber === part.partNumber; });
+    const netQty = resolvedEntry ? resolvedEntry.net : 0;
+    const pm = drawerPriceModel(part);
+    listTotal += pm.list * netQty;
+    contractTotal += pm.contract * netQty;
+  });
+  const savingsAbs = listTotal - contractTotal;
+  const savingsPct = (savingsAbs / listTotal) * 100;
+  return { listTotal: listTotal, contractTotal: contractTotal, savingsAbs: savingsAbs, savingsPct: savingsPct };
+}
+
+// Real quote + order — same visual language as the retired pipeline's
+// renderQuote()/oracle-confirm (q-table/q-total/oracle-confirm classes),
+// driven by the real 8-part qty-weighted totals. The savings line carries
+// the same "illustrative — sample pricing" tag as Phase 4: a mockup number,
+// not a business claim.
+function renderRL3Quote(refresh) {
+  const totals = realQuoteTotals(refresh);
+  const rows = RL3_PARTS.map(function (part) {
+    const resolvedEntry = refresh.resolvedParts.find(function (rp) { return rp.partNumber === part.partNumber; });
+    const netQty = resolvedEntry ? resolvedEntry.net : 0;
+    return '<tr>'
+      + '<td class="mono">' + part.partNumber + '</td>'
+      + '<td>' + part.description + '</td>'
+      + '<td class="num">' + netQty + '</td>'
+      + '<td class="num">' + money(part.price * netQty) + '</td>'
+      + '</tr>';
+  }).join("");
+
+  const quoteId = "QT-2026-" + String(Math.floor(1000 + Math.random() * 9000));
+
+  document.getElementById("ppQuote").innerHTML =
+    '<div class="q-title">Quote — Doors &amp; Bumpers/Seals Refresh, ' + RESOLVED_CASE.description + '</div>'
+    + '<table class="q-table">'
+    + '<thead><tr><th>Part</th><th>Description</th><th class="num">Qty</th><th class="num">Price</th></tr></thead>'
+    + '<tbody>' + rows
+    + '<tr class="q-total"><td colspan="3">Quote total (contract price)</td><td class="num">' + money(totals.contractTotal) + '</td></tr>'
+    + '</tbody></table>'
+    + '<div class="drawer-illustrative-tag">Illustrative — sample pricing, not a live quote</div>'
+    + '<div class="drawer-savings">List ' + money(totals.listTotal) + ' vs. contract ' + money(totals.contractTotal) + ' — save ' + money(totals.savingsAbs) + ' (' + totals.savingsPct.toFixed(0) + '%)</div>'
+    + '<div class="q-id">Quote ' + quoteId + ' · 8 BOM-verified parts · Pending quoter review</div>'
+    + '<div class="quote-actions"><button class="btn primary" id="ppApproveQuoteBtn">Approve quote</button></div>';
+
+  document.getElementById("ppQuote").classList.add("show");
+  setStep(4);
+
+  document.getElementById("ppApproveQuoteBtn").addEventListener("click", function () {
+    const orderId = "ORD-2026-" + String(Math.floor(10000 + Math.random() * 89999));
+    document.getElementById("ppOracleConfirm").innerHTML =
+      '<div class="oracle-title">Quote approved</div>'
+      + 'Order <span class="mono">' + orderId + '</span> created in Oracle via Adaptia. '
+      + 'Parts demand generated · Estimated ship in 5 weeks · Now trackable in Live Order Tracking (Demo 3).';
+    document.getElementById("ppOracleConfirm").classList.add("show");
+  });
 }
 
 // Real cards open the part-detail drawer (Phase 4). Ghost cards keep the
@@ -2561,16 +2822,41 @@ function closeDrawer() {
 // playRevealSequence() above, which continues to serve the retired
 // placeholder pipeline unchanged — from here forward, pipeline reveal beats
 // play on #ppShell. The 3 rail facets light up right as the funnel settles —
-// "the survey runs" — just before the resulting cards stagger in.
-function playRealRevealSequence() {
+// "the survey runs" — just before the resulting cards stagger in. Phase 5
+// folds netting -> kits -> quote -> order onto the END of this SAME sequence,
+// additive to the existing stagger — nothing above the Phase-5 block changed.
+function playRealRevealSequence(refresh) {
   const cardStagger = prefersReducedMotion() ? 0 : 90;
+  const rowStagger = prefersReducedMotion() ? 0 : 170;
+  const beat = prefersReducedMotion() ? 0 : 700;
   const funnelEls = document.querySelectorAll("#ppShell .funnel");
   staggerReveal(funnelEls, 0, 300, null, function () {
     document.querySelectorAll("#ppShell .pp-rail-facet").forEach(function (el) {
       el.classList.add("lit");
     });
     const cards = document.querySelectorAll("#ppShell .pp-card");
-    staggerReveal(cards, cardStagger, 220, null, null);
+    staggerReveal(cards, cardStagger, 220, null, function () {
+      // ---- Phase 5: netting (strikes) -> kit grouping -> quote -> order ----
+      setTimeout(function () {
+        const dropRows = document.querySelectorAll("#ppNetting .verdict-row");
+        staggerReveal(dropRows, rowStagger, 320, function (row) {
+          if (row.classList.contains("cut")) row.classList.add("drawn");
+        }, function () {
+          setTimeout(function () {
+            const kitCards = document.querySelectorAll("#ppNetting .pp-kit-card");
+            staggerReveal(kitCards, cardStagger, 220, null, function () {
+              setTimeout(function () {
+                renderRL3Quote(refresh);
+                setTimeout(function () {
+                  const btn = document.getElementById("ppApproveQuoteBtn");
+                  if (btn) btn.click();
+                }, beat);
+              }, beat);
+            });
+          }, beat);
+        });
+      }, beat);
+    });
   });
 }
 
