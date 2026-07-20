@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-<title>Refresh Estimate — Hussmann</title>
+<title>Refresh Scope — Hussmann</title>
 <style>
   :root{
     --navy:#0B2D4D;--navy-2:#143D63;--blue:#1E6BB8;--blue-soft:#E5EFFB;--gold:#C99A2E;
@@ -52,21 +52,12 @@
   .result{position:sticky;top:20px;}
   .result .rc{background:var(--navy);color:#fff;border-radius:var(--radius-lg);padding:22px;}
   .result .rc .k{font-size:11.5px;text-transform:uppercase;letter-spacing:1px;color:#A9C4DE;}
-  .result .rc .range{font-size:30px;font-weight:700;letter-spacing:-0.5px;margin:4px 0 2px;}
+  .result .rc .range{font-size:26px;font-weight:700;letter-spacing:-0.5px;margin:4px 0 2px;}
   .result .rc .per{font-size:12.5px;color:#C7DBEF;}
-  .rec{margin-top:16px;padding:11px 13px;border-radius:var(--radius);font-size:13px;font-weight:600;}
-  .rec.now{background:var(--amber-bg);color:var(--amber-ink);}
-  .rec.soon{background:var(--blue-soft);color:var(--navy);}
-  .rec.mon{background:var(--green-bg);color:var(--green-ink);}
   .flagged{margin-top:14px;}
   .flagged .ft{font-size:11.5px;text-transform:uppercase;letter-spacing:.5px;color:var(--ink-3);margin-bottom:7px;}
   .flagged .item{font-size:13px;color:var(--ink-2);padding:5px 0;border-bottom:1px solid var(--border);display:flex;justify-content:space-between;gap:10px;}
   .flagged .item:last-child{border-bottom:none;}
-  .conf{margin-top:14px;}
-  .conf .bar{height:7px;border-radius:999px;background:var(--border);overflow:hidden;margin-top:5px;}
-  .conf .bar>span{display:block;height:100%;background:var(--blue);border-radius:999px;transition:width .4s;}
-  .conf .t{font-size:11.5px;color:var(--ink-3);}
-  .replace{margin-top:12px;padding:11px 13px;border-radius:var(--radius);background:var(--amber-bg);color:var(--amber-ink);font-size:12.5px;line-height:1.5;}
   .caveat{margin-top:14px;font-size:11.5px;color:var(--ink-3);line-height:1.5;}
   .btn{width:100%;font-family:var(--font);font-size:14px;font-weight:600;padding:13px;border-radius:var(--radius);border:none;background:var(--gold);color:#fff;cursor:pointer;margin-top:14px;}
   .btn:hover{background:#b8891f;}
@@ -76,95 +67,111 @@
   .privacy .lock{flex-shrink:0;}
   .sent{background:var(--green-bg);border:1px solid #BFE3C8;color:var(--green-ink);padding:14px;border-radius:var(--radius);font-size:13.5px;display:none;}
   .sent.show{display:block;}
+
+  /* ====== Logic-build additions (this phase) — reuse existing tokens only,
+     no palette change. Re-skin is a later phase. ====== */
+  .illustrative-tag{font-size:11px;font-style:italic;color:var(--ink-3);margin-top:6px;}
+  .example-btn{font-family:var(--font);font-size:12.5px;font-weight:600;color:var(--navy);background:var(--surface);border:1px solid var(--border-2);border-radius:999px;padding:8px 14px;cursor:pointer;}
+  .example-btn:hover{border-color:var(--blue);}
+  textarea.freetext{width:100%;font-family:var(--font);font-size:14px;padding:11px 13px;border:1px solid var(--border-2);border-radius:var(--radius);background:var(--surface-2);resize:vertical;min-height:70px;}
+  textarea.freetext:focus{outline:none;border-color:var(--blue);background:#fff;}
+  .scope-chip-row{display:flex;flex-wrap:wrap;gap:8px;margin-top:10px;}
+  /* "Why?" reasoning chip — same interaction pattern as demo2's card-level
+     chip (toggle -> popover), but THIS variant carries a confidence number,
+     since here the scope comes from interpreting free text, not a lookup. */
+  .reason-chip{position:relative;display:inline-block;}
+  .reason-chip-toggle{display:inline-flex;align-items:center;gap:6px;font-family:var(--font);font-size:13px;font-weight:600;color:#fff;background:var(--navy);border:1px solid var(--navy);border-radius:999px;padding:7px 13px;cursor:pointer;}
+  .reason-chip-toggle .num{font-family:var(--font-mono);}
+  .reason-chip-toggle:hover{background:var(--navy-2);}
+  .reason-pop{display:none;position:absolute;left:0;top:100%;margin-top:6px;z-index:20;width:270px;background:var(--navy);color:#E7EEF6;border-radius:var(--radius);padding:12px 14px;font-size:12.5px;line-height:1.55;box-shadow:0 10px 24px rgba(11,45,77,.24);}
+  .reason-chip.open .reason-pop{display:block;}
+  .reason-pop b{color:#fff;}
+  .custom-row{display:flex;align-items:center;gap:10px;margin-top:10px;}
+  .custom-row input[type=checkbox]{width:16px;height:16px;}
+  .custom-row label{font-size:13.5px;color:var(--ink-2);cursor:pointer;}
+  .summary-line{font-size:13.5px;color:var(--navy);font-weight:600;line-height:1.5;margin-top:4px;}
+  .final-line{font-size:13px;color:var(--ink-2);line-height:1.5;margin-top:10px;padding-top:10px;border-top:1px dashed var(--border);}
 </style>
 </head>
 <body>
   <div class="topbar">
     <div class="brand"><div class="brand-mark">H</div>
-      <div class="brand-text"><div class="name">Hussmann Refresh</div><div class="sub">Instant estimate</div></div>
+      <div class="brand-text"><div class="name">Hussmann Refresh</div><div class="sub">Scope your refresh</div></div>
     </div>
     <span style="font-size:12px;color:#A9C4DE;">A Panasonic Company</span>
   </div>
 
   <div class="page">
     <div class="hero">
-      <h1>Get a refresh estimate for your cases</h1>
-      <p>Answer a few quick questions about your refrigeration cases &mdash; no serial numbers or technical details needed. You&rsquo;ll get an instant estimate range, and a Hussmann specialist will follow up with a precise quote.</p>
-      <p style="margin-top:8px;">Refreshing worn cases can restore their look and extend their life for a fraction of a full remodel &mdash; this helps you see whether a refresh is the right call for yours.</p>
+      <h1>Scope your refresh</h1>
+      <p>Describe what&rsquo;s going on with your case in your own words, or pick the areas that need attention directly. We&rsquo;ll turn that into a refresh scope a Hussmann specialist can quote precisely.</p>
     </div>
 
     <div class="layout">
       <div><!-- left column -->
-      <!-- ============ QUESTIONNAIRE (the public, layperson inputs) ============ -->
+      <!-- ============ CASE + SCOPE ============ -->
       <div class="card">
-        <div class="q">
-          <div class="label">1. What does this case hold?</div>
-          <div class="sub">Pick the closest match.</div>
-          <div class="chips" id="contentsChips"></div>
-        </div>
-
-        <div class="q">
-          <div class="label">2. Roughly how old is it?</div>
-          <div class="sub">A rough guess is fine.</div>
-          <div class="chips" id="ageChips"></div>
-        </div>
-
-        <!-- PATH A: one field a customer CAN find, unlocking model + verified age -->
+        <!-- PATH A: one field a customer CAN find, unlocking a recognized install record -->
         <div class="q" style="background:var(--blue-soft);border:1px solid #BCD6F2;border-radius:10px;padding:15px;">
           <div class="label">Have the case&rsquo;s serial or model number? <span style="font-weight:400;color:var(--ink-3);">(optional)</span></div>
-          <div class="sub">It&rsquo;s on a metal plate inside or behind the case. One number makes your estimate far more precise.</div>
-          <input type="text" id="serialInput" placeholder="e.g. HSM-D5X-081247-2017  or  D5X" style="font-family:var(--font-mono);" autocomplete="off" />
+          <div class="sub">It&rsquo;s on a metal plate inside or behind the case. If we recognize it, we can personalize what follows.</div>
+          <input type="text" id="serialInput" placeholder="e.g. MY25H067107" style="font-family:var(--font-mono);" autocomplete="off" />
           <div style="margin-top:9px;">
             <button type="button" id="scanBtn" style="font-family:var(--font);font-size:12.5px;font-weight:600;color:var(--navy);background:var(--surface);border:1px solid var(--border-2);border-radius:999px;padding:8px 14px;cursor:pointer;">&#128247; Scan the plate</button>
             <span style="font-size:11.5px;color:var(--ink-3);margin-left:8px;">Point-and-scan (demo) &mdash; reads the serial for you.</span>
+            <button type="button" id="exampleBtn" class="example-btn" style="margin-left:8px;">Try the Schnucks example</button>
           </div>
           <div id="serialBanner" style="margin-top:10px;font-size:13px;line-height:1.5;display:none;"></div>
-          <div id="configBlock" style="display:none;margin-top:12px;"></div>
         </div>
 
+        <!-- ============ FEATURE 1 — the one AI beat: free text -> interpreted
+             scope + confidence. Confidence appears ONLY here in the whole file. ============ -->
         <div class="q">
-          <div class="label">3. What are you noticing? <span style="font-weight:400;color:var(--ink-3);">(select all that apply)</span></div>
-          <div class="sub">These everyday signs tell us which parts to look at &mdash; no part names required.</div>
-          <div class="chips" id="symptomChips"></div>
-          <div style="margin-top:16px;padding-top:14px;border-top:1px dashed var(--border);font-size:12.5px;color:var(--ink-2);font-weight:600;">Already know what needs attention? Pick the areas directly:</div>
-          <div class="chips" id="concernChips" style="margin-top:9px;"></div>
+          <div class="label">Describe the store&rsquo;s condition, or what you&rsquo;re looking for</div>
+          <div class="sub">In your own words &mdash; we&rsquo;ll interpret it into a refresh scope. This is the one place an AI reads anything on this page.</div>
+          <textarea class="freetext" id="freeText" placeholder="e.g. The doors look worn and the bumpers and seals are scuffed up."></textarea>
+          <div id="interpretedScope"></div>
         </div>
 
+        <!-- ============ FEATURE 2 — clean scope selection, no AI, no confidence,
+             no chip. Same scope names Demo 2 uses for its own refresh scopes. ============ -->
         <div class="q">
-          <div class="label">4. How many cases like this?</div>
-          <div class="sub">We&rsquo;ll estimate for the whole set.</div>
-          <div class="count-row">
-            <input type="range" id="countRange" min="1" max="30" step="1" value="1" />
-            <span class="count-val" id="countVal">1 case</span>
-          </div>
+          <div class="label">Or pick the areas directly <span style="font-weight:400;color:var(--ink-3);">(select all that apply)</span></div>
+          <div class="sub">A direct pick is captured exactly as selected &mdash; no interpretation, no confidence.</div>
+          <div class="chips" id="scopeChips"></div>
         </div>
+      </div><!-- case + scope card -->
 
-        <div class="q">
-          <div class="label">5. Where is the store?</div>
-          <div class="sub">Climate affects how fast cases wear. We only use your region.</div>
-          <select id="regionSelect">
-            <option value="">Select a region&hellip;</option>
-            <option value="gulf_coast">Gulf Coast / coastal</option>
-            <option value="southeast">Southeast / humid</option>
-            <option value="midwest">Midwest</option>
-            <option value="northeast">Northeast</option>
-            <option value="mountain">Mountain / dry</option>
-            <option value="west_coast">West Coast</option>
-          </select>
+      <!-- ============ FEATURE 3 — Customization, no AI. Explicit requirements
+           only: color personalization (when the serial is recognized) and
+           dimensional modifications. Never carries a chip or a confidence. ============ -->
+      <div class="card">
+        <div style="font-size:13.5px;font-weight:600;color:var(--navy);margin-bottom:2px;">Customization</div>
+        <div style="font-size:12.5px;color:var(--ink-3);margin-bottom:16px;">Explicit changes to this build &mdash; captured as stated, not inferred.</div>
+        <div class="q" id="colorBlock"></div>
+        <div class="q" style="margin-bottom:0;">
+          <div class="label">Dimensional modifications</div>
+          <div class="sub">Optional structural changes to the refresh build.</div>
+          <div class="custom-row"><input type="checkbox" id="modBumperDepth"><label for="modBumperDepth">Reduce bumper depth</label></div>
+          <div class="custom-row"><input type="checkbox" id="modDoorEdge"><label for="modDoorEdge">Narrow the door-edge profile</label></div>
         </div>
+      </div><!-- customization card -->
 
-        <div class="q">
-          <div class="label">6. Where should we send your estimate?</div>
-          <div class="sub">A specialist will follow up with a precise quote.</div>
+      <!-- ============ LEAD CAPTURE ============ -->
+      <div class="card">
+        <div class="q" style="margin-bottom:0;">
+          <div class="label">Where should we send this?</div>
+          <div class="sub">A specialist will follow up with a quoted price for this scope.</div>
           <div class="lead-grid">
             <input type="text" id="leadName" placeholder="Your name" />
             <input type="email" id="leadEmail" placeholder="Email" />
             <input type="text" id="leadCompany" placeholder="Store or company (optional)" style="grid-column:1/-1;" />
           </div>
         </div>
-      </div><!-- questionnaire card -->
+      </div>
 
-      <!-- ============ OPTIONAL TARGETING (feeds the internal predictive model) ============ -->
+      <!-- ============ OPTIONAL TARGETING (pure lead metadata — no pricing tier,
+           no lifecycle timing; both were removed with the price estimate) ============ -->
       <div class="card">
         <div style="font-size:13.5px;font-weight:600;color:var(--navy);">Optional — helps us prepare</div>
         <div style="font-size:12.5px;color:var(--ink-3);margin:2px 0 16px;">A few extra details get you a faster, more tailored follow-up. Skip any you&rsquo;re unsure of.</div>
@@ -183,33 +190,30 @@
         <div class="q" style="margin-bottom:0;">
           <div class="label">Are you already a Hussmann customer?</div>
           <div class="chips" id="customerChips"></div>
-          <div id="accountBlock" style="display:none;margin-top:14px;padding-top:14px;border-top:1px solid var(--border);"></div>
         </div>
       </div>
       </div><!-- left column -->
 
-      <!-- ============ RESULT (estimate RANGE, not a quote) ============ -->
+      <!-- ============ RESULT (refresh SCOPE, not a price) ============ -->
       <div class="result">
         <div class="card" style="padding:18px;">
-          <div id="placeholder" class="placeholder">Answer questions 1&ndash;3 to see your estimate.</div>
+          <div id="placeholder" class="placeholder">Describe your case above, or pick the areas directly, to see the refresh scope.</div>
           <div id="resultBody" style="display:none;">
             <div class="rc">
-              <div class="k" id="rcLabel">Estimated range</div>
+              <div class="k">Refresh scope</div>
               <div class="range" id="rangeText">&mdash;</div>
               <div class="per" id="perText"></div>
             </div>
-            <div class="rec" id="recBox"></div>
             <div class="flagged" id="flaggedBox"></div>
-            <div id="climateNote" style="display:none;font-size:12px;color:var(--ink-2);margin-top:8px;padding:9px 12px;background:var(--surface-2);border:1px solid var(--border);border-radius:8px;"></div>
-            <div class="replace" id="replaceBox" style="display:none;"></div>
-            <div class="conf">
-              <div class="t" id="confText">Estimate confidence</div>
-              <div class="bar"><span id="confBar" style="width:0%"></span></div>
+            <div class="flagged" id="customBox" style="margin-top:14px;">
+              <div class="ft">Customization</div>
+              <div class="summary-line" id="customSummary"></div>
             </div>
-            <div class="caveat">This is an estimate range based on your answers, not a quote. The more you tell us, the tighter the range. A specialist confirms the exact price after an on-site survey.</div>
+            <div class="final-line" id="finalLine"></div>
+            <div class="caveat">Future phase: quoter-priced estimate. This scope is handed to a Hussmann quoter for exact contract pricing &mdash; no price is shown here.</div>
             <button class="btn" id="submitBtn" disabled>Request my specialist</button>
             <div class="sent" id="sentMsg"></div>
-            <div class="privacy"><span class="lock">&#128274;</span><span>Your answers stay within Hussmann&rsquo;s systems and are used only to prepare your estimate.</span></div>
+            <div class="privacy"><span class="lock">&#128274;</span><span>Your answers stay within Hussmann&rsquo;s systems and are used only to prepare your scope.</span></div>
           </div>
         </div>
       </div>
@@ -217,471 +221,270 @@
   </div>
 
 <!-- ============================================================================
-     SCRIPT 1 — DATA + DOMAIN. The customer speaks in SYMPTOMS; we translate to
-     PARTS. Everything here is pure logic (no UI), same as the internal demos.
+     SCRIPT 1 — DATA + DOMAIN. One AI beat (free text -> interpreted scope +
+     confidence); everything else is explicit, no-AI capture. Price-estimate
+     math and lifecycle-timing prediction are cut from this demo entirely.
      ========================================================================= -->
 <script>
-// SYMPTOM_MAP — the heart of a public survey. A layperson observation maps to a
-// likely part + a rough installed cost range. This is the "WebMD" step: the
-// customer never names a gasket; they say "doors don't seal" and we infer it.
-// (Python parallel: a dict of dicts.)
-const SYMPTOM_MAP = {
-  foggy_glass: { label:"Foggy / cloudy glass",     part:"door_glass", low:500,  high:1100, zone:"exterior" },
-  worn_trim:   { label:"Worn or scuffed trim",     part:"bumper",     low:150,  high:400,  zone:"exterior" },
-  dim_lights:  { label:"Dim or flickering lights", part:"led_kit",    low:350,  high:700,  zone:"interior" },
-  bad_seal:    { label:"Doors don't seal well",    part:"gasket",     low:200,  high:500,  zone:"interior" },
-  loud_warm:   { label:"Running loud or warm",     part:"compressor", low:1500, high:3200, zone:"interior" },
-  frost_ice:   { label:"Frost or ice buildup",     part:"coil",       low:700,  high:1600, zone:"interior" },
-};
-
-// PART_CONCERNS — George's DIRECT self-service path. Some customers don't want
-// to describe symptoms; they can already see what's worn ("the bumper and fascia
-// are scuffed"). So they pick the AREA directly. Each concern maps to the SAME
-// canonical `part` key the symptom path uses where they overlap (bumper, glass,
-// lighting, seals) so the two paths DEDUP cleanly and never double-count; the
-// exterior-only areas (front panel, fascia, shelves, wire racks) get their own
-// keys. Same downstream engine — just a second, more direct on-ramp.
-const PART_CONCERNS = {
-  bumper:      { label:"Bumper / trim",        part:"bumper",     low:150, high:400,  zone:"exterior" },
-  front_panel: { label:"Front panel",          part:"front_panel",low:300, high:800,  zone:"exterior" },
-  fascia:      { label:"Fascia (front frame)", part:"fascia",     low:250, high:650,  zone:"exterior" },
-  shelves:     { label:"Shelves",              part:"shelves",    low:200, high:600,  zone:"interior" },
-  wire_racks:  { label:"Wire racks / baskets", part:"wire_racks", low:150, high:450,  zone:"interior" },
-  doors_glass: { label:"Doors / glass",        part:"door_glass", low:500, high:1100, zone:"exterior" },
-  lighting:    { label:"Lighting",             part:"led_kit",    low:350, high:700,  zone:"interior" },
-  seals:       { label:"Door seals",           part:"gasket",     low:200, high:500,  zone:"interior" },
-};
-
-// rough install labor per case (unknown case size on a public form -> a range)
-const LABOR = { low:600, high:1200 };
-
-// older cases lean toward a fuller refresh -> nudge the estimate up.
-const AGE_BUMP = { under5:1.0, y5_10:1.05, y10_15:1.15, y15plus:1.30, unsure:1.15 };
-
-// region -> climate, INTERNAL lookup (no external weather API; nothing leaves
-// the tenant). Climate mainly drives URGENCY here, not price.
-const REGION_CLIMATE = {
-  gulf_coast:"coastal", southeast:"humid", midwest:"temperate",
-  northeast:"temperate", mountain:"dry", west_coast:"temperate",
-};
-
-// CLIMATE_SEVERITY — how hard a climate is on a case (0..1). Used ONLY to nudge
-// urgency, and (per George) weighted DOWN for exterior/aesthetic work: climate
-// wears INTERIOR/functional components far more than it does trim and panels.
-const CLIMATE_SEVERITY = { coastal:1.0, humid:0.7, temperate:0.25, dry:0.15 };
-
-// CASES — the PATH A unlock. A recognized serial gives us model + year (age)
-// with certainty, replacing several guessed answers with one verified fact.
-// In production this lookup happens at the GATEWAY (rate-limited so nobody can
-// enumerate serials to scrape the install base) and returns only customer-safe
-// fields — model name + rough age — never the full BOM or pricing.
-const CASES = {
-  "HSM-D5X-081247-2017":  { model:"D5X",  name:"D5X Multi-Deck",       year:2017 },
-  "HSM-D5LE-121892-2019": { model:"D5LE", name:"D5LE Multi-Deck (LE)", year:2019 },
-};
-
-// CASE_CONFIG — serial -> CONFIGURATION -> likely refresh KITS (George's lineage).
-// ---------------------------------------------------------------------------
-// This is the CUSTOMER-SAFE result of a resolution that, in production, runs
-// SERVER-SIDE at the gateway using the SAME engine as Demo 2:
-//     serial -> raw config BOM -> resolveBOM() -> filterRefreshParts() -> groupIntoKits()
-// The client must never see the raw BOM, part numbers, quantities, or pricing
-// (a public page's source is readable by anyone). So the gateway strips all of
-// that and returns ONLY what's safe to show a customer: the plain build summary
-// and kit NAMES with plain-language coverage. Same engine, filtered surface —
-// exactly the safe/unsafe boundary the account-gated pricing also rides on.
-const CASE_CONFIG = {
-  "HSM-D5X-081247-2017": {
-    build: "Stainless bumper, heavy-duty brackets, and high-CRI lighting",
-    kits: [
-      { name: "Bumper Refresh Kit",     covers: "The exterior bumper, its brackets, hanger, and mounting hardware" },
-      { name: "Front Panel Refresh Kit", covers: "The front panel, surrounding fascia, and top rail" },
-    ],
-  },
-};
-
-// NATIONAL_ACCOUNTS — contracted pricing tiers (a rate multiplier off street price).
-// ---------------------------------------------------------------------------
-// SECURITY-CRITICAL: a pricing tier is NEVER granted on an unauthenticated client
-// claim. "Are you a customer? -> yes" is a self-report anyone can click; trusting
-// it would let any visitor pull national pricing. In production these rates live
-// SERVER-SIDE and the gateway applies them ONLY AFTER verifying the account's
-// identity (SSO/OAuth against the customer portal). They appear in the client here
-// purely for the demo, gated behind a mocked verification step. This is the same
-// trust boundary as the serial->config->kit lineage, applied to price.
-const NATIONAL_ACCOUNTS = {
-  walmart: { name:"Walmart", rate:0.82 },
-  kroger:  { name:"Kroger",  rate:0.85 },
-  target:  { name:"Target",  rate:0.84 },
-};
-
-// pull a 4-digit year out of any serial (formats drift, so we search, not slice)
-function extractYear(s) { const m = String(s).match(/\b(19|20)\d{2}\b/); return m ? parseInt(m[0], 10) : null; }
-
-// map a manufacture year to the same age buckets the customer picks from
-function ageBucketFromYear(y) {
-  if (!y) return null;
-  const a = new Date().getFullYear() - y;
-  if (a < 5) return "under5"; if (a < 10) return "y5_10"; if (a < 15) return "y10_15"; return "y15plus";
+// Shared seeded install/config record — Demo 2's install-history feature will
+// read the SAME record (serial-keyed), so the two demos can never contradict.
+// .get(serial)-style lookup; a missing serial returns null (graceful "no
+// record found," never a crash) rather than throwing.
+const INSTALL_RECORDS = new Map([
+  ["MY25H067107", {
+    customer:     "Schnucks",                     // illustrative
+    storeManager: "Tim Figge",                     // illustrative
+    model:        "RL-3",                          // real — matches demo2's RESOLVED_CASE.model
+    modelFull:    "RL-3*M000000652-2025-08-28",     // real — matches demo2's RESOLVED_CASE.modelFull
+    factoryOrder: "882867",                         // real — matches demo2's RESOLVED_CASE.factoryOrder
+    description:  "Reach-In Merchandiser",          // real — matches demo2's RESOLVED_CASE.description
+    currentColor: "white",                          // illustrative — the color this case is in today
+  }],
+]);
+function getInstallRecord(serial) {
+  return INSTALL_RECORDS.get((serial || "").trim().toUpperCase()) || null;
 }
 
-// resolve a typed serial into { verified, model, name, year }.
-// verified = exact catalog hit (highest trust); partial = we parsed a year only.
-function resolveSerial(raw) {
-  const s = (raw || "").trim().toUpperCase();
-  if (!s) return null;
-  if (CASES[s]) return Object.assign({ serial:s, verified:true, config: CASE_CONFIG[s] || null }, CASES[s]);
-  const yr = extractYear(s);
-  const model = s.split("-")[1] || null;
-  if (yr || model) return { serial:s, verified:false, model:model, name:(model ? model + " (from number)" : "Hussmann case"), year:yr };
-  return { serial:s, verified:false, model:null, year:null };
+// The scope vocabulary — the SAME names Demo 2 uses for its own refresh
+// scopes (Doors, Bumpers/Seals are demo2's two active scopes; the rest
+// mirror its "coming soon" set), so a scope named here can never disagree
+// with demo2.
+const SCOPE_CATEGORIES = [
+  "Doors", "Bumpers/Seals", "Lighting",
+  "Controls & Electrical", "Refrigeration & Air Handling", "Shelves & Merchandising",
+];
+
+// FEATURE 1 — the one AI beat. Illustrative phrase -> scope + confidence
+// mapping: a keyword lookup standing in for the eventual language-
+// understanding step. Confidence values are illustrative, chosen only so the
+// seeded demo phrase produces a legible result — not derived from any model.
+// This is the ONLY confidence concept in the file.
+const SCOPE_PHRASE_MAP = [
+  { scope: "Doors",         confidence: 0.90, keywords: ["door", "doors"] },
+  { scope: "Bumpers/Seals", confidence: 0.80, keywords: ["bumper", "bumpers", "seal", "seals"] },
+];
+const DEMO_SCOPE_TEXT = "The doors look worn and the bumpers and seals are scuffed up."; // illustrative
+
+// Finds a short word-window around the matched keyword so the chip can quote
+// "because you wrote '...'" against the actual phrase, not just the keyword.
+function triggerSnippet(text, keyword) {
+  const words = text.split(/\s+/);
+  const idx = words.findIndex(function (w) { return w.toLowerCase().indexOf(keyword) !== -1; });
+  if (idx === -1) return text.trim();
+  const start = Math.max(0, idx - 3), end = Math.min(words.length, idx + 4);
+  return words.slice(start, end).join(" ").replace(/[.,]+$/, "");
 }
 
-// --- turn selected symptoms AND directly-picked concerns into one deduped list
-// of likely parts + cost ranges. Both on-ramps feed the same list; the `seen`
-// guard on the canonical `part` key means a symptom and a direct pick that point
-// to the SAME part are counted once (e.g. "worn trim" + "Bumper / trim").
-function flaggedParts(symptoms, concerns) {
-  const seen = {}; const out = [];
-  function add(part, label, low, high, zone) {
-    if (seen[part]) return;
-    seen[part] = true;
-    out.push({ part:part, label:label, low:low, high:high, zone:zone });
-  }
-  (symptoms || []).forEach(function (s) { const m = SYMPTOM_MAP[s];   if (m) add(m.part, m.label, m.low, m.high, m.zone); });
-  (concerns || []).forEach(function (c) { const m = PART_CONCERNS[c]; if (m) add(m.part, m.label, m.low, m.high, m.zone); });
-  return out;
+// Illustrative keyword lookup — NOT real NLP. Every hit carries its own
+// scope + confidence + the phrase that triggered it.
+function interpretScopeText(text) {
+  const t = (text || "").toLowerCase();
+  const hits = [];
+  SCOPE_PHRASE_MAP.forEach(function (row) {
+    const hitWord = row.keywords.find(function (k) { return t.indexOf(k) !== -1; });
+    if (hitWord) hits.push({ scope: row.scope, confidence: row.confidence, trigger: triggerSnippet(text, hitWord) });
+  });
+  return hits;
 }
 
-// --- completeness: how much did they actually tell us? Drives range width.
-// "not sure" answers DON'T count. (Python: sum of truthy checks / total.)
-function completeness(st) {
-  let have = 0; const total = 5;
-  if (st.contents) have++;
-  if (st.age && st.age !== "unsure") have++;
-  if (st.symptoms.length || st.concerns.length) have++;
-  if (st.count > 0) have++;
-  if (st.region) have++;
-  return have / total;
-}
-
-// --- per-case estimate. Sum flagged parts + labor, nudge by age, then WIDEN
-// the high side as completeness drops. Less data -> wider range = honesty.
-function estimateCase(flagged, ageBucket, comp, verified) {
-  let low  = flagged.reduce(function (s,f){ return s + f.low;  }, 0) + LABOR.low;
-  let high = flagged.reduce(function (s,f){ return s + f.high; }, 0) + LABOR.high;
-  const bump = AGE_BUMP[ageBucket] || 1.0;
-  low  = low  * bump;
-  high = high * bump;
-  // unknowns rarely make a job CHEAPER, so we widen upward only. A VERIFIED
-  // serial means model + age are known, so the range widens far less.
-  const widenRate = verified ? 0.15 : 0.4;
-  high = high * (1 + (1 - comp) * widenRate);
-  return { low: round100(low), high: round100(high) };
-}
-
-// --- recommendation: WHEN to act, from issue count + age (the lifecycle read),
-// with an optional climateBoost (0..1) that can pull a borderline case up. The
-// boost is already interior-weighted by the caller, so an exterior-only refresh
-// barely moves — George's point that climate isn't what drives aesthetic work.
-function recommendation(issueCount, ageBucket, climateBoost) {
-  climateBoost = climateBoost || 0;
-  const old = ageBucket === "y10_15" || ageBucket === "y15plus";
-  if (ageBucket === "y15plus" && issueCount >= 3)
-    return { cls:"now", text:"Refresh recommended now", replace:true };
-  if (issueCount >= 3 || old)
-    return { cls:"now", text:"Refresh recommended", replace:false };
-  if (issueCount >= 1) {
-    if (climateBoost >= 0.6)
-      return { cls:"now", text:"Refresh recommended — climate is accelerating wear", replace:false };
-    return { cls:"soon", text:"Refresh advisable within 1–2 years", replace:false };
-  }
-  return { cls:"mon", text:"Monitoring — no immediate action", replace:false };
-}
-
-function round100(x) { return Math.round(x / 100) * 100; }
-function money(x) { return "$" + x.toLocaleString("en-US"); }
+// FEATURE 3 — illustrative sample of Hussmann's full color program (250+
+// real options; this is a demo-sized slice, labeled as such in the UI).
+const CUSTOM_COLORS = ["White", "Black", "Stainless", "Graphite", "Navy Blue", "Forest Green", "Charcoal", "Almond"];
 </script>
 
 <!-- ============================================================================
      SCRIPT 2 — UI wiring + the (simulated) public submission.
      ========================================================================= -->
 <script>
-const state = { contents:null, age:null, symptoms:[], concerns:[], count:1, region:null,
-                serial:"", serialInfo:null,                       // Path A
-                remodel:null, storeCases:0, existingCustomer:null, // targeting extras
-                accountVerified:false, accountKey:null,            // account-gated pricing
-                name:"", email:"", company:"" };
-const AGE_OPTS = [["under5","Under 5 yrs"],["y5_10","5–10 yrs"],["y10_15","10–15 yrs"],["y15plus","15+ yrs"],["unsure","Not sure"]];
-const $ = function (id){ return document.getElementById(id); };
+const state = {
+  serial: "", record: null,                         // Path A / shared install record
+  freeText: "", interpreted: [],                     // Feature 1 (the one AI beat)
+  explicitScopes: [],                                // Feature 2 (no AI, no confidence)
+  color: "", bumperDepth: false, doorEdge: false,     // Feature 3 (no AI, no confidence)
+  remodel: null, storeCases: 0, existingCustomer: null, // pure lead-targeting metadata
+  name: "", email: "", company: "",
+};
+const $ = function (id) { return document.getElementById(id); };
 
 // single-select chip group
 function singleChips(containerId, options, key) {
   const box = $(containerId);
   box.innerHTML = options.map(function (o, i) {
-    return '<div class="chip' + (state[key]===o[0]?' on':'') + '" data-i="'+i+'">'+o[1]+'</div>';
+    return '<div class="chip' + (state[key] === o[0] ? ' on' : '') + '" data-i="' + i + '">' + o[1] + '</div>';
   }).join("");
   box.querySelectorAll(".chip").forEach(function (el) {
     el.addEventListener("click", function () {
-      state[key] = options[parseInt(el.getAttribute("data-i"),10)][0];
+      state[key] = options[parseInt(el.getAttribute("data-i"), 10)][0];
       singleChips(containerId, options, key); recompute();
     });
   });
 }
-// multi-select chip group (symptoms) — toggles membership in an array
-function multiChips(containerId, options, key) {
-  const box = $(containerId);
-  box.innerHTML = options.map(function (o, i) {
-    const on = state[key].indexOf(o[0]) > -1;
-    return '<div class="chip multi'+(on?' on':'')+'" data-i="'+i+'">'+o[1]+'</div>';
+
+// Feature 2 — explicit scope picks. Multi-select, styled identically to any
+// other chip group in this file — no visual distinction implies AI. Toggles
+// membership in state.explicitScopes; never touches confidence.
+function scopeChips() {
+  const box = $("scopeChips");
+  box.innerHTML = SCOPE_CATEGORIES.map(function (name, i) {
+    const on = state.explicitScopes.indexOf(name) > -1;
+    return '<div class="chip multi' + (on ? ' on' : '') + '" data-i="' + i + '">' + name + '</div>';
   }).join("");
   box.querySelectorAll(".chip").forEach(function (el) {
     el.addEventListener("click", function () {
-      const v = options[parseInt(el.getAttribute("data-i"),10)][0];
-      const arr = state[key]; const idx = arr.indexOf(v);
-      if (idx > -1) arr.splice(idx,1); else arr.push(v);   // toggle
-      multiChips(containerId, options, key); recompute();
+      const name = SCOPE_CATEGORIES[parseInt(el.getAttribute("data-i"), 10)];
+      const idx = state.explicitScopes.indexOf(name);
+      if (idx > -1) state.explicitScopes.splice(idx, 1); else state.explicitScopes.push(name);
+      scopeChips(); recompute();
     });
   });
 }
 
+// Feature 1 — renders one reasoning chip per interpreted scope. Each chip
+// carries ITS OWN confidence + the trigger phrase from the actual free text.
+// This is the only place a confidence number is ever rendered in this file.
+function renderInterpreted() {
+  const box = $("interpretedScope");
+  if (!state.interpreted.length) {
+    box.innerHTML = state.freeText.trim()
+      ? '<div class="illustrative-tag">No scope recognized in that text yet — try mentioning "doors" or "bumpers/seals".</div>'
+      : "";
+    return;
+  }
+  box.innerHTML = '<div class="scope-chip-row">' + state.interpreted.map(function (hit) {
+    return '<div class="reason-chip">'
+      + '<button type="button" class="reason-chip-toggle">' + hit.scope + ' <span class="num">' + hit.confidence.toFixed(2) + '</span></button>'
+      + '<div class="reason-pop">'
+      +   '<b>' + hit.scope + ' ' + hit.confidence.toFixed(2) + '</b> &mdash; because you wrote &ldquo;' + hit.trigger + '&rdquo;'
+      +   '<div class="illustrative-tag" style="color:#A9C4DE;">Illustrative confidence &mdash; not a live model.</div>'
+      + '</div>'
+      + '</div>';
+  }).join("") + '</div>';
+  box.querySelectorAll(".reason-chip-toggle").forEach(function (btn) {
+    btn.addEventListener("click", function (e) {
+      e.stopPropagation();
+      btn.closest(".reason-chip").classList.toggle("open");
+    });
+  });
+}
+
+// Feature 3 — color personalization. A recognized serial gets "currently X,
+// want to change it?" with a "keep current" default; an unrecognized serial
+// gets the generic picker — no personalization, no error either way.
+function renderColorBlock() {
+  const box = $("colorBlock");
+  const rec = state.record;
+  const opts = CUSTOM_COLORS.map(function (c) {
+    const sel = state.color === c ? " selected" : "";
+    return '<option value="' + c + '"' + sel + '>' + c + '</option>';
+  }).join("");
+  const label = rec
+    ? "This case is currently <strong>" + rec.currentColor + "</strong> — would you like to update the color?"
+    : "Select desired color";
+  box.innerHTML =
+      '<div class="label">' + label + '</div>'
+    + '<select id="colorSelect"><option value="">' + (rec ? "Keep current (" + rec.currentColor + ")" : "No change") + '</option>' + opts + '</select>'
+    + '<div class="illustrative-tag">Illustrative — sample of Hussmann’s full color program (250+ real options).</div>';
+  $("colorSelect").addEventListener("change", function () { state.color = this.value; recompute(); });
+}
+
+// Union of interpreted + explicit scopes, deduped by name — the combined
+// refresh scope this survey hands off, regardless of which path supplied it.
+function combinedScope() {
+  const names = {};
+  state.interpreted.forEach(function (h) { names[h.scope] = true; });
+  state.explicitScopes.forEach(function (s) { names[s] = true; });
+  return Object.keys(names);
+}
+
+function customizationParts() {
+  const parts = [];
+  if (state.color) parts.push("custom color: " + state.color.toLowerCase() + (state.record ? " (was " + state.record.currentColor + ")" : ""));
+  if (state.bumperDepth) parts.push("bumper depth reduced");
+  if (state.doorEdge) parts.push("door edge narrowed");
+  return parts;
+}
+
 function recompute() {
-  updateAccountVisibility();
-  const verified = !!(state.serialInfo && state.serialInfo.verified);
-  const ready = state.contents && state.age && (state.symptoms.length > 0 || state.concerns.length > 0);
+  const scope = combinedScope();
+  const ready = scope.length > 0;
   $("placeholder").style.display = ready ? "none" : "block";
   $("resultBody").style.display  = ready ? "block" : "none";
   $("submitBtn").disabled = !(ready && state.name && state.email);
+  renderInterpreted();
   if (!ready) return;
 
-  const flagged = flaggedParts(state.symptoms, state.concerns);
-  const comp = completeness(state);
-  const per = estimateCase(flagged, state.age, comp, verified);
-  const total = { low: per.low * state.count, high: per.high * state.count };
+  $("rangeText").textContent = scope.join(" + ");
+  $("perText").textContent = state.interpreted.length && state.explicitScopes.length
+    ? "from your description + direct picks"
+    : state.interpreted.length ? "from your description" : "from your direct picks";
 
-  // Account-gated pricing: a VERIFIED national account sees its contracted rate;
-  // everyone else sees the anonymous street range. (In production the rate is
-  // applied server-side after auth — see NATIONAL_ACCOUNTS note.)
-  const acct = (state.accountVerified && state.accountKey) ? NATIONAL_ACCOUNTS[state.accountKey] : null;
-  const rate = acct ? acct.rate : 1;
-  const showTotal = { low: round100(total.low * rate), high: round100(total.high * rate) };
-  const showPer   = { low: round100(per.low  * rate), high: round100(per.high  * rate) };
+  // Explicit picks — deliberately plain text, no chip, no confidence. The
+  // bright line: interpreted text gets a chip + a number; direct picks don't.
+  $("flaggedBox").innerHTML = state.explicitScopes.length
+    ? '<div class="ft">Selected directly</div>' + state.explicitScopes.map(function (s) {
+        return '<div class="item"><span>' + s + '</span><span></span></div>';
+      }).join("")
+    : "";
 
-  $("rcLabel").textContent = acct ? ("National-account pricing · " + acct.name) : "Estimated range";
-  $("rangeText").textContent = money(showTotal.low) + " – " + money(showTotal.high);
-  $("perText").textContent = state.count > 1
-    ? state.count + " cases · " + money(showPer.low) + "–" + money(showPer.high) + " each"
-    : "for 1 case, installed";
+  const custom = customizationParts();
+  $("customSummary").textContent = custom.length ? custom.join(", ") : "No customization requested";
 
-  // Environment refinement (George): climate accelerates wear mostly on INTERIOR
-  // components; exterior/aesthetic refresh is far less climate-driven. So weight
-  // the climate nudge by the INTERIOR share of the flagged issues.
-  const climate = REGION_CLIMATE[state.region];
-  const severity = CLIMATE_SEVERITY[climate] || 0;
-  const interiorCount = flagged.filter(function (f) { return f.zone === "interior"; }).length;
-  const interiorShare = flagged.length ? interiorCount / flagged.length : 0;
-  const climateBoost = severity * interiorShare;               // 0..1, interior-weighted
-
-  const rec = recommendation(flagged.length, state.age, climateBoost);
-  $("recBox").className = "rec " + rec.cls;
-  $("recBox").textContent = rec.text;
-
-  // "what we'd look at" — the inferred parts, in plain language
-  $("flaggedBox").innerHTML = '<div class="ft">What we&rsquo;d look at</div>' +
-    flagged.map(function (f) {
-      return '<div class="item"><span>'+f.label+'</span><span>'+money(f.low)+'–'+money(f.high)+'</span></div>';
-    }).join("");
-
-  // climate transparency (George's environment refinement) — explain the nudge
-  // in BOTH directions so the interior-vs-exterior weighting is visible.
-  const cn = $("climateNote");
-  if (state.region && flagged.length && severity >= 0.7) {
-    if (climateBoost >= 0.6) {
-      cn.style.display = "block";
-      cn.innerHTML = 'Your ' + climate + ' climate accelerates wear on interior components \u2014 we\u2019ve factored that into the timing above.';
-    } else if (interiorShare < 0.5) {
-      cn.style.display = "block";
-      cn.innerHTML = 'Your refresh is mostly exterior / aesthetic, which climate affects far less \u2014 so your ' + climate + ' climate didn\u2019t change the timing.';
-    } else { cn.style.display = "none"; }
-  } else { cn.style.display = "none"; }
-
-  // HONEST replace note (the 75–77% rule, surfaced to the customer)
-  if (rec.replace) {
-    $("replaceBox").style.display = "block";
-    $("replaceBox").innerHTML = "At this age and condition, a brand-new case may be more cost-effective than a full refresh. Your specialist will compare both options honestly.";
-  } else { $("replaceBox").style.display = "none"; }
-
-  // confidence = completeness. Fewer answers -> lower confidence, wider range.
-  const pct = Math.round(comp * 100);
-  $("confBar").style.width = pct + "%";
-  $("confText").textContent = verified
-    ? "Estimate confidence: " + pct + "% — verified from your serial number"
-    : "Estimate confidence: " + pct + "%" + (pct < 100 ? " — answer question " + nextMissing() + " to tighten it" : "");
+  $("finalLine").textContent = scope.join(" + ") + " refresh" + (custom.length ? " — " + custom.join(", ") : "");
 }
 
-function nextMissing() {
-  if (!state.contents) return "1"; if (!state.age || state.age==="unsure") return "2";
-  if (!state.symptoms.length && !state.concerns.length) return "3"; if (!state.count) return "4"; return "5";
+// Path A: recognized serial -> the shared install record personalizes the
+// color question and confirms customer/store/model; unrecognized -> a plain
+// "no record found" message, never an error, never a crash.
+function applySerial(raw) {
+  state.serial = (raw || "").trim();
+  state.record = getInstallRecord(state.serial);
+  const b = $("serialBanner");
+  if (!state.serial) {
+    b.style.display = "none";
+  } else if (state.record) {
+    b.style.display = "block";
+    b.innerHTML = '<span style="color:var(--green-ink);font-weight:600;">&#10003; Recognized:</span> '
+      + state.record.customer + ' &middot; ' + state.record.storeManager + ' &middot; ' + state.record.description;
+  } else {
+    b.style.display = "block";
+    b.innerHTML = '<span style="color:var(--ink-3);">No install record found for that serial — no problem, use the fields below.</span>';
+  }
+  renderColorBlock();
+  recompute();
 }
 
 // ---- the public SUBMISSION. In production this POSTs to the gateway, which
-// validates, rate-limits, writes the lead to CRM (feeding Step 1 targeting),
-// and returns ONLY the filtered estimate — never internal cost or margin.
+// validates, rate-limits, and writes the lead + scope to CRM. No price ships
+// from the client — pricing is the quoter's job, a future phase.
 function submitLead() {
-  // API NOTE — production shape (client holds NO secrets):
-  //   POST https://refresh.hussmann.com/api/estimate   (public, rate-limited)
-  //   body: { contents, age, symptoms, count, region, lead:{name,email,company} }
-  //   gateway -> validate -> CRM lead + estimate service -> filtered response
-  // PROVENANCE MATTERS: the internal models must know which features are
-  // VERIFIED (trust) vs. CUSTOMER-STATED (discount). We tag age's source so a
-  // confident guess can't pollute a confident fact.
-  const verified = !!(state.serialInfo && state.serialInfo.verified);
   const payload = {
-    case: { serial: state.serial || null,
-            model: state.serialInfo ? state.serialInfo.model : null,
-            ageSource: verified ? "verified_serial" : "customer_stated",
-            configRecognized: !!(state.serialInfo && state.serialInfo.config),
-            likelyKits: (state.serialInfo && state.serialInfo.config)
-                          ? state.serialInfo.config.kits.map(function (k) { return k.name; })
-                          : [] },
-    survey: { contents: state.contents, age: state.age, symptoms: state.symptoms, concerns: state.concerns, count: state.count },
-    // -> feeds the QUOTING model (what/how much)
-    targeting: { region: state.region, climate: REGION_CLIMATE[state.region] || "unknown",
-                 remodel: state.remodel, storeCases: state.storeCases,
-                 existingCustomer: state.existingCustomer },
-    // pricing tier is ADVISORY here; the gateway re-derives it from the verified
-    // identity server-side and never trusts a client-sent tier.
-    pricing: { tier: (state.accountVerified && state.accountKey) ? "national_account" : "anonymous_street",
-               account: state.accountVerified ? state.accountKey : null },
-    // -> feeds the PREDICTIVE-TARGETING model (who/when)
+    case: { serial: state.serial || null, recognized: !!state.record },
+    scope: { interpreted: state.interpreted, explicit: state.explicitScopes, combined: combinedScope() },
+    customization: { color: state.color || null, bumperDepth: state.bumperDepth, doorEdge: state.doorEdge },
+    targeting: { remodel: state.remodel, storeCases: state.storeCases, existingCustomer: state.existingCustomer },
     lead: { name: $("leadName").value, email: $("leadEmail").value, company: $("leadCompany").value },
   };
-  console.log("POST /api/estimate", payload);   // stand-in for the gateway call
+  console.log("POST /api/scope", payload);   // stand-in for the gateway call
   const s = $("sentMsg");
   s.className = "sent show";
-  s.textContent = "Thanks, " + (payload.lead.name || "there") + "! A Hussmann refresh specialist will follow up at " + (payload.lead.email || "your email") + " with a precise quote.";
+  s.textContent = "Thanks, " + (payload.lead.name || "there") + "! A Hussmann refresh specialist will follow up at " + (payload.lead.email || "your email") + " with a quoted price for this scope.";
   $("submitBtn").disabled = true;
 }
 
-// PATH A banner: recognized serial -> verified model+age (tightens estimate);
-// parsed year -> partial; nothing -> graceful fallback to the symptom path.
-// A RECOGNIZED serial also resolves to its configuration and likely refresh
-// kits (the customer-safe lineage), shown in #configBlock below the banner.
-function renderSerial() {
-  const info = state.serialInfo, b = $("serialBanner"), cfg = $("configBlock");
-  if (!state.serial) { b.style.display = "none"; cfg.style.display = "none"; return; }
-  b.style.display = "block";
-  const now = new Date().getFullYear();
-  if (info && info.verified) {
-    state.age = ageBucketFromYear(info.year);                 // verified age wins
-    singleChips("ageChips", AGE_OPTS, "age");                 // reflect it in the chips
-    b.innerHTML = '<span style="color:var(--green-ink);font-weight:600;">&#10003; Recognized: ' + info.name + ', built ' + info.year + ' (~' + (now - info.year) + ' yrs).</span> We have this model on file — your estimate just got more precise.';
-  } else if (info && info.year) {
-    state.age = ageBucketFromYear(info.year);
-    singleChips("ageChips", AGE_OPTS, "age");
-    b.innerHTML = '<span style="color:var(--navy);font-weight:600;">Got it.</span> Looks like a ~' + info.year + ' case (~' + (now - info.year) + ' yrs). We&rsquo;ll confirm on-site.';
-  } else {
-    b.innerHTML = '<span style="color:var(--ink-3);">We couldn&rsquo;t match that number — no problem, your answers below still give a solid estimate.</span>';
-  }
-
-  // Config -> kit lineage: only for a recognized serial whose build is on file.
-  if (info && info.verified && info.config) {
-    cfg.style.display = "block";
-    cfg.innerHTML = renderConfigHTML(info.config);
-  } else {
-    cfg.style.display = "none";
-  }
-}
-
-// Customer-safe rendering of the serial -> config -> kit result. NAMES and
-// plain coverage only — never part numbers, quantities, or pricing.
-function renderConfigHTML(config) {
-  const kitItems = config.kits.map(function (k) {
-    return '<div style="display:flex;gap:9px;align-items:flex-start;padding:8px 0;border-top:1px solid var(--border);">'
-      + '<span style="color:var(--blue);font-weight:700;flex-shrink:0;line-height:1.4;">&#10003;</span>'
-      + '<div><div style="font-weight:600;font-size:13px;color:var(--navy);">' + k.name + '</div>'
-      + '<div style="font-size:12px;color:var(--ink-2);">' + k.covers + '</div></div></div>';
-  }).join("");
-  return '<div style="background:var(--surface);border:1px solid #BCD6F2;border-radius:8px;padding:14px 15px;">'
-    + '<div style="font-size:12px;color:var(--ink-3);text-transform:uppercase;letter-spacing:.04em;font-weight:700;">Your case&rsquo;s build</div>'
-    + '<div style="font-size:13.5px;font-weight:600;color:var(--navy);margin-top:3px;">' + config.build + '</div>'
-    + '<div style="font-size:12.5px;color:var(--ink-2);margin-top:11px;margin-bottom:2px;">A refresh for this build usually involves:</div>'
-    + kitItems
-    + '<div style="font-size:11.5px;color:var(--ink-3);margin-top:10px;">Exact parts and pricing are confirmed by your specialist — this is a plain-language summary of your case&rsquo;s likely refresh.</div>'
-    + '</div>';
-}
-
-// ---- Account-gated pricing UI. The block is built ONCE (so an in-progress
-// selection isn't wiped on every recompute); recompute only toggles visibility.
-function setAcctStatus(html) { $("acctStatus").innerHTML = html; }
-
-function wireSignOut() {
-  const so = document.getElementById("acctSignOut");
-  if (so) so.addEventListener("click", function (e) {
-    e.preventDefault();
-    state.accountVerified = false; state.accountKey = null;
-    setAcctStatus(""); recompute();
-  });
-}
-
-function buildAccountBlock() {
-  const box = $("accountBlock");
-  const opts = Object.keys(NATIONAL_ACCOUNTS).map(function (k) {
-    return '<option value="' + k + '">' + NATIONAL_ACCOUNTS[k].name + '</option>';
-  }).join("");
-  box.innerHTML =
-      '<div style="font-size:12.5px;color:var(--ink-2);margin-bottom:8px;">National accounts have contracted pricing. Verify your account to see it applied.</div>'
-    + '<div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center;">'
-    + '  <select id="acctSelect" style="max-width:210px;"><option value="">Select your account&hellip;</option>' + opts + '</select>'
-    + '  <button class="btn" id="acctVerifyBtn" style="width:auto;padding:9px 16px;margin:0;">Verify account</button>'
-    + '</div>'
-    + '<div id="acctStatus" style="margin-top:9px;font-size:12.5px;line-height:1.5;"></div>'
-    + '<div style="margin-top:6px;font-size:11px;color:var(--ink-3);">Demo verification. In production this is a secure sign-in &mdash; contract pricing is applied server-side only after your identity is confirmed, never on a self-reported claim.</div>';
-
-  $("acctVerifyBtn").addEventListener("click", function () {
-    const k = $("acctSelect").value;
-    if (!k) { setAcctStatus('<span style="color:var(--amber-ink);">Select your account first.</span>'); return; }
-    // MOCK verification. Real flow: OAuth/SSO -> gateway confirms identity ->
-    // gateway returns the tier. The client never self-grants a discount.
-    state.accountVerified = true; state.accountKey = k;
-    setAcctStatus('<span style="color:var(--green-ink);font-weight:600;">&#10003; Verified: ' + NATIONAL_ACCOUNTS[k].name
-      + ' &mdash; national-account pricing applied.</span> <a href="#" id="acctSignOut" style="color:var(--blue);">Sign out</a>');
-    wireSignOut();
-    recompute();
-  });
-}
-
-// Show the account block only when the visitor says they're a customer; reset
-// any verification if they switch away (so pricing can't stick after opt-out).
-function updateAccountVisibility() {
-  const box = $("accountBlock");
-  if (state.existingCustomer === "yes") {
-    box.style.display = "block";
-  } else {
-    box.style.display = "none";
-    if (state.accountVerified) { state.accountVerified = false; state.accountKey = null; setAcctStatus(""); }
-  }
-}
-
 function init() {
-  singleChips("contentsChips", [["frozen","Frozen"],["dairy","Dairy"],["produce","Produce"],["deli","Deli / prepared"],["drinks","Drinks"],["fresh_food","Fresh food"]], "contents");
-  singleChips("ageChips", AGE_OPTS, "age");
+  scopeChips();
   singleChips("remodelChips", [["none","No"],["lt12","Within 12 months"],["y1_3","1–3 years"],["exploring","Just exploring"]], "remodel");
   singleChips("customerChips", [["yes","Yes"],["no","No"],["unsure","Not sure"]], "existingCustomer");
-  multiChips("symptomChips", [["foggy_glass","Foggy / cloudy glass"],["worn_trim","Worn or scuffed trim"],["dim_lights","Dim or flickering lights"],["bad_seal","Doors don't seal well"],["loud_warm","Running loud or warm"],["frost_ice","Frost or ice buildup"]], "symptoms");
-  multiChips("concernChips", [["bumper","Bumper / trim"],["front_panel","Front panel"],["fascia","Fascia"],["shelves","Shelves"],["wire_racks","Wire racks"],["doors_glass","Doors / glass"],["lighting","Lighting"],["seals","Door seals"]], "concerns");
+  renderColorBlock();
 
-  $("countRange").addEventListener("input", function () {
-    state.count = parseInt(this.value,10);
-    $("countVal").textContent = this.value + (this.value === "1" ? " case" : " cases");
+  $("freeText").addEventListener("input", function () {
+    state.freeText = this.value;
+    state.interpreted = interpretScopeText(this.value);
     recompute();
   });
-  $("regionSelect").addEventListener("change", function () { state.region = this.value; recompute(); });
-  $("serialInput").addEventListener("input", function () {
-    state.serial = this.value.trim();
-    state.serialInfo = resolveSerial(this.value);
-    renderSerial(); recompute();
-  });
+  $("modBumperDepth").addEventListener("change", function () { state.bumperDepth = this.checked; recompute(); });
+  $("modDoorEdge").addEventListener("change", function () { state.doorEdge = this.checked; recompute(); });
+  $("serialInput").addEventListener("input", function () { applySerial(this.value); });
   $("storeRange").addEventListener("input", function () {
     state.storeCases = parseInt(this.value, 10);
     $("storeVal").textContent = this.value === "0" ? "—" : (this.value + "+");
@@ -690,27 +493,37 @@ function init() {
   ["leadName","leadEmail","leadCompany"].forEach(function (id) {
     $(id).addEventListener("input", function () { state[id.replace("lead","").toLowerCase()] = this.value; recompute(); });
   });
-  buildAccountBlock();
 
-  // Photo/QR plate scan (George's field-capture idea). MOCK: a real build would
-  // open the camera, capture the plate, and OCR the serial. Here we simulate the
-  // capture delay, then fill the serial and run the normal resolution path — so
-  // the scan reuses the exact serial->config->kit lineage, no separate code path.
+  // Photo/QR plate scan (demo). MOCK: simulates the capture delay, then fills
+  // the serial and runs the normal resolution path — the scan reuses the
+  // exact same serial -> record lineage, no separate code path.
   $("scanBtn").addEventListener("click", function () {
     const b = $("serialBanner");
     b.style.display = "block";
-    $("configBlock").style.display = "none";
     b.innerHTML = '<span style="color:var(--navy);font-weight:600;">&#128247; Reading the serial plate&hellip;</span>';
-    this.disabled = true; this.textContent = "Scanning\u2026";
+    this.disabled = true; this.textContent = "Scanning…";
     const btn = this;
     setTimeout(function () {
-      const scanned = "HSM-D5X-081247-2017";              // what the OCR "read"
+      const scanned = "MY25H067107";              // what the OCR "read" — illustrative
       $("serialInput").value = scanned;
-      state.serial = scanned;
-      state.serialInfo = resolveSerial(scanned);
-      renderSerial(); recompute();
+      applySerial(scanned);
       btn.disabled = false; btn.innerHTML = "&#128247; Scan the plate";
     }, 1100);
+  });
+
+  // One-click seeded demo path (same convention as demo2's sample-chip):
+  // fills the exact Schnucks / Tim Figge / MY25H067107 scenario in one click.
+  $("exampleBtn").addEventListener("click", function () {
+    $("serialInput").value = "MY25H067107";
+    applySerial("MY25H067107");
+    $("freeText").value = DEMO_SCOPE_TEXT;
+    state.freeText = DEMO_SCOPE_TEXT;
+    state.interpreted = interpretScopeText(DEMO_SCOPE_TEXT);
+    $("colorSelect").value = "Black";
+    state.color = "Black";
+    $("modBumperDepth").checked = true; state.bumperDepth = true;
+    $("modDoorEdge").checked = true; state.doorEdge = true;
+    recompute();
   });
 
   $("submitBtn").addEventListener("click", submitLead);
