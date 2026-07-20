@@ -564,6 +564,15 @@
     .pp-card-price { font-size: 15px; font-weight: 700; color: var(--ink); margin-top: 2px; }
     .pp-card-replaces { font-size: 11px; color: var(--ink-3); }
     .pp-card-replaces .mono { font-family: var(--font-mono); }
+    /* Illustrative stock status — same tag convention as the drawer's price
+       block (.drawer-illustrative-tag, reused as-is below). */
+    .pp-card-stock-row { margin-top: 6px; }
+    .pp-card-stock {
+      display: inline-block; font-size: 11px; font-weight: 600;
+      border-radius: 999px; padding: 3px 10px;
+    }
+    .pp-card-stock.ok { background: var(--green-tint); color: var(--green); }
+    .pp-card-stock.backordered { background: var(--amber-tint); color: var(--amber); }
     /* Grid-card thumbnail (presentation pass, pre-Phase-5) — same
        partImageSrc() helper the Phase 4 drawer uses, so card and drawer
        can't diverge on which asset a part number resolves to. */
@@ -608,6 +617,48 @@
     @media (prefers-reduced-motion: reduce) {
       .pp-kit-card { transition: none !important; }
     }
+
+    /* ====== "WHY?" REASONING CHIP — deterministic (Option A), no confidence
+       number. Distinct .reason-* namespace, deliberately separate from the
+       drawer's own styling, so this component is reusable later (the survey
+       demo) with a confidence row added, without touching this markup. Radius
+       budget: var(--radius), 999px, 50% only. Ghost cards never get one. ====== */
+    .reason-chip { position: relative; display: inline-block; margin-top: 8px; }
+    .reason-chip-toggle {
+      display: inline-flex; align-items: center; gap: 5px;
+      font-family: var(--font-display); font-size: 10.5px; font-weight: 400;
+      letter-spacing: 0.08em; text-transform: uppercase; color: var(--blue);
+      background: var(--blue-tint); border: 1px solid var(--blue-tint-border);
+      border-radius: 999px; padding: 3px 10px 3px 8px; cursor: pointer;
+    }
+    .reason-chip-toggle:hover { border-color: var(--blue); }
+    .reason-chip-toggle .qmark {
+      width: 13px; height: 13px; border-radius: 50%;
+      background: var(--blue); color: #fff; font-size: 9px; font-weight: 700;
+      display: inline-flex; align-items: center; justify-content: center;
+      font-family: var(--font); text-transform: none; letter-spacing: 0;
+    }
+    .reason-pop {
+      display: none; position: absolute; left: 0; top: 100%; margin-top: 6px;
+      z-index: 20; width: 250px;
+      background: var(--navy); color: #E7EEF6; border-radius: var(--radius);
+      padding: 12px 14px; font-size: 11.5px; line-height: 1.5;
+      box-shadow: 0 10px 24px rgba(11,45,77,.24);
+    }
+    .reason-chip.open .reason-pop { display: block; }
+    .reason-pop-row { margin-bottom: 8px; }
+    .reason-pop-row:last-of-type { margin-bottom: 0; }
+    .reason-pop-lbl {
+      font-family: var(--font-display); font-size: 9px; font-weight: 400;
+      letter-spacing: 0.1em; text-transform: uppercase; color: #8FB4D9; margin-bottom: 2px;
+    }
+    .reason-pop-model { font-weight: 600; color: #fff; }
+    .reason-pop-link {
+      display: inline-block; margin-top: 8px; font-family: var(--font-display);
+      font-size: 10px; font-weight: 400; letter-spacing: 0.08em; text-transform: uppercase;
+      color: #8FB4D9; cursor: pointer;
+    }
+    .reason-pop-link:hover { color: #fff; }
 
     /* ====== PART-DETAIL DRAWER (Phase 4) — clicking a real card opens this.
        Ghost cards are unaffected (still "Coming soon"). Mirrors what the real
@@ -1088,6 +1139,38 @@ function supersessionText(p) {
   return p.replaces.length
     ? "Legacy " + p.replaces.join(", ") + " on the prior BOM — superseded, netted automatically."
     : "No legacy number on the prior BOM for this part — nothing to net.";
+}
+
+// STOCK STATUS — illustrative: rl3_real_parts.js carries no real
+// availability field. Exactly one exception is specified (0522314,
+// backordered with a 10-day lead); every other part is simply "in stock" —
+// no invented lead times beyond the one given.
+const BACKORDERED_PART = "0522314";
+const BACKORDER_LEAD_TEXT = "Backordered — 10-day lead";
+function stockStatusText(partNumber) {
+  return partNumber === BACKORDERED_PART ? BACKORDER_LEAD_TEXT : "In stock";
+}
+function isBackordered(partNumber) {
+  return partNumber === BACKORDERED_PART;
+}
+
+// "WHY?" REASONING CHIP — deterministic (Option A): this screen resolves by
+// lookup, not ranking, so the chip carries no confidence number. Reuses
+// supersessionText()/RL3_KITS directly rather than re-deriving the same
+// facts the drawer already shows — one source of truth. Distinct .reason-*
+// CSS namespace so this component is reusable later (survey demo) with a
+// confidence row added, without touching this markup.
+function reasonChipHtml(p) {
+  const kitLabel = RL3_KITS[p.kit] ? RL3_KITS[p.kit].label : p.kit;
+  return '<div class="reason-chip" data-part="' + p.partNumber + '">'
+    + '<button type="button" class="reason-chip-toggle"><span class="qmark">?</span> Why?</button>'
+    + '<div class="reason-pop">'
+    +   '<div class="reason-pop-row"><div class="reason-pop-lbl">Model</div><div class="reason-pop-model">Deterministic — supersession lookup, no model.</div></div>'
+    +   '<div class="reason-pop-row"><div class="reason-pop-lbl">Why this part</div><div>' + supersessionText(p) + '</div></div>'
+    +   '<div class="reason-pop-row"><div class="reason-pop-lbl">Kit membership</div><div>' + kitLabel + (p.refreshScope ? ' — in refresh scope' : '') + '</div></div>'
+    +   '<span class="reason-pop-link" data-open-drawer="' + p.partNumber + '">Full detail →</span>'
+    + '</div>'
+    + '</div>';
 }
 
 // PRICE — contract price is p.price, real and unaltered. List price is a
@@ -1735,6 +1818,11 @@ function renderRealShell(info) {
     const replaces = p.replaces.length
       ? '<div class="pp-card-replaces">Replaces <span class="mono">' + p.replaces.join(", ") + '</span></div>'
       : "";
+    const backordered = isBackordered(p.partNumber);
+    const stock = '<div class="pp-card-stock-row">'
+      + '<span class="pp-card-stock' + (backordered ? ' backordered' : ' ok') + '">' + stockStatusText(p.partNumber) + '</span>'
+      + '</div>'
+      + '<div class="drawer-illustrative-tag">Illustrative — sample availability</div>';
     return '<div class="pp-card" data-part="' + p.partNumber + '">'
       // same partImageSrc() the Phase 4 drawer calls — one resolver, card and
       // drawer can't disagree on which asset a part number maps to.
@@ -1743,6 +1831,8 @@ function renderRealShell(info) {
       + '<div class="pp-card-desc">' + p.description + '</div>'
       + '<div class="pp-card-price">' + money(p.price) + '</div>'
       + replaces
+      + stock
+      + reasonChipHtml(p)
       + '</div>';
   }
   const activeScopes = RL3_ACTIVE_SCOPES.map(function (scope) {
@@ -1951,6 +2041,23 @@ function wireRealShellEvents() {
     row.addEventListener("click", function () {
       const note = row.querySelector(".pp-rail-managed-note");
       if (note) note.classList.toggle("show");
+    });
+  });
+  // "Why?" chip — stopPropagation so opening/closing it never also triggers
+  // the card's own click-to-drawer handler above.
+  document.querySelectorAll("#ppShell .reason-chip-toggle").forEach(function (btn) {
+    btn.addEventListener("click", function (e) {
+      e.stopPropagation();
+      btn.closest(".reason-chip").classList.toggle("open");
+    });
+  });
+  // Chip does not duplicate the drawer's detail — "Full detail" opens the
+  // real drawer to the same facts instead of re-implementing them here.
+  document.querySelectorAll("#ppShell .reason-pop-link").forEach(function (link) {
+    link.addEventListener("click", function (e) {
+      e.stopPropagation();
+      const part = RL3_PARTS.find(function (p) { return p.partNumber === link.getAttribute("data-open-drawer"); });
+      if (part) openDrawer(part);
     });
   });
 }
