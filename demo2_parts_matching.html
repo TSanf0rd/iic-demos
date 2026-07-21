@@ -529,6 +529,17 @@
     }
 
     .pp-main { flex: 1; min-width: 0; }
+    /* Survey-confidence banner — blue-tinted like the rail's "AI-selected
+       from survey" facets, since this IS the survey's interpretation step.
+       The customization handoff (built elsewhere) deliberately reuses the
+       neutral .drawer-price-block instead — that content is explicit, no-AI
+       capture, so it does not get the blue AI treatment. */
+    .pp-survey-banner {
+      margin-bottom: 18px; padding: 14px 16px;
+      background: var(--blue-tint); border: 1px solid var(--blue-tint-border);
+      border-radius: var(--radius);
+    }
+    .pp-survey-banner-title { font-size: 13.5px; font-weight: 600; color: var(--navy); }
     .pp-source { margin-top: 14px; font-size: 11.5px; color: var(--ink-3); font-style: italic; }
     /* Resolved-case photo (presentation pass, pre-Phase-5) — modest size next
        to the baseline label so it reads as identity context, not hero art. */
@@ -549,6 +560,14 @@
     .pp-scope-count {
       font-family: var(--font); font-size: 11.5px; font-weight: 500;
       letter-spacing: 0; text-transform: none; color: var(--ink-3);
+    }
+    /* Ties the customization/confidence handoff to the two real scopes the
+       survey actually requested — not the ghost scopes, which are unrelated. */
+    .pp-scope-requested-tag {
+      font-family: var(--font-display); font-size: 9.5px; font-weight: 400;
+      letter-spacing: 0.08em; text-transform: uppercase; color: var(--blue);
+      background: var(--blue-tint); border: 1px solid var(--blue-tint-border);
+      border-radius: 999px; padding: 2px 8px;
     }
     .pp-card-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); gap: 14px; }
     .pp-card {
@@ -1108,13 +1127,17 @@ function getActiveRefreshSurvey() {
 //  (that wiring is Phase 5's, per the master build prompt).
 // ----------------------------------------------------------------------------
 
-// Real product photography for 4 of the 8 parts; the other 4 use the shared
-// placeholder asset rather than a fabricated photo.
+// Real product photography for all 8 parts — zero placeholders now that
+// 0428585/0428586/0331774/0394752 have real assets too.
 const REAL_IMAGE_BY_PART = {
   "0522314": "0522314.png",
   "0428562": "0428562.jpg",
   "0428627": "0428627.jpg",
   "0560316": "0560316.jpg",
+  "0428585": "0428585.jpg",
+  "0428586": "0428586.jpg",
+  "0331774": "0331774.jpg",
+  "0394752": "0394752.jpg",
 };
 function partImageSrc(partNumber) {
   return "assets/" + (REAL_IMAGE_BY_PART[partNumber] || "no_image_placeholder.png");
@@ -1152,6 +1175,118 @@ function stockStatusText(partNumber) {
 }
 function isBackordered(partNumber) {
   return partNumber === BACKORDERED_PART;
+}
+
+// INSTALL / REFRESH HISTORY — new in demo2 (the survey's own INSTALL_RECORDS
+// carries none of this). customer/storeManager/currentColor are the only
+// cross-file-consistency fields — copied exactly from
+// public_smart_survey_v2.html's INSTALL_RECORDS entry for this serial so the
+// two demos can never contradict. .get(serial)-style lookup; a missing
+// serial returns null (graceful "no install record," never a crash) — same
+// convention as the survey. This is a lookup, not a model: serial in, seeded
+// record out. In production the lookup reads the ERP; here it reads this map.
+const INSTALL_RECORDS = new Map([
+  ["MY25H067107", {
+    customer:     "Schnucks",   // illustrative — matches public_smart_survey_v2.html INSTALL_RECORDS
+    storeManager: "Tim Figge",  // illustrative — matches public_smart_survey_v2.html INSTALL_RECORDS
+    currentColor: "white",      // illustrative — matches public_smart_survey_v2.html INSTALL_RECORDS
+    installDate:  "2016-04-11", // illustrative
+    // Illustrative subset of the real RL3_PARTS numbers (not invented part
+    // numbers) — a plausible slice of what the original install would have
+    // included. Real part identities; the "was on the original BOM" claim is illustrative.
+    originalBOM: ["0428562", "0522314", "0428585", "0560316", "0394752"], // illustrative
+    // Illustrative per-part refresh counts. Any part not listed here has no
+    // prior refresh on record — never shown as "0", shown honestly as none.
+    refreshHistory: { "0394752": 2 }, // illustrative — the bumper joint, refreshed twice before
+  }],
+]);
+function getInstallRecord(serial) {
+  return INSTALL_RECORDS.get((serial || "").trim().toUpperCase()) || null;
+}
+
+// The flag is a RULE, not a prediction: a deterministic threshold comparison
+// against the seeded refresh count. Illustrative data, real (if trivial) logic.
+const REFRESH_FLAG_THRESHOLD = 2;
+function refreshFlagFor(partNumber, record) {
+  const count = (record && record.refreshHistory && record.refreshHistory[partNumber]) || 0;
+  return count >= REFRESH_FLAG_THRESHOLD;
+}
+
+// Per-part install/refresh line — honest on every branch: on/off the
+// original BOM, a real count or an explicit "none", never silently omitted.
+function installHistoryText(p, record) {
+  if (!record) return "No install record found for this serial.";
+  const onOriginal = record.originalBOM.indexOf(p.partNumber) !== -1;
+  const count = (record.refreshHistory && record.refreshHistory[p.partNumber]) || 0;
+  const originPart = onOriginal ? "On original install" : "Not on the original install";
+  const refreshPart = count > 0 ? "refreshed " + count + "× before" : "no prior refresh on record";
+  return originPart + " · " + refreshPart;
+}
+
+// Feature A — case-level install summary. Reuses the drawer's own price-block
+// shape (.drawer-price-block/.drawer-illustrative-tag/.drawer-price-row) so
+// this needs zero new CSS. Unrecognized serial -> plain "no record" line,
+// never a crash.
+function installSummaryHtml(serial) {
+  const record = getInstallRecord(serial);
+  if (!record) {
+    return '<div class="drawer-price-block">'
+      + '<div class="drawer-illustrative-tag">No install record found for this serial.</div>'
+      + '</div>';
+  }
+  return '<div class="drawer-price-block">'
+    + '<div class="drawer-illustrative-tag">Illustrative install-history data — a seeded lookup, not a live ERP read.</div>'
+    + '<div class="drawer-price-row"><span>Installed</span><span class="drawer-price-val strong">' + record.installDate + '</span></div>'
+    + '<div class="drawer-price-row"><span>Customer / manager</span><span class="drawer-price-val strong">' + record.customer + ' · ' + record.storeManager + '</span></div>'
+    + '<div class="drawer-price-row"><span>Current color</span><span class="drawer-price-val strong">' + record.currentColor + '</span></div>'
+    + '</div>';
+}
+
+// SURVEY HANDOFF — seeded to match public_smart_survey_v2.html's own seeded
+// Schnucks scenario exactly (cross-file consistency: these values must never
+// diverge). The confidence belongs to the SURVEY's scope-interpretation step
+// — it is never a per-part number. Parts still resolve by deterministic
+// lookup (Option A, see reasonChipHtml above); nothing here adds a
+// confidence to any individual part.
+const SURVEY_HANDOFF = {
+  scopeConfidence: [
+    { scope: "Doors", confidence: 0.90 },         // illustrative — matches public_smart_survey_v2.html SCOPE_PHRASE_MAP
+    { scope: "Bumpers/Seals", confidence: 0.80 }, // illustrative — matches public_smart_survey_v2.html SCOPE_PHRASE_MAP
+  ],
+  customization: {
+    color: "black", priorColor: "white",   // illustrative — matches the survey's seeded customization (was white)
+    bumperDepthReduced: true,               // illustrative — matches the survey's seeded customization
+    doorEdgeNarrowed: true,                 // illustrative — matches the survey's seeded customization
+  },
+};
+
+// Banner: the survey's interpreted scope + confidence, attributed to the
+// survey step — not rendered anywhere near an individual part.
+function surveyConfidenceBannerHtml() {
+  const scopeText = SURVEY_HANDOFF.scopeConfidence.map(function (s) {
+    return s.scope + " " + s.confidence.toFixed(2);
+  }).join(" · ");
+  return '<div class="pp-survey-banner">'
+    + '<div class="pp-survey-banner-title">Customer request interpreted by Smart Survey — ' + scopeText + '</div>'
+    + '<div class="drawer-illustrative-tag">Illustrative confidence — attributed to the survey’s scope interpretation, not to individual parts.</div>'
+    + '</div>';
+}
+
+// Banner: the customization the survey captured, carried forward as an
+// active element (not a static label) — reuses the drawer's own neutral
+// panel shape (.drawer-price-block), since customization is explicit, no-AI
+// capture (Feature 2/3's own bright line), not survey-confidence-flavored.
+function customizationHandoffHtml() {
+  const c = SURVEY_HANDOFF.customization;
+  const mods = [];
+  if (c.bumperDepthReduced) mods.push("bumper depth reduced");
+  if (c.doorEdgeNarrowed) mods.push("door edge narrowed");
+  return '<div class="drawer-price-block">'
+    + '<div class="drawer-illustrative-tag">Customization from Smart Survey — explicit request, not inferred.</div>'
+    + '<div class="drawer-price-row"><span>Custom color</span><span class="drawer-price-val strong">' + c.color + ' (was ' + c.priorColor + ')</span></div>'
+    + (mods.length ? '<div class="drawer-price-row"><span>Dimensional mods</span><span class="drawer-price-val strong">' + mods.join(", ") + '</span></div>' : "")
+    + '<div class="drawer-savings" style="color:var(--blue);">Applies to the Doors and Bumpers/Seals scopes below.</div>'
+    + '</div>';
 }
 
 // "WHY?" REASONING CHIP — deterministic (Option A): this screen resolves by
@@ -1838,7 +1973,9 @@ function renderRealShell(info) {
   const activeScopes = RL3_ACTIVE_SCOPES.map(function (scope) {
     const parts = partsForKit(scope.key);
     return '<div class="pp-scope">'
-      + '<div class="pp-scope-head">' + scope.label + '<span class="pp-scope-count">' + parts.length + ' parts</span></div>'
+      + '<div class="pp-scope-head">' + scope.label
+      +   '<span class="pp-scope-requested-tag">Customer requested</span>'
+      +   '<span class="pp-scope-count">' + parts.length + ' parts</span></div>'
       + '<div class="pp-card-grid">' + parts.map(realCard).join("") + '</div>'
       + '</div>';
   }).join("");
@@ -1864,11 +2001,14 @@ function renderRealShell(info) {
   const netting = buildNettingHtml(refresh);
 
   const main = '<div class="pp-main">'
+    + surveyConfidenceBannerHtml()
     + funnel
     + '<div class="pp-case-photo-row">'
     +   '<img class="pp-case-photo" src="' + CASE_PHOTO_SRC + '" alt="Case ' + info.serial + '">'
     +   '<div class="pp-source">Baseline data from Hussmann Performance Parts (serial ' + info.serial + ').</div>'
     + '</div>'
+    + installSummaryHtml(info.serial)
+    + customizationHandoffHtml()
     + activeScopes
     + comingSoon
     + netting
@@ -2087,6 +2227,8 @@ function openDrawer(p) {
 
   const kitLabel = RL3_KITS[p.kit] ? RL3_KITS[p.kit].label : p.kit;
   const whyFlagged = WHY_FLAGGED_BY_KIT[p.kit] || "Flagged by the refresh survey for this case.";
+  const installRecord = getInstallRecord(ui.caseInfo && ui.caseInfo.serial);
+  const refreshFlagged = refreshFlagFor(p.partNumber, installRecord);
 
   const body =
       '<div class="drawer-eyebrow">Part detail</div>'
@@ -2114,6 +2256,14 @@ function openDrawer(p) {
     + '<div class="drawer-section">'
     +   '<div class="drawer-section-lbl">Supersession resolved</div>'
     +   '<div class="drawer-section-body">' + supersessionText(p) + '</div>'
+    + '</div>'
+    + '<div class="drawer-section">'
+    +   '<div class="drawer-section-lbl">Install / refresh history</div>'
+    +   '<div class="drawer-illustrative-tag">Illustrative — a seeded lookup, not a live ERP read. The rule below is real logic.</div>'
+    +   '<div class="drawer-section-body">' + installHistoryText(p, installRecord) + '</div>'
+    +   (refreshFlagged
+          ? '<div class="drawer-illustrative-tag" style="font-style:normal;color:var(--pencil);font-weight:600;">Rule: refreshed ≥ ' + REFRESH_FLAG_THRESHOLD + '× → refreshed before, consider upgrade.</div>'
+          : '')
     + '</div>';
 
   document.getElementById("drawerBody").innerHTML = body;
