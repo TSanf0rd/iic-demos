@@ -45,30 +45,40 @@
       --blue:        #1E6BB8;   /* active/interactive blue */
       --blue-soft:   #E5EFFB;   /* soft blue background wash */
 
-      /* Warm neutrals — softer than pure white, feels less templated */
-      --bg:          #F5F3EE;   /* page background — warm off-white */
-      --surface:     #FFFFFF;   /* cards sit on white above the warm bg */
+      /* Cool paper surface — ported from demo2 (Phase 1 reskin). The old
+         warm off-white/cream base is deleted; this is the same "engineering
+         vellum under fluorescent light" surface as demo2 and the survey. */
+      --paper:       #E8EBE9;   /* page background — cool, ported from demo2 --paper */
+      --surface:     #FFFFFF;   /* cards sit on white above the paper */
       --surface-2:   #FAF9F6;   /* subtle alternate surface */
-      --border:      #E2DFD8;   /* hairline borders — warm gray */
-      --border-2:    #CFCBC1;   /* stronger border on hover */
+      --border:      #C2C8C6;   /* hairline borders — ported from demo2 --rule */
+      --border-2:    #DBDFDD;   /* stronger border on hover — ported from demo2 --rule-2 */
 
-      /* Text */
-      --ink:         #1A1A18;   /* near-black primary text */
-      --ink-2:       #5A574F;   /* muted secondary text */
-      --ink-3:       #8A867B;   /* faint tertiary text / captions */
+      /* Text — ported from demo2 --ink/-2/-3 exact hexes */
+      --ink:         #14181A;   /* near-black primary text */
+      --ink-2:       #5A625F;   /* muted secondary text */
+      --ink-3:       #8A928F;   /* faint tertiary text / captions */
 
-      /* Status colors — used ONLY for state, so they stay meaningful */
-      --green:       #2E9E4A;   --green-bg: #E7F4EA;   --green-ink: #1E7A34;
-      --amber:       #E08A16;   --amber-bg: #FDF0E3;   --amber-ink: #B4600A;
-      --sky:         #2A7FD4;   --sky-bg:   #E5EFFB;   --sky-ink:   #1560A8;
-      --gray:        #9A9A94;   --gray-bg:  #EEEEEC;   --gray-ink:  #5F5F5B;
-      --red:         #C62828;   --red-bg:   #FBE4E4;   --red-ink:   #B02020;
+      /* The ONLY warm color on the page, ported from demo2 — the red-pencil
+         annotation/error mark. Unused this phase; Phase 2 wires it in. */
+      --pencil:      #B0342C;
+
+      /* Status colors — kept as a full 5-color triad system (SLA/risk need
+         the range), hues harmonized into demo2's cool, muted family. Green,
+         amber, and sky now reuse demo2's exact green/amber/blue tokens; gray
+         reuses demo2's ink-2/ink-3; red is nudged toward the same deepened,
+         desaturated family without colliding with --pencil's exact hex. */
+      --green:       #2E7D46;   --green-bg: #E2EDE5;   --green-ink: #1C5F32;
+      --amber:       #B4600A;   --amber-bg: #F4E9DD;   --amber-ink: #8A4808;
+      --sky:         #1E6BB8;   --sky-bg:   #E8F0F8;   --sky-ink:   #143D63;
+      --gray:        #8A928F;   --gray-bg:  #E4E7E5;   --gray-ink:  #5A625F;
+      --red:         #A6332B;   --red-bg:   #F6E7E6;   --red-ink:   #7A241D;
 
       /* Layout */
-      --radius:      10px;      /* standard corner rounding */
+      --radius:      8px;       /* standard corner rounding — matched to demo2 */
       --radius-lg:   14px;      /* larger cards */
       --gap:         16px;
-      --maxw:        1180px;    /* max content width */
+      --maxw:        1180px;    /* max content width — layout dimension, untouched this phase */
 
       /* Type */
       --font: "Inter", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
@@ -91,7 +101,7 @@
 
     body {
       font-family: var(--font);
-      background: var(--bg);
+      background: var(--paper);
       color: var(--ink);
       line-height: 1.5;
       -webkit-font-smoothing: antialiased;
@@ -121,13 +131,8 @@
       align-items: center;
       gap: 12px;
     }
-    .topbar .brand-mark {
-      width: 34px; height: 34px;
-      border-radius: 7px;
-      background: linear-gradient(135deg, var(--blue) 0%, var(--navy-2) 100%);
-      display: flex; align-items: center; justify-content: center;
-      font-weight: 700; font-size: 17px; letter-spacing: -0.5px;
-    }
+    .topbar .wordmark { color: #fff; }
+    .topbar .wordmark svg { height: 20px; width: auto; display: block; }
     .topbar .brand-text { display: flex; flex-direction: column; line-height: 1.15; }
     .topbar .brand-text .name { font-weight: 600; font-size: 15px; letter-spacing: 0.2px; }
     .topbar .brand-text .sub  { font-size: 11.5px; color: #A9C4DE; font-weight: 400; }
@@ -574,7 +579,7 @@
       margin-top: 24px;
       border: 1px solid var(--border);
       border-radius: var(--radius-lg);
-      background: linear-gradient(180deg, #F7FAFD 0%, var(--surface) 100%);
+      background: var(--surface);
       padding: 20px;
     }
     .copilot-head {
@@ -583,7 +588,7 @@
     }
     .copilot-badge {
       font-size: 11px; font-weight: 700; letter-spacing: 0.4px;
-      color: #fff; background: linear-gradient(135deg, #2A7FD4 0%, #7B4FD0 100%);
+      color: #fff; background: var(--blue);
       padding: 3px 9px; border-radius: 5px;
     }
     .copilot-title { font-size: 15px; font-weight: 600; color: var(--navy); }
@@ -771,7 +776,7 @@
        ====================================================================== -->
   <header class="topbar">
     <div class="brand">
-      <div class="brand-mark">H</div>
+      <div class="wordmark"><svg role="img" aria-label="Hussmann" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 175 19.1"><path fill="currentColor" d="M166.9 4v13.1h-6v-10c0-.9-1.4-1.8-3.1-.7 0 0-1 .8-1 2.6v8h-6V1.8h6.1v1.8s4.6-2.4 6.9-1.9c.1-.1 2.5.2 3.1 2.3zM146.3 4v13.1h-6v-10c0-.9-1.4-1.8-3.1-.7 0 0-1 .8-1 2.6v8h-6V1.7h6.1v1.8s4.6-2.4 6.9-1.9c0 0 2.5.3 3.1 2.4zM81 17.1V1.7h6.1v2.1s3.9-2.4 6.2-2c0 0 1.9.1 3 2 0 0 3.7-2.7 6.6-1.9 0 0 2.5.7 2.6 2.6v12.6h-6.1V7.5s-.2-1.6-1.8-1.1c0 0-1.2.2-1.3 1.7v9h-6.1V7.7s-.7-1.9-2.3-.8c0 0-.8.5-.8 2.1v8.1H81zM30.2 17.1h5.3c3.3-.1 3.1-2.9 3.1-2.9V1.6h-6.3v11.5c0 1.2-1.1 1.4-1.6 1.5h-.6c-.5 0-1.6-.2-1.6-1.5V1.6h-6.3v12.5s-.2 2.8 3.1 2.9h5.3-.4v.1zM71.1 7H77V3.2s-.3-1.6-2.5-1.6h-9.2s-2.9-.3-3.3 1.8v5.9s.1 1.7 3.3 1.8h4s1.7 0 1.8 1.1c0 0 .3 1.4-.3 2-.3.3-.5.5-1.2.5-.5 0-.9-.2-1.1-.5-.3-.5-.3-.8-.3-1.8H62v2.7s-.2 2 2 2h10.7s2 .2 2.5-2.3v-4.2s-.2-2.1-1.8-2.1c0 0-5.3-.1-5.4-.2-.3 0-1.8.2-1.7-1.1V5.6c0-.9.8-1.4 1.5-1.4.9 0 1.4.5 1.5 1.4L71.1 7zM52.1 7H58V3.2s-.3-1.6-2.5-1.6h-9.2s-2.9-.3-3.3 1.8v5.9s.1 1.7 3.3 1.8h4s1.7 0 1.8 1.1c0 0 .3 1.4-.3 2-.3.3-.5.5-1.2.5-.5 0-.9-.2-1.1-.5-.3-.5-.3-.8-.3-1.8H43v2.7s-.2 2 2 2h10.7s2 .2 2.5-2.3v-4.2s-.2-2.1-1.8-2.1c0 0-5.3-.1-5.4-.2-.3 0-1.8.2-1.7-1.1V5.6c0-.9.8-1.4 1.5-1.4.9 0 1.4.5 1.5 1.4L52.1 7zM9.6 10.7h1.2s.7 0 .7.8v5.6h6.4V1.6h-6.4v5.5s0 .7-.7.8H8.4c-.7 0-.7-.7-.7-.7V1.6H1.4V17h6.3v-5.6c0-.8.7-.8.7-.8l1.2.1z"/><path fill="currentColor" fill-rule="evenodd" clip-rule="evenodd" d="M171.3 5.7c1.4 0 2.6-1.1 2.6-2.5 0-1.5-1.2-2.5-2.6-2.5-1.4 0-2.6 1.1-2.6 2.5.1 1.4 1.2 2.5 2.6 2.5zm-2-2.6c0-1.2.9-2.1 2.1-2.1 1.1 0 2.1.9 2.1 2.1s-.9 2.1-2.1 2.1-2.1-.9-2.1-2.1zm1.5.2h.5l.8 1.3h.5l-.8-1.3c.4-.1.8-.3.8-.8 0-.6-.3-.8-1-.8h-1.1v2.9h.4l-.1-1.3zm0-.4V2h.6c.3 0 .6.1.6.4 0 .5-.3.5-.7.5h-.5zM119.9 9.1V4.4c-.1-.2-.2-.7-1.1-.7h-1.6c-.5 0-1.1 0-1.1.8v4.3c0 1.2.7 1.1.7 1.1h2.3c.1.1.8.1.8-.8zm2.5-7.5c4.1-.2 3.8 2.8 3.8 2.8v12.7h-6.3v-3.3c0-.3-.2-.7-.8-.7h-2.2c-.3 0-.8.3-.8.7v3.4h-6.3V4.6s-.3-3 3.7-2.8H122.4v-.2z"/></svg></div>
       <div class="brand-text">
         <span class="name">Hussmann Refresh</span>
         <span class="sub">Live Order Tracking</span>
@@ -1138,10 +1143,10 @@ function slaFor(order) {
 //  (background + text). We'll use these in the CSS/rendering step.
 // ----------------------------------------------------------------------------
 const STATUS_CONFIG = {
-  on_track:   { label: "On Track",   bg: "#E7F4EA", text: "#1E7A34", dot: "#2E9E4A" },
-  at_risk:    { label: "At Risk",    bg: "#FDF0E3", text: "#B4600A", dot: "#E08A16" },
-  in_transit: { label: "In Transit", bg: "#E5EFFB", text: "#1560A8", dot: "#2A7FD4" },
-  closed:     { label: "Closed",     bg: "#EEEEEC", text: "#5F5F5B", dot: "#9A9A94" },
+  on_track:   { label: "On Track",   bg: "#E2EDE5", text: "#1C5F32", dot: "#2E7D46" },
+  at_risk:    { label: "At Risk",    bg: "#F4E9DD", text: "#8A4808", dot: "#B4600A" },
+  in_transit: { label: "In Transit", bg: "#E8F0F8", text: "#143D63", dot: "#1E6BB8" },
+  closed:     { label: "Closed",     bg: "#E4E7E5", text: "#5A625F", dot: "#8A928F" },
 };
 
 
@@ -1151,9 +1156,9 @@ const STATUS_CONFIG = {
 //  Same pattern — defines how each part-level risk looks in the internal view.
 // ----------------------------------------------------------------------------
 const RISK_CONFIG = {
-  none:     { label: "—",         bg: "transparent", text: "#5F5F5B" },
-  delayed:  { label: "Delayed",   bg: "#FDF0E3",     text: "#B4600A" },
-  jeopardy: { label: "Jeopardy",  bg: "#FBE4E4",     text: "#B02020" },
+  none:     { label: "—",         bg: "transparent", text: "#5A625F" },
+  delayed:  { label: "Delayed",   bg: "#F4E9DD",     text: "#8A4808" },
+  jeopardy: { label: "Jeopardy",  bg: "#F6E7E6",     text: "#7A241D" },
 };
 
 
