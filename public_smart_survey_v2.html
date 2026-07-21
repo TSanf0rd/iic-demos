@@ -234,6 +234,7 @@
             <div class="caveat">Future phase: quoter-priced estimate. This scope is handed to a Hussmann quoter for exact contract pricing &mdash; no price is shown here.</div>
             <button class="btn" id="submitBtn" disabled>Request my specialist</button>
             <div class="sent" id="sentMsg"></div>
+            <a class="btn" id="surveyNextBtn" href="demo2_parts_matching.html" style="display:none;text-decoration:none;text-align:center;">Next &rarr;</a>
             <div class="privacy"><span class="lock">&#128274;</span><span>Your answers stay within Hussmann&rsquo;s systems and are used only to prepare your scope.</span></div>
           </div>
         </div>
@@ -496,6 +497,7 @@ function submitLead() {
   s.className = "sent show";
   s.textContent = "Thanks, " + (payload.lead.name || "there") + "! A Hussmann refresh specialist will follow up at " + (payload.lead.email || "your email") + " with a quoted price for this scope.";
   $("submitBtn").disabled = true;
+  $("surveyNextBtn").style.display = "block";
 }
 
 function init() {

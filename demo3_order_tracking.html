@@ -447,25 +447,25 @@
     .risk-banner-text strong { font-weight: 600; }
 
     .risk-banner.jeopardy {
-      background: var(--red-bg); border-color: #F0C4C4;
+      background: var(--red-bg); border-color: #E7C2C0;
     }
     .risk-banner.jeopardy .risk-banner-icon { background: var(--red); }
     .risk-banner.jeopardy .risk-banner-title { color: var(--red-ink); }
-    .risk-banner.jeopardy .risk-banner-text { color: #7A2020; }
+    .risk-banner.jeopardy .risk-banner-text { color: #5C1E19; }
 
     .risk-banner.delayed {
-      background: var(--amber-bg); border-color: #F3D9B4;
+      background: var(--amber-bg); border-color: #E8CFB6;
     }
     .risk-banner.delayed .risk-banner-icon { background: var(--amber); }
     .risk-banner.delayed .risk-banner-title { color: var(--amber-ink); }
-    .risk-banner.delayed .risk-banner-text { color: #7A4E0A; }
+    .risk-banner.delayed .risk-banner-text { color: #6B3D06; }
 
     .risk-banner.clear {
-      background: var(--green-bg); border-color: #C4E4CC;
+      background: var(--green-bg); border-color: #C0D8C8;
     }
     .risk-banner.clear .risk-banner-icon { background: var(--green); }
     .risk-banner.clear .risk-banner-title { color: var(--green-ink); }
-    .risk-banner.clear .risk-banner-text { color: #2A5E38; }
+    .risk-banner.clear .risk-banner-text { color: #163F22; }
 
     /* Caption above the table */
     .internal-sub {
@@ -510,8 +510,8 @@
     }
 
     /* Faint row tint for at-risk parts, so the eye jumps to them */
-    .parts-table tr.row-delayed  td { background: rgba(224, 138, 22, 0.05); }
-    .parts-table tr.row-jeopardy td { background: rgba(198, 40, 40, 0.05); }
+    .parts-table tr.row-delayed  td { background: rgba(180, 96, 10, 0.05); }
+    .parts-table tr.row-jeopardy td { background: rgba(166, 51, 43, 0.05); }
 
     /* ======================================================================
        SUPPLY-CHAIN MAP (inside the internal view)
@@ -751,13 +751,13 @@
     .cust-provenance { margin-top:12px; font-size:11px; color:var(--ink-3); line-height:1.5; }
 
     .bottleneck { display:flex; align-items:center; gap:12px; background:var(--amber-bg);
-                  border:1px solid #F0D2A6; border-radius: var(--radius); padding:12px 15px; margin-bottom:14px; }
+                  border:1px solid #E8CFB6; border-radius: var(--radius); padding:12px 15px; margin-bottom:14px; }
     .bn-icon { font-size:18px; color:var(--amber-ink); flex-shrink:0; }
     .bn-body { flex:1; }
     .bn-title { font-size:13.5px; font-weight:700; color:var(--amber-ink); }
     .bn-note { font-size:12.5px; color:var(--ink-2); margin-top:1px; }
     .bn-tag { font-size:10px; font-weight:700; text-transform:uppercase; letter-spacing:.4px;
-              color:var(--amber-ink); border:1px solid #E7B87A; border-radius: 999px; padding:3px 7px; flex-shrink:0; }
+              color:var(--amber-ink); border:1px solid #D9A768; border-radius: 999px; padding:3px 7px; flex-shrink:0; }
 
     .install-block { border:1px solid var(--border); border-radius: var(--radius); padding:14px 16px; margin-bottom:16px; }
     .ib-head { font-size:12px; font-weight:700; text-transform:uppercase; letter-spacing:.5px;
@@ -782,7 +782,10 @@
         <span class="sub">Live Order Tracking</span>
       </div>
     </div>
-    <span class="env">Internal Tool · Demo</span>
+    <div style="display:flex;align-items:center;gap:10px;">
+      <a class="env" href="index.html" style="text-decoration:none;cursor:pointer;">Back to overview</a>
+      <span class="env">Internal Tool · Demo</span>
+    </div>
   </header>
 
   <!-- ======================================================================

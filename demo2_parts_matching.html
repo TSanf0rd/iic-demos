@@ -2221,7 +2221,8 @@ function renderRL3Quote(refresh) {
     document.getElementById("ppOracleConfirm").innerHTML =
       '<div class="oracle-title">Quote approved</div>'
       + 'Order <span class="mono">' + orderId + '</span> created in Oracle via Adaptia. '
-      + 'Parts demand generated · Estimated ship in 5 weeks · Now trackable in Live Order Tracking (Demo 3).';
+      + 'Parts demand generated · Estimated ship in 5 weeks · Now trackable in Live Order Tracking (Demo 3).'
+      + '<a class="btn primary" href="demo3_order_tracking.html" style="display:inline-block;width:auto;text-decoration:none;text-align:center;margin-top:10px;">Next &rarr;</a>';
     document.getElementById("ppOracleConfirm").classList.add("show");
   });
 }
