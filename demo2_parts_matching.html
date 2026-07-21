@@ -569,14 +569,61 @@
       background: var(--blue-tint); border: 1px solid var(--blue-tint-border);
       border-radius: 999px; padding: 2px 8px;
     }
+    /* Visual-overhaul Phase 2 — kit-grouping band. Wraps each scope's real
+       part set in a labeled kit container; reads the same .kit field
+       partsForKit already filters on (display-only, no adapter). */
+    .pp-kit-container { margin-top: 24px; }
+    .pp-kit-container .pp-scope { margin-top: 10px; }
+    .pp-kit-band {
+      display: flex; align-items: baseline; gap: 10px;
+      font-family: var(--font-display); font-size: 11px; font-weight: 400;
+      letter-spacing: 0.1em; text-transform: uppercase; color: var(--ink-3);
+      padding-bottom: 6px; border-bottom: 1px dashed var(--rule-2);
+      /* Phase 3 — clickable affordance: cursor + a subtle hover cue so a
+         presenter knows this band toggles kit focus. */
+      cursor: pointer; transition: color .14s ease;
+    }
+    .pp-kit-band:hover { color: var(--blue); }
     .pp-card-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); gap: 14px; }
     .pp-card {
       background: var(--surface); border: 1.5px solid var(--rule-2);
       border-radius: var(--radius-lg); padding: 16px; cursor: pointer;
       display: flex; flex-direction: column; gap: 6px;
-      opacity: 1; transform: none; transition: opacity .22s ease, transform .22s ease, border-color .14s;
+      opacity: 1; transform: none; box-shadow: none;
+      transition: opacity .22s ease, transform .22s ease, border-color .14s, box-shadow .22s ease, filter .22s ease;
     }
     .pp-card:hover { border-color: var(--blue); }
+    /* Phase 3 — kit-focus interaction. Defaults to neutral (no container has
+       either class on load). Focus = a gentle lift, using the same
+       navy-tinted shadow already used elsewhere (drawer/pcard hover, e.g.
+       rgba(11,45,77,...) is --navy at partial alpha, not a new color). Mute
+       = gentle de-emphasis, never display:none, always still readable. */
+    .pp-kit-container.pp-kit-focused .pp-card {
+      transform: translateY(-2px); border-color: var(--blue);
+      box-shadow: 0 6px 16px rgba(11,45,77,.12);
+    }
+    .pp-kit-container.pp-kit-muted .pp-card {
+      opacity: .5; filter: saturate(.5);
+    }
+    /* The Phase 2 emphasis is a FACT, not a focus state — it survives muting.
+       A flagged/backordered card in a muted kit stays clearly legible
+       (higher opacity floor, full saturation) instead of fading like its
+       plain siblings. */
+    .pp-kit-container.pp-kit-muted .pp-card.pp-card-flagged,
+    .pp-kit-container.pp-kit-muted .pp-card.pp-card-backordered {
+      opacity: .9; filter: none;
+    }
+    /* Differentiated emphasis (Phase 2) — ONLY the parts that genuinely
+       stand out get a left accent; the other 6 render exactly as before, no
+       blanket "recommended" glow. Same tokens already used for these exact
+       meanings elsewhere: pencil = a rule/annotation the pipeline made a
+       call on, amber = availability at risk. */
+    .pp-card.pp-card-flagged { border-left: 4px solid var(--pencil); }
+    .pp-card.pp-card-backordered { border-left: 4px solid var(--amber); }
+    .pp-card-flag {
+      font-family: var(--font-display); font-size: 10px; font-weight: 400;
+      letter-spacing: 0.08em; text-transform: uppercase; color: var(--pencil);
+    }
     .pp-card.pre { opacity: 0; transform: translateY(4px); pointer-events: none; }
     .pp-card-part { font-family: var(--font-mono); font-size: 13px; font-weight: 700; color: var(--navy); }
     .pp-card-desc { font-size: 12.5px; color: var(--ink-2); line-height: 1.4; }
@@ -1958,7 +2005,17 @@ function renderRealShell(info) {
       + '<span class="pp-card-stock' + (backordered ? ' backordered' : ' ok') + '">' + stockStatusText(p.partNumber) + '</span>'
       + '</div>'
       + '<div class="drawer-illustrative-tag">Illustrative — sample availability</div>';
-    return '<div class="pp-card" data-part="' + p.partNumber + '">'
+
+    // Differentiated emphasis (Phase 2) — reuses the SAME rule the drawer
+    // already computes (refreshFlagFor) and the SAME stock status
+    // (isBackordered); nothing invented, no blanket "recommended" styling on
+    // the other 6 parts. Exactly one of these can apply per card today.
+    const record = getInstallRecord(info.serial);
+    const flagged = refreshFlagFor(p.partNumber, record);
+    const emphasisClass = flagged ? " pp-card-flagged" : (backordered ? " pp-card-backordered" : "");
+    const flagBadge = flagged ? '<div class="pp-card-flag">↻ Refreshed before</div>' : "";
+
+    return '<div class="pp-card' + emphasisClass + '" data-part="' + p.partNumber + '">'
       // same partImageSrc() the Phase 4 drawer calls — one resolver, card and
       // drawer can't disagree on which asset a part number maps to.
       + '<img class="pp-card-img" src="' + partImageSrc(p.partNumber) + '" alt="' + p.description + '">'
@@ -1967,16 +2024,27 @@ function renderRealShell(info) {
       + '<div class="pp-card-price">' + money(p.price) + '</div>'
       + replaces
       + stock
+      + flagBadge
       + reasonChipHtml(p)
       + '</div>';
   }
+  // Phase 2 — kit-grouping band wraps each scope's real part set. Reads the
+  // same .kit field partsForKit already filters on (display-only) — no
+  // adapter, groupIntoKits untouched. Distinct from the scope header nested
+  // inside it: kit = the pipeline's real grouping construct (RL3_KITS), scope
+  // = the customer-facing label (kept from Phase 1, "Customer requested" tag
+  // included, not duplicated here).
   const activeScopes = RL3_ACTIVE_SCOPES.map(function (scope) {
     const parts = partsForKit(scope.key);
-    return '<div class="pp-scope">'
-      + '<div class="pp-scope-head">' + scope.label
-      +   '<span class="pp-scope-requested-tag">Customer requested</span>'
-      +   '<span class="pp-scope-count">' + parts.length + ' parts</span></div>'
-      + '<div class="pp-card-grid">' + parts.map(realCard).join("") + '</div>'
+    const kitLabel = RL3_KITS[scope.key] ? RL3_KITS[scope.key].label : scope.key;
+    return '<div class="pp-kit-container" data-kit="' + scope.key + '">'
+      + '<div class="pp-kit-band" data-kit="' + scope.key + '">Kit — ' + kitLabel + '<span class="pp-scope-count">' + parts.length + ' parts</span></div>'
+      + '<div class="pp-scope">'
+      +   '<div class="pp-scope-head">' + scope.label
+      +     '<span class="pp-scope-requested-tag">Customer requested</span>'
+      +     '<span class="pp-scope-count">' + parts.length + ' parts</span></div>'
+      +   '<div class="pp-card-grid">' + parts.map(realCard).join("") + '</div>'
+      + '</div>'
       + '</div>';
   }).join("");
 
@@ -2198,6 +2266,25 @@ function wireRealShellEvents() {
       e.stopPropagation();
       const part = RL3_PARTS.find(function (p) { return p.partNumber === link.getAttribute("data-open-drawer"); });
       if (part) openDrawer(part);
+    });
+  });
+  // Kit-focus: click a kit band to spotlight that kit and mute the other.
+  // Click the focused band again to return to neutral (toggle, never stuck).
+  document.querySelectorAll("#ppShell .pp-kit-band").forEach(function (band) {
+    band.addEventListener("click", function () {
+      const key = band.getAttribute("data-kit");
+      const container = band.closest(".pp-kit-container");
+      const alreadyFocused = container.classList.contains("pp-kit-focused");
+      const containers = document.querySelectorAll("#ppShell .pp-kit-container");
+      containers.forEach(function (c) {
+        c.classList.remove("pp-kit-focused", "pp-kit-muted");
+      });
+      if (!alreadyFocused) {
+        containers.forEach(function (c) {
+          if (c.getAttribute("data-kit") === key) c.classList.add("pp-kit-focused");
+          else c.classList.add("pp-kit-muted");
+        });
+      }
     });
   });
 }
