@@ -662,6 +662,56 @@
       .pp-card { transition: none !important; }
     }
 
+    /* ====== CANDIDATE RANKING PANEL — the one learning-to-rank surface in
+       this demo (Door slot). Deliberately visually distinct from .pp-card
+       (the resolved BOM above): a blue wash instead of white, since blue is
+       already this file's "AI-driven" accent (survey facets, reason-chip,
+       requested-tag). Hand-tuned/illustrative — NOT routed through
+       rankCandidates (see the note at RANK_CANDIDATES_DOOR). No confidence
+       number anywhere here: fit is a 0-100 bar, never a 0.xx decimal, so it
+       never reads like the survey's confidence display. ====== */
+    .rank-panel-badge {
+      font-family: var(--font-display); font-size: 10px; font-weight: 400;
+      letter-spacing: 0.08em; text-transform: uppercase; color: var(--blue);
+      background: var(--blue-tint); border: 1px solid var(--blue-tint-border);
+      border-radius: var(--radius); padding: 6px 10px; margin-bottom: 14px;
+      display: inline-block;
+    }
+    .rank-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); gap: 14px; }
+    .rank-card {
+      position: relative;
+      background: var(--blue-tint); border: 1.5px solid var(--blue-tint-border);
+      border-radius: var(--radius-lg); padding: 16px;
+      display: flex; flex-direction: column; gap: 6px;
+    }
+    .rank-card-badge {
+      position: absolute; top: 10px; right: 10px;
+      width: 22px; height: 22px; border-radius: 50%;
+      background: var(--navy); color: #fff;
+      font-family: var(--font-display); font-size: 11px; font-weight: 400;
+      display: flex; align-items: center; justify-content: center;
+    }
+    .rank-card-img {
+      width: 100%; height: 88px; object-fit: contain;
+      background: var(--surface); border: 1px solid var(--blue-tint-border); border-radius: var(--radius);
+    }
+    .rank-card-part { font-family: var(--font-mono); font-size: 12px; font-weight: 700; color: var(--navy); }
+    .rank-card-part-illustrative {
+      font-family: var(--font-display); font-size: 10px; font-weight: 400;
+      letter-spacing: 0.06em; text-transform: uppercase; color: var(--ink-3);
+    }
+    .rank-card-title { font-size: 13px; font-weight: 600; color: var(--ink); }
+    .rank-card-desc { font-size: 12px; color: var(--ink-2); line-height: 1.4; }
+    .rank-fit { margin-top: 4px; }
+    .rank-fit-track { background: var(--surface); border: 1px solid var(--blue-tint-border); border-radius: 999px; height: 6px; overflow: hidden; }
+    .rank-fit-bar { height: 100%; background: var(--blue); border-radius: 999px; }
+    .rank-fit-label { font-size: 11.5px; font-weight: 700; color: var(--navy); margin-top: 4px; display: inline-block; }
+    .rank-fit-unit { font-weight: 500; color: var(--ink-3); text-transform: none; letter-spacing: 0; }
+    .rank-override-note {
+      margin-top: 14px; font-size: 11.5px; font-style: italic; color: var(--ink-3);
+      padding-top: 10px; border-top: 1px dashed var(--rule-2);
+    }
+
     /* ====== BOM NETTING -> KIT GROUPING (Phase 5) — reuses the existing
        .funnel/.verdict-row/.recon-badge language already defined above (same
        visual grammar the retired resolve panel uses), now driven by the real
@@ -1352,6 +1402,108 @@ function reasonChipHtml(p) {
     +   '<div class="reason-pop-row"><div class="reason-pop-lbl">Kit membership</div><div>' + kitLabel + (p.refreshScope ? ' — in refresh scope' : '') + '</div></div>'
     +   '<span class="reason-pop-link" data-open-drawer="' + p.partNumber + '">Full detail →</span>'
     + '</div>'
+    + '</div>';
+}
+
+// ----------------------------------------------------------------------------
+//  CANDIDATE RANKING PANEL (Door slot) — the ONE learning-to-rank surface in
+//  this demo.
+//
+//  STEP 0 FINDING (per build brief): rankCandidates()/scoreConfidence()'s only
+//  two signals are matchType ("exact"/"substitution") and historicalUses.
+//  Candidates #1 and #2 below are the SAME real part (0522314) — same
+//  matchType, same historicalUses — so the real ranker would score them
+//  IDENTICALLY. It has no signal for "customer-requested finish match," which
+//  is the actual deciding factor here. Candidate #3 has no real SKU at all.
+//  Feeding the ranker fabricated divergent inputs just to force this specific
+//  order would be inventing data to match a predetermined result — the exact
+//  thing this file's honesty rules forbid. So: NOT routed through
+//  rankCandidates. rankCandidates/scoreConfidence stay untouched and unused
+//  here. This panel is hand-tuned/illustrative and says so twice (the panel
+//  badge, and each Why chip's "Model" row).
+// ----------------------------------------------------------------------------
+const REQUESTED_FINISH = SURVEY_HANDOFF.customization.color; // "black" — same value customizationHandoffHtml() shows, not a parallel hardcode
+const REQUESTED_FINISH_DISPLAY = REQUESTED_FINISH.charAt(0).toUpperCase() + REQUESTED_FINISH.slice(1);
+
+const RANK_CANDIDATES_DOOR = [
+  {
+    rank: 1,
+    partNumber: "0522314",   // real
+    finish: REQUESTED_FINISH_DISPLAY,
+    illustrativeFinish: false,
+    fit: 94,                 // illustrative
+    why: "Matches customer's requested finish (" + REQUESTED_FINISH_DISPLAY + ", from survey) + exact spec.",
+    signals: ["Finish match: " + REQUESTED_FINISH_DISPLAY + " (customer requested)", "Exact catalog spec"],
+  },
+  {
+    rank: 2,
+    partNumber: "0522314",   // real part number; finish below is an illustrative override for comparison
+    finish: "White",
+    illustrativeFinish: true,
+    fit: 71,                 // illustrative
+    why: "Exact part, but customer requested " + REQUESTED_FINISH + ".",
+    signals: ["Exact catalog spec", "Finish mismatch: White vs. requested " + REQUESTED_FINISH_DISPLAY],
+  },
+  {
+    rank: 3,
+    partNumber: null,        // no real SKU — illustrative candidate
+    label: "Upgrade door — illustrative candidate",
+    desc: "Higher-efficiency door — heated glass, lower U-factor.",
+    fit: 60,                 // illustrative
+    why: "Better energy spec; higher cost / longer lead time — illustrative.",
+    signals: ["Energy spec: lower U-factor (illustrative)", "Cost / lead-time tradeoff (illustrative)"],
+  },
+];
+
+function candidateImageSrc(c) {
+  return c.partNumber ? partImageSrc(c.partNumber) : "assets/no_image_placeholder.png";
+}
+
+// Reuses the exact .reason-chip/.reason-pop shell (Model / Why / signals
+// rows) so the two "Why?" chips read as one family. No "Full detail" link
+// here — both #1 and #2 share a real part number, and the drawer would show
+// that part's actual (Black) description regardless of which candidate's
+// chip opened it, which would misrepresent #2's illustrative White finish.
+function candidateReasonChipHtml(c) {
+  return '<div class="reason-chip" data-rank="' + c.rank + '">'
+    + '<button type="button" class="reason-chip-toggle"><span class="qmark">?</span> Why?</button>'
+    + '<div class="reason-pop">'
+    +   '<div class="reason-pop-row"><div class="reason-pop-lbl">Model</div><div class="reason-pop-model">Learning ranker — illustrative, hand-tuned weights (no trained model)</div></div>'
+    +   '<div class="reason-pop-row"><div class="reason-pop-lbl">Why this rank</div><div>' + c.why + '</div></div>'
+    +   '<div class="reason-pop-row"><div class="reason-pop-lbl">Top signals</div><div>' + c.signals.join(" · ") + '</div></div>'
+    + '</div>'
+    + '</div>';
+}
+
+function rankCardHtml(c) {
+  const title = c.partNumber ? "Door — " + c.finish + " finish" : c.label;
+  const partLine = c.partNumber
+    ? '<div class="rank-card-part">' + c.partNumber + '</div>'
+    : '<div class="rank-card-part-illustrative">Illustrative candidate — no SKU</div>';
+  const illustrativeFinishTag = c.illustrativeFinish
+    ? '<div class="drawer-illustrative-tag">Illustrative — finish shown for comparison; catalog part is ' + REQUESTED_FINISH_DISPLAY + '.</div>'
+    : '';
+  const descLine = c.partNumber ? illustrativeFinishTag : '<div class="rank-card-desc">' + c.desc + '</div>';
+  return '<div class="rank-card" data-rank="' + c.rank + '">'
+    + '<div class="rank-card-badge">#' + c.rank + '</div>'
+    + '<img class="rank-card-img" src="' + candidateImageSrc(c) + '" alt="' + title + '">'
+    + partLine
+    + '<div class="rank-card-title">' + title + '</div>'
+    + descLine
+    + '<div class="rank-fit">'
+    +   '<div class="rank-fit-track"><div class="rank-fit-bar" style="width:' + c.fit + '%"></div></div>'
+    +   '<div class="rank-fit-label">' + c.fit + ' <span class="rank-fit-unit">/ 100 fit</span></div>'
+    + '</div>'
+    + candidateReasonChipHtml(c)
+    + '</div>';
+}
+
+function candidateRankingPanelHtml() {
+  return '<div class="pp-scope">'
+    + '<div class="pp-scope-head">Door slot — candidate ranking<span class="pp-scope-count">3 candidates</span></div>'
+    + '<div class="rank-panel-badge">Candidate ranking &middot; learning-to-rank &mdash; illustrative, hand-tuned weights (no trained model)</div>'
+    + '<div class="rank-grid">' + RANK_CANDIDATES_DOOR.map(rankCardHtml).join("") + '</div>'
+    + '<div class="rank-override-note">A quoter can reorder these. Each reorder is a labeled preference pair the ranker learns from — this is how it sharpens over time.</div>'
     + '</div>';
 }
 
@@ -2078,6 +2230,7 @@ function renderRealShell(info) {
     + installSummaryHtml(info.serial)
     + customizationHandoffHtml()
     + activeScopes
+    + candidateRankingPanelHtml()
     + comingSoon
     + netting
     + '<div class="quote-card" id="ppQuote"></div>'
